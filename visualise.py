@@ -1,18 +1,22 @@
 import numpy as np
 import argparse
-import matplotlib.pyplot as plt
+import os
+import nibabel as nib
+import utils
 
 
 def main(args):
 
-    path = args.file_path
+    file_path = args.file_path
+    directory = args.directory
 
-    print(path)
+    tumor_paths = [os.path.join(path, name) for path, subdirs, files in os.walk(directory) for name in files
+                   if "tumor.nii" in name]
 
-    image = np.random.random((100, 100))
+    for tumor in tumor_paths:
 
-    plt.imshow(image)
-    plt.show()
+        nifti = nib.load(tumor)
+        utils.volumetric_plot(nifti, volume_type="tumor")
 
 
 if __name__ == '__main__':
