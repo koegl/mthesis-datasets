@@ -9,11 +9,13 @@ def main(args):
 
     file_path = args.file_path
     directory = args.directory
+    tag = args.search_tag
+
     tumor_paths = []
 
-    if directory is not None:
+    if directory is not None and tag is not None:
         tumor_paths = [os.path.join(path, name) for path, subdirs, files in os.walk(directory) for name in files
-                       if "tumor.nii" in name]
+                       if tag in name]
 
     if file_path is not None:
         tumor_paths = [file_path]
@@ -31,6 +33,8 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--directory", type=str, default=None, help="Directory in which mnc files will be"
                                                                           "searched for and converted to nii")
     parser.add_argument("-fp", "--file_path", type=str, default=None, help="File path of the file to be displayed")
+    parser.add_argument("-st", "--search_tag", type=str, default="tumor.nii", help="String that has to be included in"
+                                                                                   "the filename")
 
     arguments = parser.parse_args()
 
