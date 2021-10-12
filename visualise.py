@@ -9,9 +9,14 @@ def main(args):
 
     file_path = args.file_path
     directory = args.directory
+    tumor_paths = []
 
-    tumor_paths = [os.path.join(path, name) for path, subdirs, files in os.walk(directory) for name in files
-                   if "tumor.nii" in name]
+    if directory is not None:
+        tumor_paths = [os.path.join(path, name) for path, subdirs, files in os.walk(directory) for name in files
+                       if "tumor.nii" in name]
+
+    if file_path is not None:
+        tumor_paths = [file_path]
 
     for tumor in tumor_paths:
 
