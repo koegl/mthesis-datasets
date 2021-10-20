@@ -23,7 +23,12 @@ def main(args):
     for tumor in tumor_paths:
 
         nifti = nib.load(tumor)
-        utils.volumetric_plot(nifti, volume_type="tumor")
+
+        # convert to numpy array
+        volume = nifti.get_fdata()
+        volume = np.asarray(volume)
+
+        utils.volumetric_plot(volume, volume_type="tumor")
 
 
 if __name__ == '__main__':
