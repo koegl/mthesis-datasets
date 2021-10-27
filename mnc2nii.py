@@ -9,9 +9,15 @@ import argparse
 def main(args):
 
     directory = args.directory
+    key = args.exclude_keyword
 
-    # get all .mnc files in given directory
-    all_files = [os.path.join(path, name) for path, subdirs, files in os.walk(directory) for name in files if ".nii" in name]
+    # get all .mnc files in given directory with the keyword exclusion
+    all_files = []
+
+    for path, subdirs, files in os.walk(directory):
+        for name in files:
+            if ".nii" in name and key in name:
+                all_files.append(os.path.join(path, name))
 
     # loop through all .mnc files and convert them to .nii
     for file in all_files:
@@ -30,6 +36,8 @@ if __name__ == '__main__':
 
     parser.add_argument("-d", "--directory", type=str, help="Directory in which mnc files will be searched for and"
                                                             "converted to nii")
+    parser.add_argument("-ek", "--exclude_keyword", type=str, help="If this keyword will be found in the path/filename,"
+                                                                   "then the file will be excluded from conversion")
 
     arguments = parser.parse_args()
 
