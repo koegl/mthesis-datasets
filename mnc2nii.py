@@ -2,8 +2,9 @@ import os
 import argparse
 
 
-# activate minc toolkit - this needs to be done in the terminal manually first
-# os.system(". /opt/minc/1.9.18/minc-toolkit-config.sh")
+# activate minc toolkit - this needs to be done in the terminal manually first:
+# . /opt/minc/1.9.18/minc-toolkit-config.sh
+# (or locally on F's machine: activateMinc)
 
 def main(args):
 
