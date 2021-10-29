@@ -7,7 +7,6 @@ import argparse
 # (or locally on F's machine: activateMinc)
 
 def main(args):
-
     directory = args.directory
     key = args.exclude_keyword
 
@@ -16,12 +15,11 @@ def main(args):
 
     for path, subdirs, files in os.walk(directory):
         for name in files:
-            if ".nii" in name and key in name:
+            if ".mnc" in name and key not in name:
                 all_files.append(os.path.join(path, name))
 
     # loop through all .mnc files and convert them to .nii
     for file in all_files:
-
         # create new filename
         new_file = os.path.splitext(file)[0] + '.nii'
 
@@ -31,13 +29,13 @@ def main(args):
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-d", "--directory", type=str, help="Directory in which mnc files will be searched for and"
                                                             "converted to nii")
-    parser.add_argument("-ek", "--exclude_keyword", type=str, help="If this keyword will be found in the path/filename,"
-                                                                   "then the file will be excluded from conversion")
+    parser.add_argument("-ek", "--exclude_keyword", type=str, default=None, help="If this keyword will be found in the"
+                                                                                 "path/filename, then the file will be"
+                                                                                 "excluded from conversion")
 
     arguments = parser.parse_args()
 
