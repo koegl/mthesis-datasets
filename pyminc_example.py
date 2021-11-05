@@ -6,10 +6,8 @@ import sys
 
 def main():
 
-    tumor_path = "/mnt/c/Users/fryde/Documents/University a/Master/Master\'s " \
-                 "thesis/Datasets/BITE/group3/01/01_tumor.mnc"
-    preop_path = "/mnt/c/Users/fryde/Documents/University a/Master/Master\'s " \
-                 "thesis/Datasets/BITE/group3/01/01_preop_mri.mnc"
+    tumor_path = "/mnt/c/Users/fryde/Documents/university/master/thesis/datasets/BITE/group3/01/01_tumor.mnc"
+    preop_path = "/mnt/c/Users/fryde/Documents/university/master/thesis/datasets/BITE/group3/01/01_preop_mri.mnc"
 
     # get the input file
     preop = volumeFromFile(preop_path)
@@ -21,7 +19,7 @@ def main():
 
     save_data = np.asarray(slice_mri)
 
-    with open('test.npy', 'wb') as f:
+    with open('test2.npy', 'wb') as f:
         np.save(f, save_data)
 
     # get the output file using the same dimension info as the input file
