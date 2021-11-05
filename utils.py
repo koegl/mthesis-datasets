@@ -43,6 +43,24 @@ def is_float(word):
         return False
 
 
+def euclid_dist(point1, point2):
+    """
+    Calculates the euclidean distance between two 3D points
+    :param point1: first point
+    :param point2: second point
+    :return: the distacne between the points
+    """
+
+    assert len(point1) == 3, "first point is not 3D"
+    assert len(point2) == 3, "second point is not 3D"
+
+    dx_sq = (point1[0] - point2[0]) ** 2
+    dy_sq = (point1[1] - point2[1]) ** 2
+    dz_sq = (point1[2] - point2[2]) ** 2
+
+    return np.sqrt(dx_sq + dy_sq + dz_sq)
+
+
 def read_tag_file(tag_file_path):
     """
     Reads a .tag file into a 6xN numpy array, where N is the amount of point pairs
