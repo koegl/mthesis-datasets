@@ -13,10 +13,16 @@ def main(args):
     # get all .mnc files in given directory with the keyword exclusion
     all_files = []
 
-    for path, subdirs, files in os.walk(directory):
-        for name in files:
-            if ".mnc" in name and key not in name:
-                all_files.append(os.path.join(path, name))
+    if key is none:
+        for path, subdirs, files in os.walk(directory):
+            for name in files:
+                if ".mnc" in name:
+                    all_files.append(os.path.join(path, name))
+    else:
+        for path, subdirs, files in os.walk(directory):
+            for name in files:
+                if ".mnc" in name and key not in name:
+                    all_files.append(os.path.join(path, name))
 
     # loop through all .mnc files and convert them to .nii
     for file in all_files:
