@@ -1,6 +1,7 @@
 # script_path = "C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\mthesis-datasets\\mrb_hierarchy_extractor.py"
 # eval(open('/tmp/code.py').read())
-
+# command to run the script from the terminal
+# C:\Users\fryde\AppData\Local\NA-MIC\Slicer 4.13.0-2022-01-27>Slicer.exe --python-script C:\Users\fryde\Documents\university\master\thesis\code\mthesis-datasets\mrb_hierarchy_extractor.py
 
 def export_nodes(sh_folder_item_id, output_folder, f):
     # Get items in the folder
