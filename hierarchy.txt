@@ -1,0 +1,12 @@
+starting with writing
+
+
+c:/tmp/test20211123/person/folder us________Case1-US-after.nii
+c:/tmp/test20211123/person/folder us________Case1-US-before.nii
+c:/tmp/test20211123/person/folder us________Case1-US-during.nii
+c:/tmp/test20211123/person/folder mr________Case1-T1.nii
+c:/tmp/test20211123/person________empty.nrrd
+
+
+
+done with writing
