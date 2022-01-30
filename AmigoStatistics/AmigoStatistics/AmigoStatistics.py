@@ -8,17 +8,17 @@ import SegmentEditorEffects
 import functools
 
 #
-# MRUSLandmarking
+# AmigoStatistics
 #
 
-class MRUSLandmarking(ScriptedLoadableModule):
+class AmigoStatistics(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "MRUSLandmarking"
+    self.parent.title = "AmigoStatistics"
     self.parent.categories = ["Informatics"]
     self.parent.dependencies = ["Markups"]
     self.parent.contributors = ["Fryderyk Kögl (TUM, BWH), Harneet Cheema (BWH, UOttawa), Tina Kapur (BWH)"]
@@ -28,7 +28,7 @@ class MRUSLandmarking(ScriptedLoadableModule):
     volumes that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an
     overlapping area and the customise your view. Use the shortcuts listed at the bottom to increase the efficiency of
     the workflow.
-    https://github.com/koegl/MRUSLandmarking
+    https://github.com/koegl/AmigoStatistics
     """
     self.parent.acknowledgementText = """
     This extension was developed at the Brigham and Women's Hospital by Fryderyk Kögl, Harneet Cheema and Tina Kapur.
@@ -39,10 +39,10 @@ class MRUSLandmarking(ScriptedLoadableModule):
 
 
 #
-# MRUSLandmarkingWidget
+# AmigoStatisticsWidget
 #
 #
-class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
@@ -65,7 +65,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Load widget from .ui file (created by Qt Designer).
     # Additional widgets can be instantiated manually and added to self.layout.
-    uiWidget = slicer.util.loadUI(self.resourcePath('UI/MRUSLandmarking.ui'))
+    uiWidget = slicer.util.loadUI(self.resourcePath('UI/AmigoStatistics.ui'))
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -76,7 +76,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
-    self.logic = MRUSLandmarkingLogic()
+    self.logic = AmigoStatisticsLogic()
 
     # Connections
 
@@ -89,7 +89,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Buttons
     # set foreground threshold to 1 for all chosen volumes
-    self.ui.thresholdButton.connect('clicked(bool)', self.onThresholdButton)
+    self.ui.hierarchyDumpButton.connect('clicked(bool)', self.onHierarchyDumpButton)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -184,6 +184,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
+  def onHierarchyDumpButton(self):
+    self.dump_hierarchy_to_json()
+
   def dump_hierarchy_to_json(self):
     """
     Dumps entire hierarchy to a json
@@ -214,7 +217,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       return dictionary
 
-    def export_nodes(sh_folder_item_id, f, mrm, storage_dict, hierarchy_ori=None):
+    def export_nodes(sh_folder_item_id, mrm, storage_dict, hierarchy_ori=None):
 
       hierarchy = hierarchy_ori
 
@@ -274,7 +277,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         grand_child_ids = vtk.vtkIdList()
         sh_node.GetItemChildren(sh_item_id, grand_child_ids)
         if grand_child_ids.GetNumberOfIds() > 0:
-          export_nodes(sh_item_id, f, mrm, storage_dict, hierarchy_ori + "/" + sh_node.GetItemName(sh_item_id))
+          export_nodes(sh_item_id, mrm, storage_dict, hierarchy_ori + "/" + sh_node.GetItemName(sh_item_id))
 
       return storage_dict
 
@@ -284,7 +287,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
     slicer.app.ioManager().addDefaultStorageNodes()
-    patients_dict = export_nodes(shNode.GetSceneItemID(), f, 123456789, patients_dict)
+    patients_dict = export_nodes(shNode.GetSceneItemID(), 123456789, patients_dict)
 
     f = open("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json", "w")
     json.dump(patients_dict, f)
@@ -292,10 +295,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 #
-# MRUSLandmarkingLogic
+# AmigoStatisticsLogic
 #
 
-class MRUSLandmarkingLogic(ScriptedLoadableModuleLogic):
+class AmigoStatisticsLogic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface
   should be such that other python code can import
@@ -312,10 +315,10 @@ class MRUSLandmarkingLogic(ScriptedLoadableModuleLogic):
     ScriptedLoadableModuleLogic.__init__(self)
 
 #
-# MRUSLandmarkingTest
+# AmigoStatisticsTest
 #
 #
-class MRUSLandmarkingTest(ScriptedLoadableModuleTest):
+class AmigoStatisticsTest(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -331,9 +334,9 @@ class MRUSLandmarkingTest(ScriptedLoadableModuleTest):
     """Run as few or as many tests as needed here.
     """
     self.setUp()
-    self.test_MRUSLandmarking1()
+    self.test_AmigoStatistics1()
 
-  def test_MRUSLandmarking1(self):
+  def test_AmigoStatistics1(self):
     """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the
@@ -347,7 +350,7 @@ class MRUSLandmarkingTest(ScriptedLoadableModuleTest):
 
     self.delayDisplay("Starting the test")
 
-    logic = MRUSLandmarkingLogic()
+    logic = AmigoStatisticsLogic()
 
     pass
 
