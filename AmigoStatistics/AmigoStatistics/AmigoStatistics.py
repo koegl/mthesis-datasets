@@ -6,6 +6,10 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
 import functools
+import os
+from os.path import exists
+import json
+import random
 
 #
 # AmigoStatistics
