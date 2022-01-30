@@ -267,7 +267,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             storage_dict[mrm][hierarchy[0].lower()]["rest"].append(filename)
           elif hierarchy[1].lower() == "pre-op fmri segmentations":
             storage_dict[mrm][hierarchy[0].lower()]["pre-op fmri segmentations"].append(filename)
-          elif hierarchy[1].lower() == "pre-op brainlab manual dti tractography segmentations":
+          elif all(x in hierarchy[1].lower() for x in ["brainlab", "dti", "tractography"]):
             storage_dict[mrm][hierarchy[0].lower()]["pre-op brainlab manual dti tractography segmentations"].append(filename)
 
       # Write all children of this child item
