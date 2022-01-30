@@ -193,8 +193,9 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Add an empty dict entry
     """
+
     dictionary[mrm] = {
-      "path": path,
+      "path": [path],
       "pre-op imaging": [],
       "intra-op imaging": {
         "ultrasounds": [],
