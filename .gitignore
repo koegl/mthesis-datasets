@@ -3,3 +3,5 @@
 *.npy
 
 hierarchy.txt
+
+statisistics_module/MRUSLandmarking/__pycache__/
