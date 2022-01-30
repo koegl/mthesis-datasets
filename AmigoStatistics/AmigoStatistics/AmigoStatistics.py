@@ -189,11 +189,12 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode.EndModify(wasModified)
 
   @staticmethod
-  def create_empty_dict_entry(dictionary, mrm):
+  def create_empty_dict_entry(dictionary, mrm, path):
     """
     Add an empty dict entry
     """
     dictionary[mrm] = {
+      "path": path,
       "pre-op imaging": [],
       "intra-op imaging": {
         "ultrasounds": [],
