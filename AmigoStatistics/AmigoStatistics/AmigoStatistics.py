@@ -214,7 +214,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     return dictionary
 
-  def populate_dict_with_hierarchy(self, sh_folder_item_id, mrm, storage_dict, hierarchy_ori=None):
+  def populate_dict_with_hierarchy(self, sh_folder_item_id, mrm, storage_dict, scene_path, hierarchy_ori=None):
+    """
+    Populate a dict entry with the hierarchy of an opened scene
+    """
 
     hierarchy = hierarchy_ori
 
@@ -245,7 +248,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         filename = os.path.basename(storage_node.GetFileName())
 
         if mrm not in storage_dict:
-          storage_dict = self.create_empty_dict_entry(storage_dict, mrm)
+          storage_dict = self.create_empty_dict_entry(storage_dict, mrm, scene_path)
 
         if not hierarchy:  # we are at the end
           return storage_dict
@@ -274,24 +277,23 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       grand_child_ids = vtk.vtkIdList()
       sh_node.GetItemChildren(sh_item_id, grand_child_ids)
       if grand_child_ids.GetNumberOfIds() > 0:
-        self.populate_dict_with_hierarchy(sh_item_id, mrm, storage_dict,
+        self.populate_dict_with_hierarchy(sh_item_id, mrm, storage_dict, scene_path,
                                      hierarchy_ori + "/" + sh_node.GetItemName(sh_item_id))
 
     return storage_dict
 
-  def dump_hierarchy_to_json(self, patient_id):
+  def dump_hierarchy_to_json(self, patient_id, data_json_path, scene_path):
     """
     Dumps entire hierarchy to a json
     """
-
     print('Processing: {}'.format(patient_id))
 
-    if exists("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json"):
+    if exists(data_json_path):
       # check if file is empty
-      if os.stat("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json").st_size == 0:
+      if os.stat(data_json_path).st_size == 0:
         patients_dict = {}
       else:  # if not empty, we can load it (we assume it is correct)
-        load_file = open("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json", "r+")
+        load_file = open(data_json_path, "r+")
         patients_dict = json.load(load_file)
         load_file.truncate(0)  # clear file so we can store the updated dict
         load_file.close()
@@ -302,25 +304,103 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     slicer.app.ioManager().addDefaultStorageNodes()
 
     if str(patient_id) not in patients_dict:  # it was already parsed at some point
-      patients_dict = self.populate_dict_with_hierarchy(shNode.GetSceneItemID(), patient_id, patients_dict)
+      patients_dict = self.populate_dict_with_hierarchy(shNode.GetSceneItemID(), patient_id, patients_dict, scene_path)
 
-      f = open("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json", "a")
+      f = open(data_json_path, "a")
       json.dump(patients_dict, f)
       f.close()
 
+    print('Finished rocessing: {}\n'.format(patient_id))
+
+  def check_dictionary_for_completeness(self, data_dict):
+    """
+    Check if each array in the dict is populated, if not write some kind of error log
+    """
+
+    data_missing = {}
+
+    for key, item in data_dict.items():
+      data_missing[key] = []
+
+      if len(item["pre-op imaging"]) == 0:
+        data_missing[key].append("pre-op imaging")
+
+      if len(item["intra-op imaging"]["ultrasounds"]) == 0:
+        data_missing[key].append("intra-op imaging - ultrasounds")
+      if len(item["intra-op imaging"]["rest"]) == 0:
+        data_missing[key].append("intra-op imaging - rest")
+
+      if len(item["continuous tracking data"]["pre-imri tracking"]) == 0:
+        data_missing[key].append("continuous tracking data - pre-imri tracking")
+      if len(item["continuous tracking data"]["post-imri tracking"]) == 0:
+        data_missing[key].append("continuous tracking data - post-imri tracking")
+
+      if len(item["segmentations"]["pre-op fmri segmentations"]) == 0:
+        data_missing[key].append("segmentations - pre-op fmri segmentations")
+      if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) == 0:
+        data_missing[key].append("segmentations - pre-op brainlab manual dti tractography segmentations")
+      if len(item["segmentations"]["rest"]) == 0:
+        data_missing[key].append("segmentations - rest")
+
+    return data_missing
+
   def onHierarchyDumpButton(self):
 
-    mrml_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
+    data_summary_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_data_summary.json"
+    data_completeness_path = r"C:\Users\fryde\Documents\university\master\thesis\code\data_completeness.json"
+    igt2_paths_path = r"C:\Users\fryde\Documents\university\master\thesis\code\igt2_paths.json"
+
+    dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
                   r"AG2160 Uncompressed\Case AG2160.mrml",
                   r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2146\Case "
                   r"AG2146 Uncompressed\Case AG2146.mrml",
                   r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2152\Case "
                   r"AG2152 Uncompressed\Case AG2152.mrml"]
 
-    for path in mrml_paths:
+    # read igt2 paths
+    igt2_paths_file = open(igt2_paths_path, "r")
+    igt2_paths_dict = json.load(igt2_paths_file)
+    igt2_paths = igt2_paths_dict["paths"]
+
+    # close any previously opened scene
+    slicer.mrmlScene.Clear(0)
+
+    for path in dropbox_paths:
+      
+      # get id
+      path_for_id = path.split("\\")
+      id = path_for_id[-2]
+      id = id.split(" ")
+      id = id[2]
+
+      # for dropbox
+      id = path[-11:-5]
+      
       slicer.util.loadScene(path)
-      self.dump_hierarchy_to_json(patient_id=path[-11:-5])
+      self.dump_hierarchy_to_json(patient_id=id, data_json_path=data_summary_path, scene_path=path)
       slicer.mrmlScene.Clear(0)
+
+    # check completeness
+    print("Checking completness...")
+    # load dict with all data
+    load_file = open(data_summary_path, "r")
+    patients_check_dict = json.load(load_file)
+    load_file.close()
+
+    # create dict specifying what is missing
+    data_missing = self.check_dictionary_for_completeness(patients_check_dict)
+
+    # save completeness dict
+    completeness_file = open(data_completeness_path, "w+")
+    completeness_file.truncate(0)
+    json.dump(data_missing, completeness_file)
+    completeness_file.close()
+
+    print("Completeness checked.")
+
+    for key, item in data_missing.items():
+      if len(item) > 0:
+        print("\nCase {} misses the following data:\n{}\n".format(key, item))
 
 #
 # AmigoStatisticsLogic
