@@ -188,115 +188,137 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
-  def onHierarchyDumpButton(self):
-    self.dump_hierarchy_to_json()
+  @staticmethod
+  def create_empty_dict_entry(dictionary, mrm):
+    """
+    Add an empty dict entry
+    """
+    dictionary[mrm] = {
+      "pre-op imaging": [],
+      "intra-op imaging": {
+        "ultrasounds": [],
+        "rest": []
+      },
+      "continuous tracking data": {
+        "pre-imri tracking": [],
+        "post-imri tracking": []
+      },
+      "segmentations": {
+        "pre-op fmri segmentations": [],
+        "pre-op brainlab manual dti tractography segmentations": [],
+        "rest": []
+      }
+    }
 
-  def dump_hierarchy_to_json(self):
+    return dictionary
+
+  def populate_dict_with_hierarchy(self, sh_folder_item_id, mrm, storage_dict, hierarchy_ori=None):
+
+    hierarchy = hierarchy_ori
+
+    if not hierarchy_ori:
+      hierarchy_ori = ""
+
+    if not hierarchy:
+      hierarchy = ""
+    else:
+      hierarchy = hierarchy.split('/')
+      del hierarchy[0]
+      if "patient" in hierarchy[0].lower():
+        del hierarchy[0]  # remove first element because it's the patient case
+
+    child_ids = vtk.vtkIdList()
+    sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    sh_node.GetItemChildren(sh_folder_item_id, child_ids)
+    if child_ids.GetNumberOfIds() == 0:
+      return
+
+    # Write each child item to file
+    for itemIdIndex in range(child_ids.GetNumberOfIds()):
+      sh_item_id = child_ids.GetId(itemIdIndex)
+      # Write node to file (if storable)
+      data_node = sh_node.GetItemDataNode(sh_item_id)
+      if data_node and data_node.IsA("vtkMRMLStorableNode") and data_node.GetStorageNode():
+        storage_node = data_node.GetStorageNode()
+        filename = os.path.basename(storage_node.GetFileName())
+
+        if mrm not in storage_dict:
+          storage_dict = self.create_empty_dict_entry(storage_dict, mrm)
+
+        if not hierarchy:  # we are at the end
+          return storage_dict
+
+        if hierarchy[0].lower() == "pre-op imaging":
+          storage_dict[mrm][hierarchy[0].lower()].append(filename)
+        elif hierarchy[0].lower() == "intra-op imaging":
+          if len(hierarchy) == 1:
+            storage_dict[mrm][hierarchy[0].lower()]["rest"].append(filename)
+          else:
+            storage_dict[mrm][hierarchy[0].lower()]["ultrasounds"].append(filename)
+        elif hierarchy[0].lower() == "continuous tracking data":
+          if hierarchy[1].lower() == "pre-imri tracking":
+            storage_dict[mrm][hierarchy[0].lower()]["pre-imri tracking"].append(filename)
+          elif hierarchy[1].lower() == "post-imri tracking":
+            storage_dict[mrm][hierarchy[0].lower()]["post-imri tracking"].append(filename)
+        elif hierarchy[0].lower() == "segmentations":
+          if len(hierarchy) == 1:
+            storage_dict[mrm][hierarchy[0].lower()]["rest"].append(filename)
+          elif hierarchy[1].lower() == "pre-op fmri segmentations":
+            storage_dict[mrm][hierarchy[0].lower()]["pre-op fmri segmentations"].append(filename)
+          elif hierarchy[1].lower() == "pre-op brainlab manual dti tractography segmentations":
+            storage_dict[mrm][hierarchy[0].lower()]["pre-op brainlab manual dti tractography segmentations"].append(filename)
+
+      # Write all children of this child item
+      grand_child_ids = vtk.vtkIdList()
+      sh_node.GetItemChildren(sh_item_id, grand_child_ids)
+      if grand_child_ids.GetNumberOfIds() > 0:
+        self.populate_dict_with_hierarchy(sh_item_id, mrm, storage_dict,
+                                     hierarchy_ori + "/" + sh_node.GetItemName(sh_item_id))
+
+    return storage_dict
+
+  def dump_hierarchy_to_json(self, patient_id):
     """
     Dumps entire hierarchy to a json
     """
 
-    print('running')
+    print('Processing: {}'.format(patient_id))
 
-    import os
-    import json
-
-    def create_empty_dict_entry(dictionary, mrm):
-      dictionary[mrm] = {
-        "Pre-op Imaging": [],
-        "Intra-op Imaging": {
-          "Ultrasounds": [],
-          "rest": []
-        },
-        "Continuous Tracking Data": {
-          "Pre-iMRI Tracking": [],
-          "Post-iMRI Tracking": []
-        },
-        "Segmentations": {
-          "Pre-op fMRI Segmentations": [],
-          "Pre-op Brainlab Manual DTI Tractography Segmentations": [],
-          "rest": []
-        }
-      }
-
-      return dictionary
-
-    def export_nodes(sh_folder_item_id, mrm, storage_dict, hierarchy_ori=None):
-
-      hierarchy = hierarchy_ori
-
-      if not hierarchy_ori:
-        hierarchy_ori = ""
-
-      if not hierarchy:
-        hierarchy = ""
-      else:
-        hierarchy = hierarchy.split('/')
-        del hierarchy[0]
-        if "patient" in hierarchy[0].lower():
-          del hierarchy[0]  # remove first element because it's the patient case
-
-      child_ids = vtk.vtkIdList()
-      sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-      sh_node.GetItemChildren(sh_folder_item_id, child_ids)
-      if child_ids.GetNumberOfIds() == 0:
-        return
-
-      # Write each child item to file
-      for itemIdIndex in range(child_ids.GetNumberOfIds()):
-        sh_item_id = child_ids.GetId(itemIdIndex)
-        # Write node to file (if storable)
-        data_node = sh_node.GetItemDataNode(sh_item_id)
-        if data_node and data_node.IsA("vtkMRMLStorableNode") and data_node.GetStorageNode():
-          storage_node = data_node.GetStorageNode()
-          filename = os.path.basename(storage_node.GetFileName())
-
-          if mrm not in storage_dict:
-            storage_dict = create_empty_dict_entry(storage_dict, mrm)
-
-          if not hierarchy:  # we are at the end
-            return storage_dict
-
-          if hierarchy[0] == "Pre-op Imaging":
-            storage_dict[mrm][hierarchy[0]].append(filename)
-          elif hierarchy[0] == "Intra-op Imaging":
-            if len(hierarchy) == 1:
-              storage_dict[mrm][hierarchy[0]]["rest"].append(filename)
-            else:
-              storage_dict[mrm][hierarchy[0]]["Ultrasounds"].append(filename)
-          elif hierarchy[0] == "Continuous Tracking Data":
-            if hierarchy[1] == "Pre-iMRI Tracking":
-              storage_dict[mrm][hierarchy[0]]["Pre-iMRI Tracking"].append(filename)
-            elif hierarchy[1] == "Post-iMRI Tracking":
-              storage_dict[mrm][hierarchy[0]]["Post-iMRI Tracking"].append(filename)
-          elif hierarchy[0] == "Segmentations":
-            if len(hierarchy) == 1:
-              storage_dict[mrm][hierarchy[0]]["rest"].append(filename)
-            elif hierarchy[1] == "Pre-op fMRI Segmentations":
-              storage_dict[mrm][hierarchy[0]]["Pre-op fMRI Segmentations"].append(filename)
-            elif hierarchy[1] == "Pre-op Brainlab Manual DTI Tractography Segmentations":
-              storage_dict[mrm][hierarchy[0]]["Pre-op Brainlab Manual DTI Tractography Segmentations"].append(filename)
-
-        # Write all children of this child item
-        grand_child_ids = vtk.vtkIdList()
-        sh_node.GetItemChildren(sh_item_id, grand_child_ids)
-        if grand_child_ids.GetNumberOfIds() > 0:
-          export_nodes(sh_item_id, mrm, storage_dict, hierarchy_ori + "/" + sh_node.GetItemName(sh_item_id))
-
-      return storage_dict
-
-    patients_dict = {}
-
-    # slicer.util.loadScene(scene_path_amigo)
+    if exists("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json"):
+      # check if file is empty
+      if os.stat("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json").st_size == 0:
+        patients_dict = {}
+      else:  # if not empty, we can load it (we assume it is correct)
+        load_file = open("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json", "r+")
+        patients_dict = json.load(load_file)
+        load_file.truncate(0)  # clear file so we can store the updated dict
+        load_file.close()
+    else:
+      patients_dict = {}
 
     shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
     slicer.app.ioManager().addDefaultStorageNodes()
-    patients_dict = export_nodes(shNode.GetSceneItemID(), 123456789, patients_dict)
 
-    f = open("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json", "w")
-    json.dump(patients_dict, f)
-    f.close()
+    if str(patient_id) not in patients_dict:  # it was already parsed at some point
+      patients_dict = self.populate_dict_with_hierarchy(shNode.GetSceneItemID(), patient_id, patients_dict)
 
+      f = open("C:\\Users\\fryde\\Documents\\university\\master\\thesis\\code\\available_data_write.json", "a")
+      json.dump(patients_dict, f)
+      f.close()
+
+  def onHierarchyDumpButton(self):
+
+    mrml_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
+                  r"AG2160 Uncompressed\Case AG2160.mrml",
+                  r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2146\Case "
+                  r"AG2146 Uncompressed\Case AG2146.mrml",
+                  r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2152\Case "
+                  r"AG2152 Uncompressed\Case AG2152.mrml"]
+
+    for path in mrml_paths:
+      slicer.util.loadScene(path)
+      self.dump_hierarchy_to_json(patient_id=path[-11:-5])
+      slicer.mrmlScene.Clear(0)
 
 #
 # AmigoStatisticsLogic
