@@ -325,7 +325,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     data_missing = {}
 
     for key, item in data_dict.items():
-      data_missing[key] = []
+      data_missing[key] = [item["path"]]
 
       if len(item["pre-op imaging"]) == 0:
         data_missing[key].append("pre-op imaging")
@@ -346,6 +346,9 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         data_missing[key].append("segmentations - pre-op brainlab manual dti tractography segmentations")
       if len(item["segmentations"]["rest"]) == 0:
         data_missing[key].append("segmentations - rest")
+
+      if len(data_missing[key]) == 1:  # if nothing missing was found, remove the entry (1 means we only added the path)
+        del data_missing[key]
 
     return data_missing
 
