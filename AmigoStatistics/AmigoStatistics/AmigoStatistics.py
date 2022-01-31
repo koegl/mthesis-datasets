@@ -297,11 +297,13 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # check if file is empty
       if os.stat(data_json_path).st_size == 0:
         patients_dict = {}
+        os.remove(data_json_path)
       else:  # if not empty, we can load it (we assume it is correct)
         load_file = open(data_json_path, "r+")
         patients_dict = json.load(load_file)
         load_file.truncate(0)  # clear file so we can store the updated dict
         load_file.close()
+        os.remove(data_json_path)
     else:
       patients_dict = {}
 
@@ -373,6 +375,12 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # close any previously opened scene
     slicer.mrmlScene.Clear(0)
 
+    # delete the json storage file if a previous version exisrs
+    try:
+      os.remove(data_summary_path)
+    except:
+      pass
+
     for path in igt2_paths:
 
       # get id
@@ -403,6 +411,12 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # create dict specifying what is missing
     data_missing = self.check_dictionary_for_completeness(patients_check_dict)
+
+    # delete the json completeness file if a previous version exisrs
+    try:
+      os.remove(data_completeness_path)
+    except:
+      pass
 
     # save completeness dict
     completeness_file = open(data_completeness_path, "w+")
