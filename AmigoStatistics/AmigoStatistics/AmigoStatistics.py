@@ -256,27 +256,27 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return storage_dict
 
         if all(x in hierarchy[0].lower() for x in ["pre", "op", "imaging"]):
-          storage_dict[patient_id][hierarchy[0].lower()].append(filename)
+          storage_dict[patient_id]["pre-op imaging"].append(filename)
 
         elif all(x in hierarchy[0].lower() for x in ["intra", "op", "imaging"]):
           if len(hierarchy) == 1:
-            storage_dict[patient_id][hierarchy[0].lower()]["rest"].append(filename)
+            storage_dict[patient_id]["intra-op imaging"]["rest"].append(filename)
           else:
-            storage_dict[patient_id][hierarchy[0].lower()]["ultrasounds"].append(filename)
+            storage_dict[patient_id]["intra-op imaging"]["ultrasounds"].append(filename)
 
-        elif all(x in hierarchy[0].lower() for x in ["continuous", "tracking"]):
+        elif all(x in hierarchy[0].lower() for x in ["contin", "tracking"]):
           if all(x in hierarchy[1].lower() for x in ["pre", "imri", "tracking"]):
-            storage_dict[patient_id][hierarchy[0].lower()]["pre-imri tracking"].append(filename)
+            storage_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(filename)
           elif all(x in hierarchy[1].lower() for x in ["post", "imri", "tracking"]):
-            storage_dict[patient_id][hierarchy[0].lower()]["post-imri tracking"].append(filename)
+            storage_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(filename)
 
         elif "segmentations" in hierarchy[0].lower():
           if len(hierarchy) == 1:
-            storage_dict[patient_id][hierarchy[0].lower()]["rest"].append(filename)
+            storage_dict[patient_id]["segmentations"]["rest"].append(filename)
           elif all(x in hierarchy[1].lower() for x in ["pre-op", "fmri"]):
-            storage_dict[patient_id][hierarchy[0].lower()]["pre-op fmri segmentations"].append(filename)
+            storage_dict[patient_id]["segmentations"]["pre-op fmri segmentations"].append(filename)
           elif all(x in hierarchy[1].lower() for x in ["brainlab", "dti", "tractography"]):
-            storage_dict[patient_id][hierarchy[0].lower()]["pre-op brainlab manual dti tractography segmentations"].append(filename)
+            storage_dict[patient_id]["segmentations"]["pre-op brainlab manual dti tractography segmentations"].append(filename)
 
       # Write all children of this child item
       grand_child_ids = vtk.vtkIdList()
