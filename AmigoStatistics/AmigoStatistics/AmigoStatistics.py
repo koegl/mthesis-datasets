@@ -388,11 +388,9 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       data_summary_path_full = data_summary_path_partial + subject_id + ".json"
       data_summary_paths.append(data_summary_path_full)
 
-      # delete the json storage file if a previous version exists
-      try:
-        os.remove(data_summary_path_full)
-      except:
-        pass
+      # if the file exists, continue to the next one
+      if exists(data_summary_path_full):
+        continue
       
       slicer.util.loadScene(path)
       self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
