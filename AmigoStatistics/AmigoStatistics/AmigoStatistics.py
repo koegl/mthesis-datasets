@@ -323,7 +323,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Check if each array in the dict is populated, if not write some kind of error log
     """
-
     data_missing = {}
 
     for key, item in data_dict.items():
@@ -356,8 +355,9 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onHierarchyDumpButton(self):
 
-    data_summary_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_data_summary.json"
-    data_completeness_path = r"C:\Users\fryde\Documents\university\master\thesis\code\data_completeness.json"
+    data_summary_path_partial = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary\patient_data_summary_"
+    data_summary_paths = []
+    data_completeness_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary\data_completeness.json"
     igt2_paths_path = r"C:\Users\fryde\Documents\university\master\thesis\code\igt2_paths.json"
 
     dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
@@ -375,44 +375,51 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # close any previously opened scene
     slicer.mrmlScene.Clear(0)
 
-    # delete the json storage file if a previous version exisrs
-    try:
-      os.remove(data_summary_path)
-    except:
-      pass
-
     for path in igt2_paths:
-
       # get id
       path_for_id = path.split("\\")
-      id = path_for_id[-2]
-      id = id.split(" ")
-      id = id[2]
+      subject_id = path_for_id[-2]
+      subject_id = subject_id.split(" ")
+      subject_id = subject_id[2]
 
       # for dropbox
       # id = path[-11:-5]
+
+      data_summary_path_full = data_summary_path_partial + subject_id + ".json"
+      data_summary_paths.append(data_summary_path_full)
+
+      # delete the json storage file if a previous version exists
+      try:
+        os.remove(data_summary_path_full)
+      except:
+        pass
       
       slicer.util.loadScene(path)
-      self.dump_hierarchy_to_json(patient_id=id, data_json_path=data_summary_path, scene_path=path)
+      self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
       slicer.mrmlScene.Clear(0)
 
     # check completeness
     print("\n\n\nChecking completness...")
+    data_missing = []
 
-    # check if dict contains something
-    if os.stat(data_summary_path).st_size == 0:
-      slicer.util.errorDisplay("No data found in the .json to check for completeness")
-      return
+    for data_summary_path in data_summary_paths:
+      # check if dict contains something
+      if os.stat(data_summary_path).st_size == 0:
+        slicer.util.errorDisplay("No data found in the .json to check for completeness")
+        return
 
-    # load dict with all data
-    load_file = open(data_summary_path, "r")
-    patients_check_dict = json.load(load_file)
-    load_file.close()
+      # load dict with all data
+      load_file = open(data_summary_path, "r")
+      patients_check_dict = json.load(load_file)
+      load_file.close()
 
-    # create dict specifying what is missing
-    data_missing = self.check_dictionary_for_completeness(patients_check_dict)
+      # create dict specifying what is missing
+      if not patients_check_dict:  # if dict is empty
+        data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
+      else:
+        data_missing.append(self.check_dictionary_for_completeness(patients_check_dict))
 
-    # delete the json completeness file if a previous version exisrs
+    # delete the json completeness file if a previous version exists
     try:
       os.remove(data_completeness_path)
     except:
@@ -424,9 +431,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     json.dump(data_missing, completeness_file)
     completeness_file.close()
 
-    for key, item in data_missing.items():
-      if len(item) > 0:
-        print("\nCase {} misses the following data:\n{}\n".format(key, item))
+    for missing in data_missing:
+      for key, item in missing.items():
+        if len(item) > 0:
+          print("\nCase {} misses the following data:\n{}\n".format(key, item))
 
     print("\n\n\nCompleteness checked.")
 
