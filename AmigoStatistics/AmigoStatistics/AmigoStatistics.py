@@ -265,7 +265,13 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             storage_dict[patient_id]["intra-op imaging"]["ultrasounds"].append(filename)
 
         elif all(x in hierarchy[0].lower() for x in ["contin", "tracking"]):
-          if all(x in hierarchy[1].lower() for x in ["pre", "imri", "tracking"]):
+          if len(hierarchy) == 1:
+            if "post" in filename.lower():
+              storage_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(filename)
+            else:
+              storage_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(filename)
+
+          elif all(x in hierarchy[1].lower() for x in ["pre", "imri", "tracking"]):
             storage_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(filename)
           elif all(x in hierarchy[1].lower() for x in ["post", "imri", "tracking"]):
             storage_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(filename)
@@ -275,7 +281,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             storage_dict[patient_id]["segmentations"]["rest"].append(filename)
           elif all(x in hierarchy[1].lower() for x in ["pre-op", "fmri"]):
             storage_dict[patient_id]["segmentations"]["pre-op fmri segmentations"].append(filename)
-          elif all(x in hierarchy[1].lower() for x in ["brainlab", "dti", "tractography"]):
+          elif all(x in hierarchy[1].lower() for x in ["brainlab", "dti"]):
             storage_dict[patient_id]["segmentations"]["pre-op brainlab manual dti tractography segmentations"].append(filename)
 
       # Write all children of this child item
@@ -291,7 +297,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Dumps entire hierarchy to a json
     """
-    print('Processing: {}'.format(patient_id))
+    print('Processing: {}\n'.format(patient_id))
 
     if exists(data_json_path):
       # check if file is empty
@@ -358,7 +364,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     data_summary_path_partial = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary\patient_data_summary_"
     data_summary_paths = []
     data_completeness_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary\data_completeness.json"
-    igt2_paths_path = r"C:\Users\fryde\Documents\university\master\thesis\code\igt2_paths.json"
+    igt2_paths_path = r"C:\Users\fryde\Documents\university\master\thesis\code\igt2_local_paths.json"
 
     dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
                   r"AG2160 Uncompressed\Case AG2160.mrml",
@@ -393,7 +399,12 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         continue
       
       slicer.util.loadScene(path)
-      self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
+      try:
+        self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
+      except Exception as e:
+        print("Could not process patient {} (path: {}). Skipping to the next one.\n({})".format(subject_id, path, e))
+        slicer.mrmlScene.Clear(0)
+        continue
       slicer.mrmlScene.Clear(0)
 
     # check completeness
@@ -402,9 +413,12 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     for data_summary_path in data_summary_paths:
       # check if dict contains something
+      if not exists(data_summary_path):
+        print("{} to check for completeness could not be found".format(data_summary_path))
+        continue
       if os.stat(data_summary_path).st_size == 0:
-        slicer.util.errorDisplay("No data found in the .json to check for completeness")
-        return
+        print("No data found in the .json to check for completeness")
+        continue
 
       # load dict with all data
       load_file = open(data_summary_path, "r")
@@ -418,10 +432,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         data_missing.append(self.check_dictionary_for_completeness(patients_check_dict))
 
     # delete the json completeness file if a previous version exists
-    try:
+    if exists(data_completeness_path):
       os.remove(data_completeness_path)
-    except:
-      pass
 
     # save completeness dict
     completeness_file = open(data_completeness_path, "w+")
