@@ -215,7 +215,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     return dictionary
 
-  def populate_dict_with_hierarchy(self, sh_folder_item_id, mrm, storage_dict, scene_path, hierarchy_ori=None):
+  def populate_dict_with_hierarchy(self, sh_folder_item_id, patient_id, storage_dict, scene_path, hierarchy_ori=None):
     """
     Populate a dict entry with the hierarchy of an opened scene
     """
@@ -230,7 +230,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     else:
       hierarchy = hierarchy.split('/')
       del hierarchy[0]
-      if "patient" in hierarchy[0].lower():
+
+      if any(x in hierarchy[0].lower() for x in ["patient", patient_id]):
         del hierarchy[0]  # remove first element because it's the patient case
 
     child_ids = vtk.vtkIdList()
@@ -248,37 +249,40 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         storage_node = data_node.GetStorageNode()
         filename = os.path.basename(storage_node.GetFileName())
 
-        if mrm not in storage_dict:
-          storage_dict = self.create_empty_dict_entry(storage_dict, mrm, scene_path)
+        if patient_id not in storage_dict:
+          storage_dict = self.create_empty_dict_entry(storage_dict, patient_id, scene_path)
 
         if not hierarchy:  # we are at the end
           return storage_dict
 
-        if hierarchy[0].lower() == "pre-op imaging":
-          storage_dict[mrm][hierarchy[0].lower()].append(filename)
-        elif hierarchy[0].lower() == "intra-op imaging":
+        if all(x in hierarchy[0].lower() for x in ["pre", "op", "imaging"]):
+          storage_dict[patient_id][hierarchy[0].lower()].append(filename)
+
+        elif all(x in hierarchy[0].lower() for x in ["intra", "op", "imaging"]):
           if len(hierarchy) == 1:
-            storage_dict[mrm][hierarchy[0].lower()]["rest"].append(filename)
+            storage_dict[patient_id][hierarchy[0].lower()]["rest"].append(filename)
           else:
-            storage_dict[mrm][hierarchy[0].lower()]["ultrasounds"].append(filename)
-        elif hierarchy[0].lower() == "continuous tracking data":
-          if hierarchy[1].lower() == "pre-imri tracking":
-            storage_dict[mrm][hierarchy[0].lower()]["pre-imri tracking"].append(filename)
-          elif hierarchy[1].lower() == "post-imri tracking":
-            storage_dict[mrm][hierarchy[0].lower()]["post-imri tracking"].append(filename)
-        elif hierarchy[0].lower() == "segmentations":
+            storage_dict[patient_id][hierarchy[0].lower()]["ultrasounds"].append(filename)
+
+        elif all(x in hierarchy[0].lower() for x in ["continuous", "tracking"]):
+          if all(x in hierarchy[1].lower() for x in ["pre", "imri", "tracking"]):
+            storage_dict[patient_id][hierarchy[0].lower()]["pre-imri tracking"].append(filename)
+          elif all(x in hierarchy[1].lower() for x in ["post", "imri", "tracking"]):
+            storage_dict[patient_id][hierarchy[0].lower()]["post-imri tracking"].append(filename)
+
+        elif "segmentations" in hierarchy[0].lower():
           if len(hierarchy) == 1:
-            storage_dict[mrm][hierarchy[0].lower()]["rest"].append(filename)
-          elif hierarchy[1].lower() == "pre-op fmri segmentations":
-            storage_dict[mrm][hierarchy[0].lower()]["pre-op fmri segmentations"].append(filename)
+            storage_dict[patient_id][hierarchy[0].lower()]["rest"].append(filename)
+          elif all(x in hierarchy[1].lower() for x in ["pre-op", "fmri"]):
+            storage_dict[patient_id][hierarchy[0].lower()]["pre-op fmri segmentations"].append(filename)
           elif all(x in hierarchy[1].lower() for x in ["brainlab", "dti", "tractography"]):
-            storage_dict[mrm][hierarchy[0].lower()]["pre-op brainlab manual dti tractography segmentations"].append(filename)
+            storage_dict[patient_id][hierarchy[0].lower()]["pre-op brainlab manual dti tractography segmentations"].append(filename)
 
       # Write all children of this child item
       grand_child_ids = vtk.vtkIdList()
       sh_node.GetItemChildren(sh_item_id, grand_child_ids)
       if grand_child_ids.GetNumberOfIds() > 0:
-        self.populate_dict_with_hierarchy(sh_item_id, mrm, storage_dict, scene_path,
+        self.populate_dict_with_hierarchy(sh_item_id, patient_id, storage_dict, scene_path,
                                      hierarchy_ori + "/" + sh_node.GetItemName(sh_item_id))
 
     return storage_dict
@@ -366,20 +370,24 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # close any previously opened scene
     slicer.mrmlScene.Clear(0)
 
-    for path in dropbox_paths:
-      
+    for path in igt2_paths:
+
       # get id
       path_for_id = path.split("\\")
       id = path_for_id[-2]
       id = id.split(" ")
-      id = id[2]
+      # todo temporary id = id[2]
+      id = "12108221"
 
       # for dropbox
-      id = path[-11:-5]
+      # id = path[-11:-5]
       
       slicer.util.loadScene(path)
       self.dump_hierarchy_to_json(patient_id=id, data_json_path=data_summary_path, scene_path=path)
       slicer.mrmlScene.Clear(0)
+
+      # todo TEMPORARY
+      break
 
     # check completeness
     print("Checking completness...")
