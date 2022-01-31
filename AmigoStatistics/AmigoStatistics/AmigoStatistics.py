@@ -94,6 +94,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Buttons
     # set foreground threshold to 1 for all chosen volumes
     self.ui.hierarchyDumpButton.connect('clicked(bool)', self.onHierarchyDumpButton)
+    self.ui.printCurrentHierarchyButton.connect('clicked(bool)', self.onPrintCurrentHierarchyButton)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -401,6 +402,41 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     for key, item in data_missing.items():
       if len(item) > 0:
         print("\nCase {} misses the following data:\n{}\n".format(key, item))
+
+  def onPrintCurrentHierarchyButton(self):
+    """
+    Prints the current hierarchy
+    """
+    print("Current hierarchy:")
+    def exportNodes(shFolderItemId, outputFolder=""):
+      # Get items in the folder
+      childIds = vtk.vtkIdList()
+      shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      shNode.GetItemChildren(shFolderItemId, childIds)
+      if childIds.GetNumberOfIds() == 0:
+        return
+
+      # Write each child item to file
+      for itemIdIndex in range(childIds.GetNumberOfIds()):
+        shItemId = childIds.GetId(itemIdIndex)
+
+        # Write node to file (if storable)
+        dataNode = shNode.GetItemDataNode(shItemId)
+        if dataNode and dataNode.IsA("vtkMRMLStorableNode") and dataNode.GetStorageNode():
+          storageNode = dataNode.GetStorageNode()
+          filename = os.path.basename(storageNode.GetFileName())
+          filepath = outputFolder + "/" + filename
+          print(filepath)
+
+        # Write all children of this child item
+        grandChildIds = vtk.vtkIdList()
+        shNode.GetItemChildren(shItemId, grandChildIds)
+        if grandChildIds.GetNumberOfIds() > 0:
+          exportNodes(shItemId, outputFolder + "/" + shNode.GetItemName(shItemId))
+
+    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    slicer.app.ioManager().addDefaultStorageNodes()
+    exportNodes(shNode.GetSceneItemID())
 
 #
 # AmigoStatisticsLogic
