@@ -379,8 +379,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       path_for_id = path.split("\\")
       id = path_for_id[-2]
       id = id.split(" ")
-      # todo temporary id = id[2]
-      id = "12108221"
+      id = id[2]
 
       # for dropbox
       # id = path[-11:-5]
@@ -389,11 +388,14 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.dump_hierarchy_to_json(patient_id=id, data_json_path=data_summary_path, scene_path=path)
       slicer.mrmlScene.Clear(0)
 
-      # todo TEMPORARY
-      break
-
     # check completeness
     print("Checking completness...")
+
+    # check if dict contains something
+    if os.stat(data_summary_path).st_size == 0:
+      slicer.util.errorDisplay("No data found in the .json to check for completeness")
+      return
+
     # load dict with all data
     load_file = open(data_summary_path, "r")
     patients_check_dict = json.load(load_file)
