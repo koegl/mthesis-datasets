@@ -389,7 +389,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.mrmlScene.Clear(0)
 
     # check completeness
-    print("Checking completness...")
+    print("\n\n\nChecking completness...")
 
     # check if dict contains something
     if os.stat(data_summary_path).st_size == 0:
@@ -410,11 +410,11 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     json.dump(data_missing, completeness_file)
     completeness_file.close()
 
-    print("Completeness checked.")
-
     for key, item in data_missing.items():
       if len(item) > 0:
         print("\nCase {} misses the following data:\n{}\n".format(key, item))
+
+    print("\n\n\nCompleteness checked.")
 
   def onPrintCurrentHierarchyButton(self):
     """
