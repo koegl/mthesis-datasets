@@ -53,10 +53,7 @@ def main(params):
     for i in range(len(full_data) + 2):  # '+2' for volume type and empty column
         data_matrix.append([])
         for j in range(sum(lengths.values()) + 10):  # '+1' for titles and paths
-            if i == len(full_data) + 1:
                 data_matrix[i].append(' ')
-            else:
-                data_matrix[i].append('')
 
     id_index = 1
     row_index = 2
