@@ -426,7 +426,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # close any previously opened scene
     slicer.mrmlScene.Clear(0)
 
-    for path in igt2_paths:
+    for index, path in enumerate(igt2_paths):
+
+      print("Processing file {}/{}".format(index, len(igt2_paths)))
+
       # get id
       path_for_id = path.split("/")  # todo do this with os. so its cross platform
       subject_id = path_for_id[-2]
