@@ -409,7 +409,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     data_summary_path_partial = "/Users/fryderykkogl/Data/patient_hierarchy/patient_summary/patient_data_summary_"
     self.data_summary_paths = []
     self.data_completeness_path = "/Users/fryderykkogl/Data/patient_hierarchy/patient_summary/data_completeness.json"
-    igt2_paths_path = "/Users/fryderykkogl/Data/patient_hierarchy/igt2_local_paths.json"
+    igt2_paths_path = "/Users/fryderykkogl/Data/patient_hierarchy/igt2_paths.json"
 
     dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
                   r"AG2160 Uncompressed\Case AG2160.mrml",
@@ -428,7 +428,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     for path in igt2_paths:
       # get id
-      path_for_id = path.split("\\")
+      path_for_id = path.split("/")  # todo do this with os. so its cross platform
       subject_id = path_for_id[-2]
       subject_id = subject_id.split(" ")
       subject_id = subject_id[2]
