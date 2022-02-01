@@ -10,6 +10,8 @@ import os
 from os.path import exists
 import json
 import random
+from os import listdir
+from os.path import isfile, join
 
 #
 # AmigoStatistics
@@ -95,6 +97,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # set foreground threshold to 1 for all chosen volumes
     self.ui.hierarchyDumpButton.connect('clicked(bool)', self.onHierarchyDumpButton)
     self.ui.printCurrentHierarchyButton.connect('clicked(bool)', self.onPrintCurrentHierarchyButton)
+    self.ui.checkCompletenessButton.connect('clicked(bool)', self.onCheckCompletenessButton)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -359,12 +362,54 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     return data_missing
 
+  def dump_full_completenes_dict_to_json(self, summary_paths, save_path):
+    """
+    Gather all summary files and combine into one completness dict
+    """
+
+    data_missing = []
+
+    for data_summary_path in summary_paths:
+      # check if dict contains something
+      if not exists(data_summary_path):
+        print("{} to check for completeness could not be found".format(data_summary_path))
+        continue
+      if os.stat(data_summary_path).st_size == 0:
+        print("No data found in the .json to check for completeness")
+        continue
+
+      # load dict with all data
+      load_file = open(data_summary_path, "r")
+      patients_check_dict = json.load(load_file)
+      load_file.close()
+
+      # create dict specifying what is missing
+      if not patients_check_dict:  # if dict is empty
+        data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
+      else:
+        data_missing.append(self.check_dictionary_for_completeness(patients_check_dict))
+
+    # delete the json completeness file if a previous version exists
+    if exists(save_path):
+      os.remove(save_path)
+
+    # save completeness dict
+    completeness_file = open(save_path, "w+")
+    completeness_file.truncate(0)
+    json.dump(data_missing, completeness_file)
+    completeness_file.close()
+
+    for missing in data_missing:
+      for key, item in missing.items():
+        if len(item) > 0:
+          print("\nCase {} misses the following data:\n{}\n".format(key, item))
+
   def onHierarchyDumpButton(self):
 
-    data_summary_path_partial = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary\patient_data_summary_"
-    data_summary_paths = []
-    data_completeness_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary\data_completeness.json"
-    igt2_paths_path = r"C:\Users\fryde\Documents\university\master\thesis\code\igt2_local_paths.json"
+    data_summary_path_partial = "/Users/fryderykkogl/Data/patient_hierarchy/patient_summary/patient_data_summary_"
+    self.data_summary_paths = []
+    self.data_completeness_path = "/Users/fryderykkogl/Data/patient_hierarchy/patient_summary/data_completeness.json"
+    igt2_paths_path = "/Users/fryderykkogl/Data/patient_hierarchy/igt2_local_paths.json"
 
     dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
                   r"AG2160 Uncompressed\Case AG2160.mrml",
@@ -392,12 +437,12 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # id = path[-11:-5]
 
       data_summary_path_full = data_summary_path_partial + subject_id + ".json"
-      data_summary_paths.append(data_summary_path_full)
+      self.data_summary_paths.append(data_summary_path_full)
 
       # if the file exists, continue to the next one
       if exists(data_summary_path_full):
         continue
-      
+
       slicer.util.loadScene(path)
       try:
         self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
@@ -409,42 +454,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # check completeness
     print("\n\n\nChecking completness...")
-    data_missing = []
 
-    for data_summary_path in data_summary_paths:
-      # check if dict contains something
-      if not exists(data_summary_path):
-        print("{} to check for completeness could not be found".format(data_summary_path))
-        continue
-      if os.stat(data_summary_path).st_size == 0:
-        print("No data found in the .json to check for completeness")
-        continue
-
-      # load dict with all data
-      load_file = open(data_summary_path, "r")
-      patients_check_dict = json.load(load_file)
-      load_file.close()
-
-      # create dict specifying what is missing
-      if not patients_check_dict:  # if dict is empty
-        data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
-      else:
-        data_missing.append(self.check_dictionary_for_completeness(patients_check_dict))
-
-    # delete the json completeness file if a previous version exists
-    if exists(data_completeness_path):
-      os.remove(data_completeness_path)
-
-    # save completeness dict
-    completeness_file = open(data_completeness_path, "w+")
-    completeness_file.truncate(0)
-    json.dump(data_missing, completeness_file)
-    completeness_file.close()
-
-    for missing in data_missing:
-      for key, item in missing.items():
-        if len(item) > 0:
-          print("\nCase {} misses the following data:\n{}\n".format(key, item))
+    self.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
 
     print("\n\n\nCompleteness checked.")
 
@@ -482,6 +493,22 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
     slicer.app.ioManager().addDefaultStorageNodes()
     exportNodes(shNode.GetSceneItemID())
+
+  def onCheckCompletenessButton(self):
+    """
+    Combine all files check completeness of all files in a given directory
+    """
+
+    # combine all files
+    directory_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary"
+    summary_files = [join(directory_path, f) for f in listdir(directory_path) if isfile(join(directory_path, f)) and "summary" in f]
+    summary_dicts = []
+
+    for file in summary_files:
+      f = open(file, "r")
+      summary_dicts.append(json.load(f))
+
+    self.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
 
 #
 # AmigoStatisticsLogic

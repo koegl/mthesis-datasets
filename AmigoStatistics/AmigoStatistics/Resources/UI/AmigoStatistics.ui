@@ -29,6 +29,13 @@
     </widget>
    </item>
    <item>
+    <widget class="QPushButton" name="checkCompletenessButton">
+     <property name="text">
+      <string>Combine and check all files</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
