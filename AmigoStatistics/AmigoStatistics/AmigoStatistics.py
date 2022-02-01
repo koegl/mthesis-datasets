@@ -10,6 +10,8 @@ import os
 from os.path import exists
 import json
 import random
+from os import listdir
+from os.path import isfile, join
 
 #
 # AmigoStatistics
@@ -95,6 +97,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # set foreground threshold to 1 for all chosen volumes
     self.ui.hierarchyDumpButton.connect('clicked(bool)', self.onHierarchyDumpButton)
     self.ui.printCurrentHierarchyButton.connect('clicked(bool)', self.onPrintCurrentHierarchyButton)
+    self.ui.checkCompletenessButton.connect('clicked(bool)', self.onCheckCompletenessButton)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -215,7 +218,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     return dictionary
 
-  def populate_dict_with_hierarchy(self, sh_folder_item_id, mrm, storage_dict, scene_path, hierarchy_ori=None):
+  def populate_dict_with_hierarchy(self, sh_folder_item_id, patient_id, storage_dict, scene_path, hierarchy_ori=None):
     """
     Populate a dict entry with the hierarchy of an opened scene
     """
@@ -230,7 +233,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     else:
       hierarchy = hierarchy.split('/')
       del hierarchy[0]
-      if "patient" in hierarchy[0].lower():
+
+      if any(x in hierarchy[0].lower() for x in ["patient", patient_id]):
         del hierarchy[0]  # remove first element because it's the patient case
 
     child_ids = vtk.vtkIdList()
@@ -248,37 +252,46 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         storage_node = data_node.GetStorageNode()
         filename = os.path.basename(storage_node.GetFileName())
 
-        if mrm not in storage_dict:
-          storage_dict = self.create_empty_dict_entry(storage_dict, mrm, scene_path)
+        if patient_id not in storage_dict:
+          storage_dict = self.create_empty_dict_entry(storage_dict, patient_id, scene_path)
 
         if not hierarchy:  # we are at the end
           return storage_dict
 
-        if hierarchy[0].lower() == "pre-op imaging":
-          storage_dict[mrm][hierarchy[0].lower()].append(filename)
-        elif hierarchy[0].lower() == "intra-op imaging":
+        if all(x in hierarchy[0].lower() for x in ["pre", "op", "imaging"]):
+          storage_dict[patient_id]["pre-op imaging"].append(filename)
+
+        elif all(x in hierarchy[0].lower() for x in ["intra", "op", "imaging"]):
           if len(hierarchy) == 1:
-            storage_dict[mrm][hierarchy[0].lower()]["rest"].append(filename)
+            storage_dict[patient_id]["intra-op imaging"]["rest"].append(filename)
           else:
-            storage_dict[mrm][hierarchy[0].lower()]["ultrasounds"].append(filename)
-        elif hierarchy[0].lower() == "continuous tracking data":
-          if hierarchy[1].lower() == "pre-imri tracking":
-            storage_dict[mrm][hierarchy[0].lower()]["pre-imri tracking"].append(filename)
-          elif hierarchy[1].lower() == "post-imri tracking":
-            storage_dict[mrm][hierarchy[0].lower()]["post-imri tracking"].append(filename)
-        elif hierarchy[0].lower() == "segmentations":
+            storage_dict[patient_id]["intra-op imaging"]["ultrasounds"].append(filename)
+
+        elif all(x in hierarchy[0].lower() for x in ["contin", "tracking"]):
           if len(hierarchy) == 1:
-            storage_dict[mrm][hierarchy[0].lower()]["rest"].append(filename)
-          elif hierarchy[1].lower() == "pre-op fmri segmentations":
-            storage_dict[mrm][hierarchy[0].lower()]["pre-op fmri segmentations"].append(filename)
-          elif all(x in hierarchy[1].lower() for x in ["brainlab", "dti", "tractography"]):
-            storage_dict[mrm][hierarchy[0].lower()]["pre-op brainlab manual dti tractography segmentations"].append(filename)
+            if "post" in filename.lower():
+              storage_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(filename)
+            else:
+              storage_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(filename)
+
+          elif all(x in hierarchy[1].lower() for x in ["pre", "imri", "tracking"]):
+            storage_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(filename)
+          elif all(x in hierarchy[1].lower() for x in ["post", "imri", "tracking"]):
+            storage_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(filename)
+
+        elif "segmentations" in hierarchy[0].lower():
+          if len(hierarchy) == 1:
+            storage_dict[patient_id]["segmentations"]["rest"].append(filename)
+          elif all(x in hierarchy[1].lower() for x in ["pre-op", "fmri"]):
+            storage_dict[patient_id]["segmentations"]["pre-op fmri segmentations"].append(filename)
+          elif all(x in hierarchy[1].lower() for x in ["brainlab", "dti"]):
+            storage_dict[patient_id]["segmentations"]["pre-op brainlab manual dti tractography segmentations"].append(filename)
 
       # Write all children of this child item
       grand_child_ids = vtk.vtkIdList()
       sh_node.GetItemChildren(sh_item_id, grand_child_ids)
       if grand_child_ids.GetNumberOfIds() > 0:
-        self.populate_dict_with_hierarchy(sh_item_id, mrm, storage_dict, scene_path,
+        self.populate_dict_with_hierarchy(sh_item_id, patient_id, storage_dict, scene_path,
                                      hierarchy_ori + "/" + sh_node.GetItemName(sh_item_id))
 
     return storage_dict
@@ -287,17 +300,19 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Dumps entire hierarchy to a json
     """
-    print('Processing: {}'.format(patient_id))
+    print('Processing: {}\n'.format(patient_id))
 
     if exists(data_json_path):
       # check if file is empty
       if os.stat(data_json_path).st_size == 0:
         patients_dict = {}
+        os.remove(data_json_path)
       else:  # if not empty, we can load it (we assume it is correct)
         load_file = open(data_json_path, "r+")
         patients_dict = json.load(load_file)
         load_file.truncate(0)  # clear file so we can store the updated dict
         load_file.close()
+        os.remove(data_json_path)
     else:
       patients_dict = {}
 
@@ -317,11 +332,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Check if each array in the dict is populated, if not write some kind of error log
     """
-
     data_missing = {}
 
     for key, item in data_dict.items():
-      data_missing[key] = []
+      data_missing[key] = [item["path"]]
 
       if len(item["pre-op imaging"]) == 0:
         data_missing[key].append("pre-op imaging")
@@ -343,13 +357,59 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if len(item["segmentations"]["rest"]) == 0:
         data_missing[key].append("segmentations - rest")
 
+      if len(data_missing[key]) == 1:  # if nothing missing was found, remove the entry (1 means we only added the path)
+        del data_missing[key]
+
     return data_missing
+
+  def dump_full_completenes_dict_to_json(self, summary_paths, save_path):
+    """
+    Gather all summary files and combine into one completness dict
+    """
+
+    data_missing = []
+
+    for data_summary_path in summary_paths:
+      # check if dict contains something
+      if not exists(data_summary_path):
+        print("{} to check for completeness could not be found".format(data_summary_path))
+        continue
+      if os.stat(data_summary_path).st_size == 0:
+        print("No data found in the .json to check for completeness")
+        continue
+
+      # load dict with all data
+      load_file = open(data_summary_path, "r")
+      patients_check_dict = json.load(load_file)
+      load_file.close()
+
+      # create dict specifying what is missing
+      if not patients_check_dict:  # if dict is empty
+        data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
+      else:
+        data_missing.append(self.check_dictionary_for_completeness(patients_check_dict))
+
+    # delete the json completeness file if a previous version exists
+    if exists(save_path):
+      os.remove(save_path)
+
+    # save completeness dict
+    completeness_file = open(save_path, "w+")
+    completeness_file.truncate(0)
+    json.dump(data_missing, completeness_file)
+    completeness_file.close()
+
+    for missing in data_missing:
+      for key, item in missing.items():
+        if len(item) > 0:
+          print("\nCase {} misses the following data:\n{}\n".format(key, item))
 
   def onHierarchyDumpButton(self):
 
-    data_summary_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_data_summary.json"
-    data_completeness_path = r"C:\Users\fryde\Documents\university\master\thesis\code\data_completeness.json"
-    igt2_paths_path = r"C:\Users\fryde\Documents\university\master\thesis\code\igt2_paths.json"
+    data_summary_path_partial = "/Users/fryderykkogl/Data/patient_hierarchy/patient_summary/patient_data_summary_"
+    self.data_summary_paths = []
+    self.data_completeness_path = "/Users/fryderykkogl/Data/patient_hierarchy/patient_summary/data_completeness.json"
+    igt2_paths_path = "/Users/fryderykkogl/Data/patient_hierarchy/igt2_paths.json"
 
     dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
                   r"AG2160 Uncompressed\Case AG2160.mrml",
@@ -366,42 +426,47 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # close any previously opened scene
     slicer.mrmlScene.Clear(0)
 
-    for path in dropbox_paths:
-      
+    for index, path in enumerate(igt2_paths):
+
+      print("Processing file {}/{}".format(index, len(igt2_paths)))
+
       # get id
-      path_for_id = path.split("\\")
-      id = path_for_id[-2]
-      id = id.split(" ")
-      id = id[2]
+      path_for_id = path.split("/")  # todo do this with os. so its cross platform
+      subject_id = path_for_id[-2]
+      subject_id = subject_id.split(" ")
+      subject_id = subject_id[2]
 
       # for dropbox
-      id = path[-11:-5]
-      
-      slicer.util.loadScene(path)
-      self.dump_hierarchy_to_json(patient_id=id, data_json_path=data_summary_path, scene_path=path)
+      # id = path[-11:-5]
+
+      data_summary_path_full = data_summary_path_partial + subject_id + ".json"
+      self.data_summary_paths.append(data_summary_path_full)
+
+      # if the file exists, continue to the next one
+      if exists(data_summary_path_full):
+        continue
+
+      try:
+        print("loading scene")
+        slicer.util.loadScene(path)
+      except:
+        pass
+
+      try:
+        print("trying to dump")
+        self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
+      except Exception as e:
+        print("Could not process patient {} (path: {}). Skipping to the next one.\n({})".format(subject_id, path, e))
+        slicer.mrmlScene.Clear(0)
+        continue
       slicer.mrmlScene.Clear(0)
 
     # check completeness
-    print("Checking completness...")
-    # load dict with all data
-    load_file = open(data_summary_path, "r")
-    patients_check_dict = json.load(load_file)
-    load_file.close()
+    print("\n\n\nChecking completness...")
 
-    # create dict specifying what is missing
-    data_missing = self.check_dictionary_for_completeness(patients_check_dict)
+    self.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
 
-    # save completeness dict
-    completeness_file = open(data_completeness_path, "w+")
-    completeness_file.truncate(0)
-    json.dump(data_missing, completeness_file)
-    completeness_file.close()
-
-    print("Completeness checked.")
-
-    for key, item in data_missing.items():
-      if len(item) > 0:
-        print("\nCase {} misses the following data:\n{}\n".format(key, item))
+    print("\n\n\nCompleteness checked.")
 
   def onPrintCurrentHierarchyButton(self):
     """
@@ -437,6 +502,22 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
     slicer.app.ioManager().addDefaultStorageNodes()
     exportNodes(shNode.GetSceneItemID())
+
+  def onCheckCompletenessButton(self):
+    """
+    Combine all files check completeness of all files in a given directory
+    """
+
+    # combine all files
+    directory_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary"
+    summary_files = [join(directory_path, f) for f in listdir(directory_path) if isfile(join(directory_path, f)) and "summary" in f]
+    summary_dicts = []
+
+    for file in summary_files:
+      f = open(file, "r")
+      summary_dicts.append(json.load(f))
+
+    self.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
 
 #
 # AmigoStatisticsLogic
