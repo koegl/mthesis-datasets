@@ -406,10 +406,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onHierarchyDumpButton(self):
 
-    data_summary_path_partial = "/Users/fryderykkogl/Data/patient_hierarchy/patient_summary/patient_data_summary_"
+    data_summary_path_partial = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/patient_data_summary_"
     self.data_summary_paths = []
-    self.data_completeness_path = "/Users/fryderykkogl/Data/patient_hierarchy/patient_summary/data_completeness.json"
-    igt2_paths_path = "/Users/fryderykkogl/Data/patient_hierarchy/igt2_paths.json"
+    self.data_completeness_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/data_completeness.json"
+    igt2_paths_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_paths.json"
 
     dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
                   r"AG2160 Uncompressed\Case AG2160.mrml",
@@ -508,16 +508,29 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Combine all files check completeness of all files in a given directory
     """
 
-    # combine all files
-    directory_path = r"C:\Users\fryde\Documents\university\master\thesis\code\patient_summary"
-    summary_files = [join(directory_path, f) for f in listdir(directory_path) if isfile(join(directory_path, f)) and "summary" in f]
-    summary_dicts = []
+    try:
+      # check completeness
+      directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
+                       "/patient_summary"
+      summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if isfile(join(directory_path, f)) and "summary" in f]
+      summary_dicts_full = {}
 
-    for file in summary_files:
-      f = open(file, "r")
-      summary_dicts.append(json.load(f))
+      self.dump_full_completenes_dict_to_json(summary_file_paths, os.path.join(directory_path, "full_completeness.json"))
 
-    self.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
+      # combine dicts
+      for file in summary_file_paths:
+        f = open(file, "r")
+        summary_dicts_full.update((json.load(f)))
+
+      # save completeness dict
+      full_summary_file = open(os.path.join(directory_path, "full_summary.json"), "w+")
+      full_summary_file.truncate(0)
+      json.dump(summary_dicts_full, full_summary_file)
+      full_summary_file.close()
+
+    except:
+      slicer.util.errorDisplay("Could not combine and check files.\n{}".format(Exception))
+      return
 
 #
 # AmigoStatisticsLogic
