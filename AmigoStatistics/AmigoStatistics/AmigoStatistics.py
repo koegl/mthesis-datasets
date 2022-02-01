@@ -443,8 +443,14 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if exists(data_summary_path_full):
         continue
 
-      slicer.util.loadScene(path)
       try:
+        print("loading scene")
+        slicer.util.loadScene(path)
+      except:
+        pass
+
+      try:
+        print("trying to dump")
         self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
       except Exception as e:
         print("Could not process patient {} (path: {}). Skipping to the next one.\n({})".format(subject_id, path, e))
