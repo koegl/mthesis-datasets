@@ -20,6 +20,26 @@ def replace_character_in_file(path_to_file, old_character, new_character):
         f.truncate(0)
         f.write(text)    
 
+def create_empty_data_matrix(data_summary_length, max_array_lengths_sum):
+    """
+    Create an empty data matrix that will be written to an excel spreadsheet
+    :param data_summary_length: Amount of different patients
+    :param max_array_lengths_sum: The sum of all the maximal lengths of the data arrays
+    :return:
+    """
+
+    data_summary_length += 2  # '+ 2' for volume type and empty column at the back to stop spill
+    max_array_lengths_sum += 10  # '+ 10' for titles, paths and empty rows
+
+    empty_data_matrix = []
+
+    for i in range(len(data_summary_length)):  # '+2' for volume type and empty column
+        empty_data_matrix.append([])
+        for j in range(max_array_lengths_sum.values() + 10):  # '+1' for titles and paths
+                empty_data_matrix[i].append(' ')
+
+    return empty_data_matrix
+
 def main(params):
     # load full dict
     full_dict_path = params.summary_file
@@ -39,7 +59,7 @@ def main(params):
     lengths = {"pre_op_im": 0, "intra_us": 0, "intra_rest": 0, "tracking_pre": 0, "tracking_post": 0, "seg_fmir": 0,
                "seg_dti": 0, "seg_rest": 0}
 
-    for key, item in full_data.items():
+    data_matrix = create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
         # data_matrix[0].append(key)
         if len(item["pre-op imaging"]) > lengths["pre_op_im"]:
             lengths["pre_op_im"] = len(item["pre-op imaging"])
@@ -58,12 +78,7 @@ def main(params):
         if len(item["segmentations"]["rest"]) > lengths["seg_rest"]:
             lengths["seg_rest"] = len(item["segmentations"]["rest"])
 
-    data_matrix = []
 
-    for i in range(len(full_data) + 2):  # '+2' for volume type and empty column
-        data_matrix.append([])
-        for j in range(sum(lengths.values()) + 10):  # '+1' for titles and paths
-                data_matrix[i].append(' ')
 
     id_index = 1
     row_index = 2
