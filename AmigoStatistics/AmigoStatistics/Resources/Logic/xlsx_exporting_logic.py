@@ -90,7 +90,7 @@ def fill_empty_matrix_with_summary_dict(summary_dict, data_matrix, max_lengths_d
 
     for key, value in summary_dict.items():
         data_matrix[id_index][row_index - 2] = key
-        data_matrix[id_index][row_index - 1] = value["path"]
+        data_matrix[id_index][row_index - 1] = value["path"][0]
 
         data_matrix[0][row_index + 1] = "pre-op imaging"
         data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op imaging"]
