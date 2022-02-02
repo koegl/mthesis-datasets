@@ -240,6 +240,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # if the file exists, continue to the next one
         if exists(data_summary_path_full):
+          print("{} was already processed. Skipping to the next one.".format(data_summary_path_full))
           continue
 
         try:
@@ -327,22 +328,11 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
                        "/patient_summary"
-      summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if isfile(join(directory_path, f)) and "summary" in f]
-      summary_dicts_full = {}
 
-      json_dict_logic.dump_full_completenes_dict_to_json(summary_file_paths, os.path.join(directory_path,
-                                                                                          "full_completeness.json"))
+      full_dict_path = os.path.join(directory_path, "full_summary.json")
+      full_save_path = os.path.join(directory_path, "full_completeness.json")
 
-      # combine dicts
-      for file in summary_file_paths:
-        f = open(file, "r")
-        summary_dicts_full.update((json.load(f)))
-
-      # save completeness dict
-      full_summary_file = open(os.path.join(directory_path, "full_summary.json"), "w+")
-      full_summary_file.truncate(0)
-      json.dump(summary_dicts_full, full_summary_file)
-      full_summary_file.close()
+      json_dict_logic.dump_full_completenes_dict_to_json(full_dict_path, full_save_path)
 
       print("\n\n\nCompleteness checked.")
 
