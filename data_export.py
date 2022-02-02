@@ -102,38 +102,38 @@ def main(params):
 
         data_matrix[0][row_index + 1] = "pre-op imaging"
         data_matrix[id_index][row_index+1:row_index+1+len(value["pre-op imaging"])] = value["pre-op imaging"]
-        row_index += lengths["pre_op_im"] + 1
+        row_index += max_lengths["pre_op_im"] + 1
 
         data_matrix[0][row_index + 1] = "intra-op US"
         data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["ultrasounds"])] = \
             value["intra-op imaging"]["ultrasounds"]
-        row_index += lengths["intra_us"] + 1
+        row_index += max_lengths["intra_us"] + 1
         data_matrix[0][row_index + 1] = "intra-op REST"
         data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["rest"])] = \
             value["intra-op imaging"]["rest"]
-        row_index += lengths["intra_rest"] + 1
+        row_index += max_lengths["intra_rest"] + 1
 
         data_matrix[0][row_index + 1] = "tracking PRE"
         data_matrix[id_index][row_index + 1:row_index + 1 + len(value["continuous tracking data"]["pre-imri tracking"])]\
             = value["continuous tracking data"]["pre-imri tracking"]
-        row_index += lengths["tracking_pre"] + 1
+        row_index += max_lengths["tracking_pre"] + 1
         data_matrix[0][row_index + 1] = "tracking POST"
         data_matrix[id_index][row_index + 1:row_index + 1 + len(value["continuous tracking data"]["post-imri tracking"])] \
             = value["continuous tracking data"]["post-imri tracking"]
-        row_index += lengths["tracking_post"] + 1
+        row_index += max_lengths["tracking_post"] + 1
 
         data_matrix[0][row_index + 1] = "segmentations fMRI"
         data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op fmri segmentations"])] \
             = value["segmentations"]["pre-op fmri segmentations"]
-        row_index += lengths["seg_fmir"] + 1
+        row_index += max_lengths["seg_fmir"] + 1
         data_matrix[0][row_index + 1] = "segmentations DTI"
         data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op brainlab manual dti tractography segmentations"])] \
             = value["segmentations"]["pre-op brainlab manual dti tractography segmentations"]
-        row_index += lengths["seg_dti"] + 1
+        row_index += max_lengths["seg_dti"] + 1
         data_matrix[0][row_index + 1] = "segmentations REST"
         data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["rest"])] \
             = value["segmentations"]["rest"]
-        row_index += lengths["seg_rest"] + 1
+        row_index += max_lengths["seg_rest"] + 1
 
         id_index += 1
         row_index = 2
@@ -153,7 +153,7 @@ def main(params):
              "segmentations DTI", "segmentations REST"]
     range_start = 0
 
-    for key, value in lengths.items():
+    for key, value in max_lengths.items():
         worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
 
         range_start += value + 1
