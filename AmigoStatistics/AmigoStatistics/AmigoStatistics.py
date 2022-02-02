@@ -199,48 +199,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
-  def dump_full_completenes_dict_to_json(self, summary_paths, save_path):
-    """
-    Gather all summary files and combine into one completness dict
-    """
-
-    data_missing = []
-
-    for data_summary_path in summary_paths:
-      # check if dict contains something
-      if not exists(data_summary_path):
-        print("{} to check for completeness could not be found".format(data_summary_path))
-        continue
-      if os.stat(data_summary_path).st_size == 0:
-        print("No data found in the .json to check for completeness")
-        continue
-
-      # load dict with all data
-      load_file = open(data_summary_path, "r")
-      patients_check_dict = json.load(load_file)
-      load_file.close()
-
-      # create dict specifying what is missing
-      if not patients_check_dict:  # if dict is empty
-        data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
-      else:
-        data_missing.append(json_dict_logic.check_dictionary_for_completeness(patients_check_dict))
-
-    # delete the json completeness file if a previous version exists
-    if exists(save_path):
-      os.remove(save_path)
-
-    # save completeness dict
-    completeness_file = open(save_path, "w+")
-    completeness_file.truncate(0)
-    json.dump(data_missing, completeness_file)
-    completeness_file.close()
-
-    for missing in data_missing:
-      for key, item in missing.items():
-        if len(item) > 0:
-          print("\nCase {} misses the following data:\n{}\n".format(key, item))
-
   def onHierarchyDumpButton(self):
 
     data_summary_path_partial = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/patient_data_summary_"
@@ -299,44 +257,45 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # check completeness
     print("\n\n\nChecking completness...")
 
-    self.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
+    json_dict_logic.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
 
     print("\n\n\nCompleteness checked.")
+
+  @staticmethod
+  def export_nodes(self, shFolderItemId, outputFolder=""):
+    # Get items in the folder
+    childIds = vtk.vtkIdList()
+    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    shNode.GetItemChildren(shFolderItemId, childIds)
+    if childIds.GetNumberOfIds() == 0:
+      return
+
+    # Write each child item to file
+    for itemIdIndex in range(childIds.GetNumberOfIds()):
+      shItemId = childIds.GetId(itemIdIndex)
+
+      # Write node to file (if storable)
+      dataNode = shNode.GetItemDataNode(shItemId)
+      if dataNode and dataNode.IsA("vtkMRMLStorableNode") and dataNode.GetStorageNode():
+        storageNode = dataNode.GetStorageNode()
+        filename = os.path.basename(storageNode.GetFileName())
+        filepath = outputFolder + "/" + filename
+        print(filepath)
+
+      # Write all children of this child item
+      grandChildIds = vtk.vtkIdList()
+      shNode.GetItemChildren(shItemId, grandChildIds)
+      if grandChildIds.GetNumberOfIds() > 0:
+        AmigoStatisticsWidget.export_nodes(shItemId, outputFolder + "/" + shNode.GetItemName(shItemId))
 
   def onPrintCurrentHierarchyButton(self):
     """
     Prints the current hierarchy
     """
     print("Current hierarchy:")
-    def exportNodes(shFolderItemId, outputFolder=""):
-      # Get items in the folder
-      childIds = vtk.vtkIdList()
-      shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-      shNode.GetItemChildren(shFolderItemId, childIds)
-      if childIds.GetNumberOfIds() == 0:
-        return
-
-      # Write each child item to file
-      for itemIdIndex in range(childIds.GetNumberOfIds()):
-        shItemId = childIds.GetId(itemIdIndex)
-
-        # Write node to file (if storable)
-        dataNode = shNode.GetItemDataNode(shItemId)
-        if dataNode and dataNode.IsA("vtkMRMLStorableNode") and dataNode.GetStorageNode():
-          storageNode = dataNode.GetStorageNode()
-          filename = os.path.basename(storageNode.GetFileName())
-          filepath = outputFolder + "/" + filename
-          print(filepath)
-
-        # Write all children of this child item
-        grandChildIds = vtk.vtkIdList()
-        shNode.GetItemChildren(shItemId, grandChildIds)
-        if grandChildIds.GetNumberOfIds() > 0:
-          exportNodes(shItemId, outputFolder + "/" + shNode.GetItemName(shItemId))
-
     shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
     slicer.app.ioManager().addDefaultStorageNodes()
-    exportNodes(shNode.GetSceneItemID())
+    self.export_nodes(shNode.GetSceneItemID())
 
   def onCheckCompletenessButton(self):
     """
@@ -350,7 +309,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if isfile(join(directory_path, f)) and "summary" in f]
       summary_dicts_full = {}
 
-      self.dump_full_completenes_dict_to_json(summary_file_paths, os.path.join(directory_path, "full_completeness.json"))
+      json_dict_logic.dump_full_completenes_dict_to_json(summary_file_paths, os.path.join(directory_path, "full_completeness.json"))
 
       # combine dicts
       for file in summary_file_paths:

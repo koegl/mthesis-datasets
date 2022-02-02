@@ -144,7 +144,7 @@ def populate_dict_with_hierarchy(sh_folder_item_id, patient_id, storage_dict, sc
     return storage_dict
 
 
-def dump_hierarchy_to_json(self, patient_id, data_json_path, scene_path):
+def dump_hierarchy_to_json(patient_id, data_json_path, scene_path):
     """
     Dumps entire hierarchy to a json
     """
@@ -175,3 +175,46 @@ def dump_hierarchy_to_json(self, patient_id, data_json_path, scene_path):
       f.close()
 
     print('Finished rocessing: {}\n'.format(patient_id))
+
+
+def dump_full_completenes_dict_to_json(summary_paths, save_path):
+    """
+    Gather all summary files and combine into one completness dict
+    """
+
+    data_missing = []
+
+    for data_summary_path in summary_paths:
+      # check if dict contains something
+      if not exists(data_summary_path):
+        print("{} to check for completeness could not be found".format(data_summary_path))
+        continue
+      if os.stat(data_summary_path).st_size == 0:
+        print("No data found in the .json to check for completeness")
+        continue
+
+      # load dict with all data
+      load_file = open(data_summary_path, "r")
+      patients_check_dict = json.load(load_file)
+      load_file.close()
+
+      # create dict specifying what is missing
+      if not patients_check_dict:  # if dict is empty
+        data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
+      else:
+        data_missing.append(check_dictionary_for_completeness(patients_check_dict))
+
+    # delete the json completeness file if a previous version exists
+    if exists(save_path):
+      os.remove(save_path)
+
+    # save completeness dict
+    completeness_file = open(save_path, "w+")
+    completeness_file.truncate(0)
+    json.dump(data_missing, completeness_file)
+    completeness_file.close()
+
+    for missing in data_missing:
+      for key, item in missing.items():
+        if len(item) > 0:
+          print("\nCase {} misses the following data:\n{}\n".format(key, item))
