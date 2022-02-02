@@ -66,9 +66,9 @@ def create_empty_data_matrix(data_summary_length, max_array_lengths_sum):
 
     empty_data_matrix = []
 
-    for i in range(len(data_summary_length)):  # '+2' for volume type and empty column
+    for i in range(data_summary_length):  # '+2' for volume type and empty column
         empty_data_matrix.append([])
-        for j in range(max_array_lengths_sum.values() + 10):  # '+1' for titles and paths
+        for j in range(max_array_lengths_sum + 10):  # '+1' for titles and paths
                 empty_data_matrix[i].append(' ')
 
     return empty_data_matrix
@@ -131,6 +131,38 @@ def fill_empty_matrix_with_summary_dict(summary_dict, data_matrix, max_lengths_d
     return data_matrix
 
 
+def format_data_matrix_to_excel(data_matrix, max_lengths_dict, save_path):
+    """
+    Takes in the data_matrix and formats it
+    :param data_matrix: The matrix to be formatted and saved
+    :param max_lengths_dict: The dict containing the max lengths of the data arrays
+    :param save_path: Path where the data will be saved
+    :return writer: The writer which can be used to save the data
+    """
+
+    df = pd.DataFrame(data=data_matrix)
+    df = (df.T)
+
+    writer = pd.ExcelWriter(save_path, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name='Sheet1', index=False, header=False)
+    worksheet = writer.sheets['Sheet1']
+    workbook = writer.book
+    merge_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
+
+    index = 0
+    names = ["pre-op imaging", "intra-op US", "intra-op REST", "tracking PRE", "tracking POST", "segmentations fMRI",
+             "segmentations DTI", "segmentations REST"]
+    range_start = 0
+
+    for key, value in max_lengths_dict.items():
+        worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
+
+        range_start += value + 1
+        index += 1
+
+    return writer
+
+
 def main(params):
     # load full dict
     full_dict_path = params.summary_file
@@ -155,38 +187,21 @@ def main(params):
     # fill empty data matrix with values from the summary dict
     data_matrix = fill_empty_matrix_with_summary_dict(full_data, data_matrix, max_lengths)
 
-    df = pd.DataFrame(data=data_matrix)
-    df = (df.T)
+    # format the data_matrix to a spreadsheet
+    writer = format_data_matrix_to_excel(data_matrix, max_lengths, "/Users/fryderykkogl/Documents/university/master/"
+                                                                   "thesis/code/patient_hierarchy.nosync/"
+                                                                   "patient_summary/full_summary.xlsx")
 
-    writer = pd.ExcelWriter("/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/"
-                            "patient_summary/full_summary.xlsx", engine='xlsxwriter')
-    df.to_excel(writer, sheet_name='Sheet1', index=False, header=False)
-    worksheet = writer.sheets['Sheet1']
-    workbook = writer.book
-    merge_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
-
-    index = 0
-    names = ["pre-op imaging", "intra-op US", "intra-op REST", "tracking PRE", "tracking POST", "segmentations fMRI",
-             "segmentations DTI", "segmentations REST"]
-    range_start = 0
-
-    for key, value in max_lengths.items():
-        worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
-
-        range_start += value + 1
-        index += 1
-
+    # save the spreadsheet
     writer.save()
-
-
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-sf", "--summary_file", type=str, help="Path to the file with all the summary dataconverted to "
-                                                                ".fcsv")
+    parser.add_argument("-sf", "--summary_file", type=str, help="Path to the file with all the summary data converted"
+                                                                "to .fcsv")
 
     arguments = parser.parse_args()
 
