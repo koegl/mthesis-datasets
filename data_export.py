@@ -1,24 +1,34 @@
 import json
 import pandas as pd
 import argparse
-import xlsxwriter
 
 
+def replace_character_in_file(path_to_file, old_character, new_character):
+    """
+    :param path_to_file: File to be edited
+    :param old_character: The character that will be replaced
+    :param new_character: The replacement character
+    """
+    
+    # read in text and replace in the string    
+    with open(path_to_file, 'r') as f:
+        text = f.read()
+        text = text.replace(old_character, new_character)
+    
+    # clear file and write the string to it
+    with open(path_to_file, 'w+') as f:
+        f.truncate(0)
+        f.write(text)    
 
 def main(params):
     # load full dict
     full_dict_path = params.summary_file
     full_data = None
-
-    with open(full_dict_path, 'r') as f:
-        # replace '%' with ' '
-        text = f.read()
-        text = text.replace('%', ' ')
-
-    with open(full_dict_path, 'w+') as f:
-        f.truncate(0)
-        f.write(text)
-
+    
+    # replace '%' with ' '
+    replace_character_in_file(full_dict_path, '%', ' ')
+    
+    # load dict
     with open(full_dict_path, 'r') as f:
         full_data = json.load(f)
 
