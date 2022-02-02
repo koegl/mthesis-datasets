@@ -177,6 +177,38 @@ def dump_hierarchy_to_json(patient_id, data_json_path, scene_path):
         f.close()
 
 
+def combine_single_summaries(summary_paths, save_path):
+    """
+    Combines single summaries into one big summary (and deletes the single files)
+    :param summary_paths: The paths to be combined
+    :param save_path: The main summary to be created
+    """
+
+    full_summary_dict = {}
+
+    for data_summary_path in summary_paths:
+        # check if dict contains something
+        if not exists(data_summary_path):
+            print("{} to combine could not be found".format(data_summary_path))
+            continue
+        if os.stat(data_summary_path).st_size == 0:
+            print("No data found in the .json to combine")
+            continue
+
+        # load dict with all data
+        single_sumary = open(data_summary_path, "r")
+        full_summary_dict.update(json.load(single_sumary))
+        single_sumary.close()
+
+        # remove the single summary file
+        os.remove(data_summary_path)
+
+    # save full dict
+    full_summary_file = open(save_path, 'w')
+    json.dump(full_summary_dict, full_summary_file)
+    full_summary_file.close()
+
+
 def dump_full_completenes_dict_to_json(summary_paths, save_path):
     """
     Gather all summary files and combine into one completness dict
@@ -204,6 +236,9 @@ def dump_full_completenes_dict_to_json(summary_paths, save_path):
         else:
             data_missing.append(check_dictionary_for_completeness(patients_check_dict))
 
+        # remove the single summary file
+        os.remove(data_summary_path)
+
     # delete the json completeness file if a previous version exists
     if exists(save_path):
         os.remove(save_path)
@@ -218,3 +253,23 @@ def dump_full_completenes_dict_to_json(summary_paths, save_path):
         for key, item in missing.items():
             if len(item) > 0:
                 print("\nCase {} misses the following data:\n{}\n".format(key, item))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

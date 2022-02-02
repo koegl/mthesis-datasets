@@ -102,6 +102,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Buttons
     # set foreground threshold to 1 for all chosen volumes
     self.ui.hierarchyDumpButton.connect('clicked(bool)', self.onHierarchyDumpButton)
+    self.ui.combineHierarchiesButton.connect('clicked(bool)', self.onCombineHierarchiesButton)
     self.ui.printCurrentHierarchyButton.connect('clicked(bool)', self.onPrintCurrentHierarchyButton)
     self.ui.checkCompletenessButton.connect('clicked(bool)', self.onCheckCompletenessButton)
     self.ui.saveToXlsxButton.connect('clicked(bool)', self.onSaveToXlsxButton)
@@ -201,65 +202,79 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onHierarchyDumpButton(self):
 
-    data_summary_path_partial = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/patient_data_summary_"
-    self.data_summary_paths = []
-    self.data_completeness_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/data_completeness.json"
-    igt2_paths_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_dropbox_paths.json"
+    try:
+      data_summary_path_partial = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/patient_data_summary_"
+      self.data_summary_paths = []
+      self.data_completeness_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/data_completeness.json"
+      igt2_paths_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_dropbox_paths.json"
 
-    dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
-                  r"AG2160 Uncompressed\Case AG2160.mrml",
-                  r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2146\Case "
-                  r"AG2146 Uncompressed\Case AG2146.mrml",
-                  r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2152\Case "
-                  r"AG2152 Uncompressed\Case AG2152.mrml"]
+      dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
+                    r"AG2160 Uncompressed\Case AG2160.mrml",
+                    r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2146\Case "
+                    r"AG2146 Uncompressed\Case AG2146.mrml",
+                    r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2152\Case "
+                    r"AG2152 Uncompressed\Case AG2152.mrml"]
 
-    # read igt2 paths
-    igt2_paths_file = open(igt2_paths_path, "r")
-    igt2_paths_dict = json.load(igt2_paths_file)
-    igt2_paths = igt2_paths_dict["paths"]
+      # read igt2 paths
+      igt2_paths_file = open(igt2_paths_path, "r")
+      igt2_paths_dict = json.load(igt2_paths_file)
+      igt2_paths = igt2_paths_dict["paths"]
 
-    # close any previously opened scene
-    slicer.mrmlScene.Clear(0)
-
-    for index, path in enumerate(igt2_paths):
-
-      # get id
-      path_for_id = path.split("/")  # todo do this with os. so its cross platform
-      subject_id = path_for_id[-2]
-      subject_id = subject_id.split(" ")
-      subject_id = subject_id[2]
-
-      # for dropbox
-      # id = path[-11:-5]
-
-      data_summary_path_full = data_summary_path_partial + subject_id + ".json"
-      self.data_summary_paths.append(data_summary_path_full)
-
-      # if the file exists, continue to the next one
-      if exists(data_summary_path_full):
-        continue
-
-      try:
-        slicer.util.loadScene(path)
-      except:  # needs to be so broad because loading causes an error which is irrelevant for the rest of the code
-        pass
-
-      try:
-        print('Processing: {}({}/{})\n'.format(subject_id, index, len(igt2_paths)))
-        json_dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
-        print('Finished processing: {}\n\n'.format(subject_id))
-      except Exception as e:
-        print("Could not process patient {} (path: {}).\nSkipping to the next one.\n({})".format(subject_id, path, e))
-        slicer.mrmlScene.Clear(0)
-        continue
+      # close any previously opened scene
       slicer.mrmlScene.Clear(0)
+      print("\n\n")
 
-    # check completeness
-    print("\n\n\nChecking completness...")
+      for index, path in enumerate(igt2_paths):
 
-    json_dict_logic.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
+        # get id
+        path_for_id = path.split("/")  # todo do this with os. so its cross platform
+        subject_id = path_for_id[-2]
+        subject_id = subject_id.split(" ")
+        subject_id = subject_id[2]
 
-    print("\n\n\nCompleteness checked.")
+        # for dropbox
+        # id = path[-11:-5]
+
+        data_summary_path_full = data_summary_path_partial + subject_id + ".json"
+        self.data_summary_paths.append(data_summary_path_full)
+
+        # if the file exists, continue to the next one
+        if exists(data_summary_path_full):
+          continue
+
+        try:
+          slicer.util.loadScene(path)
+        except:  # needs to be so broad because loading causes an error which is irrelevant for the rest of the code
+          pass
+
+        try:
+          print('Processing: {}({}/{})'.format(subject_id, index + 1, len(igt2_paths)))
+          json_dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
+          print('Finished processing: {}\n\n'.format(subject_id))
+        except Exception as e:
+          print("Could not process patient {} (path: {}).\nSkipping to the next one.\n({})".format(subject_id, path, e))
+          slicer.mrmlScene.Clear(0)
+          continue
+        slicer.mrmlScene.Clear(0)
+
+    except:
+      slicer.util.errorDisplay("Could not execute onHierarchyDumpButton.\n{}".format(Exception))
+
+  def onCombineHierarchiesButton(self):
+    """
+    Combine all single hierarchies into one summary
+    """
+
+    try:
+      # combine single files
+      directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
+                       "/patient_summary"
+      summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if
+                            isfile(join(directory_path, f)) and "summary" in f]
+      json_dict_logic.combine_single_summaries(summary_file_paths, os.path.join(directory_path, "full_summary.json"))
+
+    except:
+      slicer.util.errorDisplay("Could not execute onCombineHierarchiesButton.\n{}".format(Exception))
 
   @staticmethod
   def export_nodes(shFolderItemId, outputFolder=""):
@@ -292,10 +307,14 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Prints the current hierarchy
     """
-    print("Current hierarchy:")
-    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    slicer.app.ioManager().addDefaultStorageNodes()
-    self.export_nodes(shNode.GetSceneItemID())
+
+    try:
+      print("Current hierarchy:")
+      shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      slicer.app.ioManager().addDefaultStorageNodes()
+      self.export_nodes(shNode.GetSceneItemID())
+    except:
+      slicer.util.errorDisplay("Could not execute onPrintCurrentHierarchyButton.\n{}".format(Exception))
 
   def onCheckCompletenessButton(self):
     """
@@ -304,12 +323,15 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     try:
       # check completeness
+      print("\n\n\nChecking completness...")
+
       directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
                        "/patient_summary"
       summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if isfile(join(directory_path, f)) and "summary" in f]
       summary_dicts_full = {}
 
-      json_dict_logic.dump_full_completenes_dict_to_json(summary_file_paths, os.path.join(directory_path, "full_completeness.json"))
+      json_dict_logic.dump_full_completenes_dict_to_json(summary_file_paths, os.path.join(directory_path,
+                                                                                          "full_completeness.json"))
 
       # combine dicts
       for file in summary_file_paths:
@@ -322,6 +344,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       json.dump(summary_dicts_full, full_summary_file)
       full_summary_file.close()
 
+      print("\n\n\nCompleteness checked.")
+
     except:
       slicer.util.errorDisplay("Could not combine and check files.\n{}".format(Exception))
       return
@@ -331,40 +355,43 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Save the full summary dict to a spreadsheet
     """
 
-    directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
-                     "/patient_summary"
+    try:
+      directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
+                       "/patient_summary"
 
-    # load full dict
-    full_dict_path = os.path.join(directory_path, "full_summary.json")
+      # load full dict
+      full_dict_path = os.path.join(directory_path, "full_summary.json")
 
-    full_data = None
+      full_data = None
 
-    # replace '%' with ' '
-    xlsx_exporting_logic.replace_character_in_file(full_dict_path, '%', ' ')
+      # replace '%' with ' '
+      xlsx_exporting_logic.replace_character_in_file(full_dict_path, '%', ' ')
 
-    # load dict
-    with open(full_dict_path, 'r') as f:
-      full_data = json.load(f)
+      # load dict
+      with open(full_dict_path, 'r') as f:
+        full_data = json.load(f)
 
-    if full_data is None:
-      raise ValueError("Loaded dict is empty")
+      if full_data is None:
+        raise ValueError("Loaded dict is empty")
 
-    # get max max_lengths
-    max_lengths = xlsx_exporting_logic.get_max_lengths_of_data_arrays(full_data)
+      # get max max_lengths
+      max_lengths = xlsx_exporting_logic.get_max_lengths_of_data_arrays(full_data)
 
-    # get empty data matrix
-    data_matrix = xlsx_exporting_logic.create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
+      # get empty data matrix
+      data_matrix = xlsx_exporting_logic.create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
 
-    # fill empty data matrix with values from the summary dict
-    data_matrix = xlsx_exporting_logic.fill_empty_matrix_with_summary_dict(full_data, data_matrix, max_lengths)
+      # fill empty data matrix with values from the summary dict
+      data_matrix = xlsx_exporting_logic.fill_empty_matrix_with_summary_dict(full_data, data_matrix, max_lengths)
 
-    # format the data_matrix to a spreadsheet
-    writer = xlsx_exporting_logic.format_data_matrix_to_excel(data_matrix, max_lengths,
-                                                              os.path.join(directory_path, "full_summary.xlsx"))
+      # format the data_matrix to a spreadsheet
+      writer = xlsx_exporting_logic.format_data_matrix_to_excel(data_matrix, max_lengths,
+                                                                os.path.join(directory_path, "full_summary.xlsx"))
 
-    # save the spreadsheet
-    writer.save()
+      # save the spreadsheet
+      writer.save()
 
+    except:
+      slicer.util.errorDisplay("Could not execute onSaveToXlsxButton.\n{}".format(Exception))
 
 
 #
