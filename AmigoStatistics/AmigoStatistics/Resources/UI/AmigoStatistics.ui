@@ -12,6 +12,16 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <widget class="QLabel" name="pathLabel">
+     <property name="text">
+      <string>Paste paths to files:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPlainTextEdit" name="plainTextEdit"/>
+   </item>
+   <item>
     <widget class="QPushButton" name="hierarchyDumpButton">
      <property name="enabled">
       <bool>true</bool>
