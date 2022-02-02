@@ -7,3 +7,5 @@ hierarchy.txt
 AmigoStatistics/AmigoStatistics/__pycache__/
 
 .DS_Store
+
+AmigoStatistics/AmigoStatistics/Resources/__pycache__/
