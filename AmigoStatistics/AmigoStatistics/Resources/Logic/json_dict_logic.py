@@ -7,7 +7,7 @@ import slicer
 
 def check_dictionary_for_completeness(data_dict):
     """
-    Check if each array in the dict is populated, if not write some kind of error log
+    Check if each array in the dict is populated, if not write some kind of error log. Works on a full completeness dict
     """
     data_missing = {}
 
@@ -209,39 +209,23 @@ def combine_single_summaries(summary_paths, save_path):
     full_summary_file.close()
 
 
-def dump_full_completenes_dict_to_json(summary_paths, save_path):
+def dump_full_completenes_dict_to_json(full_summary_path, save_path):
     """
     Gather all summary files and combine into one completness dict
     """
 
-    data_missing = []
+    # open file and check it
+    if exists(full_summary_path):
+        full_summary_dict_file = open(full_summary_path, "r")
+        full_summary = json.load(full_summary_dict_file)
+        full_summary_dict_file.close()
+    else:
+        raise ValueError("Could not read {}} - it does not exist".format(full_summary_path))
+    if os.stat(full_summary_path).st_size == 0:
+        raise ValueError("No data found in the .json to check for completeness")
 
-    for data_summary_path in summary_paths:
-        # check if dict contains something
-        if not exists(data_summary_path):
-            print("{} to check for completeness could not be found".format(data_summary_path))
-            continue
-        if os.stat(data_summary_path).st_size == 0:
-            print("No data found in the .json to check for completeness")
-            continue
-
-        # load dict with all data
-        load_file = open(data_summary_path, "r")
-        patients_check_dict = json.load(load_file)
-        load_file.close()
-
-        # create dict specifying what is missing
-        if not patients_check_dict:  # if dict is empty
-            data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
-        else:
-            data_missing.append(check_dictionary_for_completeness(patients_check_dict))
-
-        # remove the single summary file
-        os.remove(data_summary_path)
-
-    # delete the json completeness file if a previous version exists
-    if exists(save_path):
-        os.remove(save_path)
+    # populate the missing data dict
+    data_missing = check_dictionary_for_completeness(full_summary)
 
     # save completeness dict
     completeness_file = open(save_path, "w+")
@@ -249,27 +233,5 @@ def dump_full_completenes_dict_to_json(summary_paths, save_path):
     json.dump(data_missing, completeness_file)
     completeness_file.close()
 
-    for missing in data_missing:
-        for key, item in missing.items():
-            if len(item) > 0:
-                print("\nCase {} misses the following data:\n{}\n".format(key, item))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    for key, item in data_missing.items():
+        print("\nCase {}({}) misses the following data:\n{}\n".format(key, item[0], item[1:]))
