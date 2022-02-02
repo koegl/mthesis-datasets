@@ -17,21 +17,21 @@
       <bool>true</bool>
      </property>
      <property name="text">
-      <string>Dump hierarchy</string>
+      <string>Dump each file's hierarchy</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="printCurrentHierarchyButton">
+    <widget class="QPushButton" name="combineHierarchiesButton">
      <property name="text">
-      <string>Print current hierarchy</string>
+      <string>Combine hierarchies</string>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QPushButton" name="checkCompletenessButton">
      <property name="text">
-      <string>Combine and check all files</string>
+      <string>Check all files for missing data</string>
      </property>
     </widget>
    </item>
@@ -54,6 +54,13 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item>
+    <widget class="QPushButton" name="printCurrentHierarchyButton">
+     <property name="text">
+      <string>Print current hierarchy</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

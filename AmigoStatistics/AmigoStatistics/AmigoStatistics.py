@@ -1,4 +1,7 @@
-import vtk, qt, ctk, slicer
+import Resources.Logic.xlsx_exporting_logic as xlsx_exporting_logic
+import Resources.Logic.json_dict_logic as json_dict_logic
+
+import vtk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import os
@@ -14,7 +17,6 @@ except:
     import pandas as pd
 slicer.util.pip_install('xlsxwriter')
 
-import Resources.xlsx_exporting_logic as exporting_logic
 
 
 #
@@ -100,6 +102,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Buttons
     # set foreground threshold to 1 for all chosen volumes
     self.ui.hierarchyDumpButton.connect('clicked(bool)', self.onHierarchyDumpButton)
+    self.ui.combineHierarchiesButton.connect('clicked(bool)', self.onCombineHierarchiesButton)
     self.ui.printCurrentHierarchyButton.connect('clicked(bool)', self.onPrintCurrentHierarchyButton)
     self.ui.checkCompletenessButton.connect('clicked(bool)', self.onCheckCompletenessButton)
     self.ui.saveToXlsxButton.connect('clicked(bool)', self.onSaveToXlsxButton)
@@ -197,314 +200,122 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
+  def onHierarchyDumpButton(self):
+
+    try:
+      data_summary_path_partial = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/patient_data_summary_"
+      self.data_summary_paths = []
+      self.data_completeness_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/data_completeness.json"
+      igt2_paths_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_dropbox_paths.json"
+
+      dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
+                    r"AG2160 Uncompressed\Case AG2160.mrml",
+                    r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2146\Case "
+                    r"AG2146 Uncompressed\Case AG2146.mrml",
+                    r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2152\Case "
+                    r"AG2152 Uncompressed\Case AG2152.mrml"]
+
+      # read igt2 paths
+      igt2_paths_file = open(igt2_paths_path, "r")
+      igt2_paths_dict = json.load(igt2_paths_file)
+      igt2_paths = igt2_paths_dict["paths"]
+
+      # close any previously opened scene
+      slicer.mrmlScene.Clear(0)
+      print("\n\n")
+
+      for index, path in enumerate(igt2_paths):
+
+        # get id
+        path_for_id = path.split("/")  # todo do this with os. so its cross platform
+        subject_id = path_for_id[-2]
+        subject_id = subject_id.split(" ")
+        subject_id = subject_id[2]
+
+        # for dropbox
+        # id = path[-11:-5]
+
+        data_summary_path_full = data_summary_path_partial + subject_id + ".json"
+        self.data_summary_paths.append(data_summary_path_full)
+
+        # if the file exists, continue to the next one
+        if exists(data_summary_path_full):
+          print("{} was already processed. Skipping to the next one.".format(data_summary_path_full))
+          continue
+
+        try:
+          slicer.util.loadScene(path)
+        except:  # needs to be so broad because loading causes an error which is irrelevant for the rest of the code
+          pass
+
+        try:
+          print('Processing: {}({}/{})'.format(subject_id, index + 1, len(igt2_paths)))
+          json_dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
+          print('Finished processing: {}\n\n'.format(subject_id))
+        except Exception as e:
+          print("Could not process patient {} (path: {}).\nSkipping to the next one.\n({})".format(subject_id, path, e))
+          slicer.mrmlScene.Clear(0)
+          continue
+        slicer.mrmlScene.Clear(0)
+
+    except:
+      slicer.util.errorDisplay("Could not execute onHierarchyDumpButton.\n{}".format(Exception))
+
+  def onCombineHierarchiesButton(self):
+    """
+    Combine all single hierarchies into one summary
+    """
+
+    try:
+      # combine single files
+      directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
+                       "/patient_summary"
+      summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if
+                            isfile(join(directory_path, f)) and "summary" in f]
+      json_dict_logic.combine_single_summaries(summary_file_paths, os.path.join(directory_path, "full_summary.json"))
+
+    except:
+      slicer.util.errorDisplay("Could not execute onCombineHierarchiesButton.\n{}".format(Exception))
+
   @staticmethod
-  def create_empty_dict_entry(dictionary, mrm, path):
-    """
-    Add an empty dict entry
-    """
-
-    dictionary[mrm] = {
-      "path": [path],
-      "pre-op imaging": [],
-      "intra-op imaging": {
-        "ultrasounds": [],
-        "rest": []
-      },
-      "continuous tracking data": {
-        "pre-imri tracking": [],
-        "post-imri tracking": []
-      },
-      "segmentations": {
-        "pre-op fmri segmentations": [],
-        "pre-op brainlab manual dti tractography segmentations": [],
-        "rest": []
-      }
-    }
-
-    return dictionary
-
-  def populate_dict_with_hierarchy(self, sh_folder_item_id, patient_id, storage_dict, scene_path, hierarchy_ori=None):
-    """
-    Populate a dict entry with the hierarchy of an opened scene
-    """
-
-    hierarchy = hierarchy_ori
-
-    if not hierarchy_ori:
-      hierarchy_ori = ""
-
-    if not hierarchy:
-      hierarchy = ""
-    else:
-      hierarchy = hierarchy.split('/')
-      del hierarchy[0]
-
-      if any(x in hierarchy[0].lower() for x in ["patient", patient_id]):
-        del hierarchy[0]  # remove first element because it's the patient case
-
-    child_ids = vtk.vtkIdList()
-    sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    sh_node.GetItemChildren(sh_folder_item_id, child_ids)
-    if child_ids.GetNumberOfIds() == 0:
+  def export_nodes(shFolderItemId, outputFolder=""):
+    # Get items in the folder
+    childIds = vtk.vtkIdList()
+    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    shNode.GetItemChildren(shFolderItemId, childIds)
+    if childIds.GetNumberOfIds() == 0:
       return
 
     # Write each child item to file
-    for itemIdIndex in range(child_ids.GetNumberOfIds()):
-      sh_item_id = child_ids.GetId(itemIdIndex)
+    for itemIdIndex in range(childIds.GetNumberOfIds()):
+      shItemId = childIds.GetId(itemIdIndex)
+
       # Write node to file (if storable)
-      data_node = sh_node.GetItemDataNode(sh_item_id)
-      if data_node and data_node.IsA("vtkMRMLStorableNode") and data_node.GetStorageNode():
-        storage_node = data_node.GetStorageNode()
-        filename = os.path.basename(storage_node.GetFileName())
-
-        if patient_id not in storage_dict:
-          storage_dict = self.create_empty_dict_entry(storage_dict, patient_id, scene_path)
-
-        if not hierarchy:  # we are at the end
-          return storage_dict
-
-        if all(x in hierarchy[0].lower() for x in ["pre", "op", "imaging"]):
-          storage_dict[patient_id]["pre-op imaging"].append(filename)
-
-        elif all(x in hierarchy[0].lower() for x in ["intra", "op", "imaging"]):
-          if len(hierarchy) == 1:
-            storage_dict[patient_id]["intra-op imaging"]["rest"].append(filename)
-          else:
-            storage_dict[patient_id]["intra-op imaging"]["ultrasounds"].append(filename)
-
-        elif all(x in hierarchy[0].lower() for x in ["contin", "tracking"]):
-          if len(hierarchy) == 1:
-            if "post" in filename.lower():
-              storage_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(filename)
-            else:
-              storage_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(filename)
-
-          elif all(x in hierarchy[1].lower() for x in ["pre", "imri", "tracking"]):
-            storage_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(filename)
-          elif all(x in hierarchy[1].lower() for x in ["post", "imri", "tracking"]):
-            storage_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(filename)
-
-        elif "segmentations" in hierarchy[0].lower():
-          if len(hierarchy) == 1:
-            storage_dict[patient_id]["segmentations"]["rest"].append(filename)
-          elif all(x in hierarchy[1].lower() for x in ["pre-op", "fmri"]):
-            storage_dict[patient_id]["segmentations"]["pre-op fmri segmentations"].append(filename)
-          elif all(x in hierarchy[1].lower() for x in ["brainlab", "dti"]):
-            storage_dict[patient_id]["segmentations"]["pre-op brainlab manual dti tractography segmentations"].append(filename)
+      dataNode = shNode.GetItemDataNode(shItemId)
+      if dataNode and dataNode.IsA("vtkMRMLStorableNode") and dataNode.GetStorageNode():
+        storageNode = dataNode.GetStorageNode()
+        filename = os.path.basename(storageNode.GetFileName())
+        filepath = outputFolder + "/" + filename
+        print(filepath)
 
       # Write all children of this child item
-      grand_child_ids = vtk.vtkIdList()
-      sh_node.GetItemChildren(sh_item_id, grand_child_ids)
-      if grand_child_ids.GetNumberOfIds() > 0:
-        self.populate_dict_with_hierarchy(sh_item_id, patient_id, storage_dict, scene_path,
-                                     hierarchy_ori + "/" + sh_node.GetItemName(sh_item_id))
-
-    return storage_dict
-
-  def dump_hierarchy_to_json(self, patient_id, data_json_path, scene_path):
-    """
-    Dumps entire hierarchy to a json
-    """
-    print('Processing: {}\n'.format(patient_id))
-
-    if exists(data_json_path):
-      # check if file is empty
-      if os.stat(data_json_path).st_size == 0:
-        patients_dict = {}
-        os.remove(data_json_path)
-      else:  # if not empty, we can load it (we assume it is correct)
-        load_file = open(data_json_path, "r+")
-        patients_dict = json.load(load_file)
-        load_file.truncate(0)  # clear file so we can store the updated dict
-        load_file.close()
-        os.remove(data_json_path)
-    else:
-      patients_dict = {}
-
-    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    slicer.app.ioManager().addDefaultStorageNodes()
-
-    if str(patient_id) not in patients_dict:  # it was already parsed at some point
-      patients_dict = self.populate_dict_with_hierarchy(shNode.GetSceneItemID(), patient_id, patients_dict, scene_path)
-
-      f = open(data_json_path, "a")
-      json.dump(patients_dict, f)
-      f.close()
-
-    print('Finished rocessing: {}\n'.format(patient_id))
-
-  def check_dictionary_for_completeness(self, data_dict):
-    """
-    Check if each array in the dict is populated, if not write some kind of error log
-    """
-    data_missing = {}
-
-    for key, item in data_dict.items():
-      data_missing[key] = [item["path"]]
-
-      if len(item["pre-op imaging"]) == 0:
-        data_missing[key].append("pre-op imaging")
-
-      if len(item["intra-op imaging"]["ultrasounds"]) == 0:
-        data_missing[key].append("intra-op imaging - ultrasounds")
-      if len(item["intra-op imaging"]["rest"]) == 0:
-        data_missing[key].append("intra-op imaging - rest")
-
-      if len(item["continuous tracking data"]["pre-imri tracking"]) == 0:
-        data_missing[key].append("continuous tracking data - pre-imri tracking")
-      if len(item["continuous tracking data"]["post-imri tracking"]) == 0:
-        data_missing[key].append("continuous tracking data - post-imri tracking")
-
-      if len(item["segmentations"]["pre-op fmri segmentations"]) == 0:
-        data_missing[key].append("segmentations - pre-op fmri segmentations")
-      if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) == 0:
-        data_missing[key].append("segmentations - pre-op brainlab manual dti tractography segmentations")
-      if len(item["segmentations"]["rest"]) == 0:
-        data_missing[key].append("segmentations - rest")
-
-      if len(data_missing[key]) == 1:  # if nothing missing was found, remove the entry (1 means we only added the path)
-        del data_missing[key]
-
-    return data_missing
-
-  def dump_full_completenes_dict_to_json(self, summary_paths, save_path):
-    """
-    Gather all summary files and combine into one completness dict
-    """
-
-    data_missing = []
-
-    for data_summary_path in summary_paths:
-      # check if dict contains something
-      if not exists(data_summary_path):
-        print("{} to check for completeness could not be found".format(data_summary_path))
-        continue
-      if os.stat(data_summary_path).st_size == 0:
-        print("No data found in the .json to check for completeness")
-        continue
-
-      # load dict with all data
-      load_file = open(data_summary_path, "r")
-      patients_check_dict = json.load(load_file)
-      load_file.close()
-
-      # create dict specifying what is missing
-      if not patients_check_dict:  # if dict is empty
-        data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
-      else:
-        data_missing.append(self.check_dictionary_for_completeness(patients_check_dict))
-
-    # delete the json completeness file if a previous version exists
-    if exists(save_path):
-      os.remove(save_path)
-
-    # save completeness dict
-    completeness_file = open(save_path, "w+")
-    completeness_file.truncate(0)
-    json.dump(data_missing, completeness_file)
-    completeness_file.close()
-
-    for missing in data_missing:
-      for key, item in missing.items():
-        if len(item) > 0:
-          print("\nCase {} misses the following data:\n{}\n".format(key, item))
-
-  def onHierarchyDumpButton(self):
-
-    data_summary_path_partial = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/patient_data_summary_"
-    self.data_summary_paths = []
-    self.data_completeness_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/data_completeness.json"
-    igt2_paths_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_dropbox_paths.json"
-
-    dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
-                  r"AG2160 Uncompressed\Case AG2160.mrml",
-                  r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2146\Case "
-                  r"AG2146 Uncompressed\Case AG2146.mrml",
-                  r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2152\Case "
-                  r"AG2152 Uncompressed\Case AG2152.mrml"]
-
-    # read igt2 paths
-    igt2_paths_file = open(igt2_paths_path, "r")
-    igt2_paths_dict = json.load(igt2_paths_file)
-    igt2_paths = igt2_paths_dict["paths"]
-
-    # close any previously opened scene
-    slicer.mrmlScene.Clear(0)
-
-    for index, path in enumerate(igt2_paths):
-
-      print("Processing file {}/{}".format(index, len(igt2_paths)))
-
-      # get id
-      path_for_id = path.split("/")  # todo do this with os. so its cross platform
-      subject_id = path_for_id[-2]
-      subject_id = subject_id.split(" ")
-      subject_id = subject_id[2]
-
-      # for dropbox
-      # id = path[-11:-5]
-
-      data_summary_path_full = data_summary_path_partial + subject_id + ".json"
-      self.data_summary_paths.append(data_summary_path_full)
-
-      # if the file exists, continue to the next one
-      if exists(data_summary_path_full):
-        continue
-
-      try:
-        slicer.util.loadScene(path)
-      except:
-        pass
-
-      try:
-        self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
-      except Exception as e:
-        print("Could not process patient {} (path: {}). Skipping to the next one.\n({})".format(subject_id, path, e))
-        slicer.mrmlScene.Clear(0)
-        continue
-      slicer.mrmlScene.Clear(0)
-
-    # check completeness
-    print("\n\n\nChecking completness...")
-
-    self.dump_full_completenes_dict_to_json(self.data_summary_paths, self.data_completeness_path)
-
-    print("\n\n\nCompleteness checked.")
+      grandChildIds = vtk.vtkIdList()
+      shNode.GetItemChildren(shItemId, grandChildIds)
+      if grandChildIds.GetNumberOfIds() > 0:
+        AmigoStatisticsWidget.export_nodes(shItemId, outputFolder + "/" + shNode.GetItemName(shItemId))
 
   def onPrintCurrentHierarchyButton(self):
     """
     Prints the current hierarchy
     """
-    print("Current hierarchy:")
-    def exportNodes(shFolderItemId, outputFolder=""):
-      # Get items in the folder
-      childIds = vtk.vtkIdList()
+
+    try:
+      print("Current hierarchy:")
       shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-      shNode.GetItemChildren(shFolderItemId, childIds)
-      if childIds.GetNumberOfIds() == 0:
-        return
-
-      # Write each child item to file
-      for itemIdIndex in range(childIds.GetNumberOfIds()):
-        shItemId = childIds.GetId(itemIdIndex)
-
-        # Write node to file (if storable)
-        dataNode = shNode.GetItemDataNode(shItemId)
-        if dataNode and dataNode.IsA("vtkMRMLStorableNode") and dataNode.GetStorageNode():
-          storageNode = dataNode.GetStorageNode()
-          filename = os.path.basename(storageNode.GetFileName())
-          filepath = outputFolder + "/" + filename
-          print(filepath)
-
-        # Write all children of this child item
-        grandChildIds = vtk.vtkIdList()
-        shNode.GetItemChildren(shItemId, grandChildIds)
-        if grandChildIds.GetNumberOfIds() > 0:
-          exportNodes(shItemId, outputFolder + "/" + shNode.GetItemName(shItemId))
-
-    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    slicer.app.ioManager().addDefaultStorageNodes()
-    exportNodes(shNode.GetSceneItemID())
+      slicer.app.ioManager().addDefaultStorageNodes()
+      self.export_nodes(shNode.GetSceneItemID())
+    except:
+      slicer.util.errorDisplay("Could not execute onPrintCurrentHierarchyButton.\n{}".format(Exception))
 
   def onCheckCompletenessButton(self):
     """
@@ -513,23 +324,17 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     try:
       # check completeness
+      print("\n\n\nChecking completness...")
+
       directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
                        "/patient_summary"
-      summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if isfile(join(directory_path, f)) and "summary" in f]
-      summary_dicts_full = {}
 
-      self.dump_full_completenes_dict_to_json(summary_file_paths, os.path.join(directory_path, "full_completeness.json"))
+      full_dict_path = os.path.join(directory_path, "full_summary.json")
+      full_save_path = os.path.join(directory_path, "full_completeness.json")
 
-      # combine dicts
-      for file in summary_file_paths:
-        f = open(file, "r")
-        summary_dicts_full.update((json.load(f)))
+      json_dict_logic.dump_full_completenes_dict_to_json(full_dict_path, full_save_path)
 
-      # save completeness dict
-      full_summary_file = open(os.path.join(directory_path, "full_summary.json"), "w+")
-      full_summary_file.truncate(0)
-      json.dump(summary_dicts_full, full_summary_file)
-      full_summary_file.close()
+      print("\n\n\nCompleteness checked.")
 
     except:
       slicer.util.errorDisplay("Could not combine and check files.\n{}".format(Exception))
@@ -540,40 +345,43 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Save the full summary dict to a spreadsheet
     """
 
-    directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
-                     "/patient_summary"
+    try:
+      directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
+                       "/patient_summary"
 
-    # load full dict
-    full_dict_path = os.path.join(directory_path, "full_summary.json")
+      # load full dict
+      full_dict_path = os.path.join(directory_path, "full_summary.json")
 
-    full_data = None
+      full_data = None
 
-    # replace '%' with ' '
-    exporting_logic.replace_character_in_file(full_dict_path, '%', ' ')
+      # replace '%' with ' '
+      xlsx_exporting_logic.replace_character_in_file(full_dict_path, '%', ' ')
 
-    # load dict
-    with open(full_dict_path, 'r') as f:
-      full_data = json.load(f)
+      # load dict
+      with open(full_dict_path, 'r') as f:
+        full_data = json.load(f)
 
-    if full_data is None:
-      raise ValueError("Loaded dict is empty")
+      if full_data is None:
+        raise ValueError("Loaded dict is empty")
 
-    # get max max_lengths
-    max_lengths = exporting_logic.get_max_lengths_of_data_arrays(full_data)
+      # get max max_lengths
+      max_lengths = xlsx_exporting_logic.get_max_lengths_of_data_arrays(full_data)
 
-    # get empty data matrix
-    data_matrix = exporting_logic.create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
+      # get empty data matrix
+      data_matrix = xlsx_exporting_logic.create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
 
-    # fill empty data matrix with values from the summary dict
-    data_matrix = exporting_logic.fill_empty_matrix_with_summary_dict(full_data, data_matrix, max_lengths)
+      # fill empty data matrix with values from the summary dict
+      data_matrix = xlsx_exporting_logic.fill_empty_matrix_with_summary_dict(full_data, data_matrix, max_lengths)
 
-    # format the data_matrix to a spreadsheet
-    writer = exporting_logic.format_data_matrix_to_excel(data_matrix, max_lengths, os.path.join(directory_path,
-                                                                                                "full_summary.xlsx"))
+      # format the data_matrix to a spreadsheet
+      writer = xlsx_exporting_logic.format_data_matrix_to_excel(data_matrix, max_lengths,
+                                                                os.path.join(directory_path, "full_summary.xlsx"))
 
-    # save the spreadsheet
-    writer.save()
+      # save the spreadsheet
+      writer.save()
 
+    except:
+      slicer.util.errorDisplay("Could not execute onSaveToXlsxButton.\n{}".format(Exception))
 
 
 #
