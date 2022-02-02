@@ -20,6 +20,39 @@ def replace_character_in_file(path_to_file, old_character, new_character):
         f.truncate(0)
         f.write(text)    
 
+
+def get_max_lengths_of_data_arrays(data_dict: dict) -> dict:
+    """
+    Takes a patient summary dict and returns a dict with the max max_lengths for each data array
+    :param data_dict: The summary dict
+    :return: The max_lengths dict
+    """
+    
+    max_lengths = {"pre_op_im": 0, "intra_us": 0, "intra_rest": 0, "tracking_pre": 0, "tracking_post": 0, "seg_fmir": 0,
+               "seg_dti": 0, "seg_rest": 0}
+
+    for key, item in data_dict.items():
+        # data_matrix[0].append(key)
+        if len(item["pre-op imaging"]) > max_lengths["pre_op_im"]:
+            max_lengths["pre_op_im"] = len(item["pre-op imaging"])
+        if len(item["intra-op imaging"]["ultrasounds"]) > max_lengths["intra_us"]:
+            max_lengths["intra_us"] = len(item["intra-op imaging"]["ultrasounds"])
+        if len(item["intra-op imaging"]["rest"]) > max_lengths["intra_rest"]:
+            max_lengths["intra_rest"] = len(item["intra-op imaging"]["rest"])
+        if len(item["continuous tracking data"]["pre-imri tracking"]) > max_lengths["tracking_pre"]:
+            max_lengths["tracking_pre"] = len(item["continuous tracking data"]["pre-imri tracking"])
+        if len(item["continuous tracking data"]["post-imri tracking"]) > max_lengths["tracking_post"]:
+            max_lengths["tracking_post"] = len(item["continuous tracking data"]["post-imri tracking"])
+        if len(item["segmentations"]["pre-op fmri segmentations"]) > max_lengths["seg_fmir"]:
+            max_lengths["seg_fmir"] = len(item["segmentations"]["pre-op fmri segmentations"])
+        if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) > max_lengths["seg_dti"]:
+            max_lengths["seg_dti"] = len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"])
+        if len(item["segmentations"]["rest"]) > max_lengths["seg_rest"]:
+            max_lengths["seg_rest"] = len(item["segmentations"]["rest"])
+    
+    return max_lengths
+
+
 def create_empty_data_matrix(data_summary_length, max_array_lengths_sum):
     """
     Create an empty data matrix that will be written to an excel spreadsheet
@@ -55,30 +88,10 @@ def main(params):
     if full_data is None:
         raise ValueError("Loaded dict is empty")
 
-    # get max lengths
-    lengths = {"pre_op_im": 0, "intra_us": 0, "intra_rest": 0, "tracking_pre": 0, "tracking_post": 0, "seg_fmir": 0,
-               "seg_dti": 0, "seg_rest": 0}
+    # get max max_lengths
+    max_lengths = get_max_lengths_of_data_arrays(full_data)
 
     data_matrix = create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
-        # data_matrix[0].append(key)
-        if len(item["pre-op imaging"]) > lengths["pre_op_im"]:
-            lengths["pre_op_im"] = len(item["pre-op imaging"])
-        if len(item["intra-op imaging"]["ultrasounds"]) > lengths["intra_us"]:
-            lengths["intra_us"] = len(item["intra-op imaging"]["ultrasounds"])
-        if len(item["intra-op imaging"]["rest"]) > lengths["intra_rest"]:
-            lengths["intra_rest"] = len(item["intra-op imaging"]["rest"])
-        if len(item["continuous tracking data"]["pre-imri tracking"]) > lengths["tracking_pre"]:
-            lengths["tracking_pre"] = len(item["continuous tracking data"]["pre-imri tracking"])
-        if len(item["continuous tracking data"]["post-imri tracking"]) > lengths["tracking_post"]:
-            lengths["tracking_post"] = len(item["continuous tracking data"]["post-imri tracking"])
-        if len(item["segmentations"]["pre-op fmri segmentations"]) > lengths["seg_fmir"]:
-            lengths["seg_fmir"] = len(item["segmentations"]["pre-op fmri segmentations"])
-        if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) > lengths["seg_dti"]:
-            lengths["seg_dti"] = len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"])
-        if len(item["segmentations"]["rest"]) > lengths["seg_rest"]:
-            lengths["seg_rest"] = len(item["segmentations"]["rest"])
-
-
 
     id_index = 1
     row_index = 2
