@@ -199,38 +199,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
-  def dump_hierarchy_to_json(self, patient_id, data_json_path, scene_path):
-    """
-    Dumps entire hierarchy to a json
-    """
-    print('Processing: {}\n'.format(patient_id))
-
-    if exists(data_json_path):
-      # check if file is empty
-      if os.stat(data_json_path).st_size == 0:
-        patients_dict = {}
-        os.remove(data_json_path)
-      else:  # if not empty, we can load it (we assume it is correct)
-        load_file = open(data_json_path, "r+")
-        patients_dict = json.load(load_file)
-        load_file.truncate(0)  # clear file so we can store the updated dict
-        load_file.close()
-        os.remove(data_json_path)
-    else:
-      patients_dict = {}
-
-    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    slicer.app.ioManager().addDefaultStorageNodes()
-
-    if str(patient_id) not in patients_dict:  # it was already parsed at some point
-      patients_dict = json_dict_logic.populate_dict_with_hierarchy(shNode.GetSceneItemID(), patient_id, patients_dict, scene_path)
-
-      f = open(data_json_path, "a")
-      json.dump(patients_dict, f)
-      f.close()
-
-    print('Finished rocessing: {}\n'.format(patient_id))
-
   def dump_full_completenes_dict_to_json(self, summary_paths, save_path):
     """
     Gather all summary files and combine into one completness dict
@@ -321,7 +289,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         pass
 
       try:
-        self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
+        json_dict_logic.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
       except Exception as e:
         print("Could not process patient {} (path: {}). Skipping to the next one.\n({})".format(subject_id, path, e))
         slicer.mrmlScene.Clear(0)

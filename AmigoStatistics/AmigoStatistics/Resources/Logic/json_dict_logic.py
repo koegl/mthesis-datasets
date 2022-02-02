@@ -1,4 +1,6 @@
 import json
+import os
+from os.path import exists
 
 
 def check_dictionary_for_completeness(data_dict):
@@ -141,3 +143,35 @@ def populate_dict_with_hierarchy(sh_folder_item_id, patient_id, storage_dict, sc
 
     return storage_dict
 
+
+def dump_hierarchy_to_json(self, patient_id, data_json_path, scene_path):
+    """
+    Dumps entire hierarchy to a json
+    """
+    print('Processing: {}\n'.format(patient_id))
+
+    if exists(data_json_path):
+      # check if file is empty
+      if os.stat(data_json_path).st_size == 0:
+        patients_dict = {}
+        os.remove(data_json_path)
+      else:  # if not empty, we can load it (we assume it is correct)
+        load_file = open(data_json_path, "r+")
+        patients_dict = json.load(load_file)
+        load_file.truncate(0)  # clear file so we can store the updated dict
+        load_file.close()
+        os.remove(data_json_path)
+    else:
+      patients_dict = {}
+
+    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    slicer.app.ioManager().addDefaultStorageNodes()
+
+    if str(patient_id) not in patients_dict:  # it was already parsed at some point
+      patients_dict = populate_dict_with_hierarchy(shNode.GetSceneItemID(), patient_id, patients_dict, scene_path)
+
+      f = open(data_json_path, "a")
+      json.dump(patients_dict, f)
+      f.close()
+
+    print('Finished rocessing: {}\n'.format(patient_id))
