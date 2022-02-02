@@ -199,32 +199,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
-  @staticmethod
-  def create_empty_dict_entry(dictionary, mrm, path):
-    """
-    Add an empty dict entry
-    """
-
-    dictionary[mrm] = {
-      "path": [path],
-      "pre-op imaging": [],
-      "intra-op imaging": {
-        "ultrasounds": [],
-        "rest": []
-      },
-      "continuous tracking data": {
-        "pre-imri tracking": [],
-        "post-imri tracking": []
-      },
-      "segmentations": {
-        "pre-op fmri segmentations": [],
-        "pre-op brainlab manual dti tractography segmentations": [],
-        "rest": []
-      }
-    }
-
-    return dictionary
-
   def populate_dict_with_hierarchy(self, sh_folder_item_id, patient_id, storage_dict, scene_path, hierarchy_ori=None):
     """
     Populate a dict entry with the hierarchy of an opened scene
@@ -260,7 +234,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         filename = os.path.basename(storage_node.GetFileName())
 
         if patient_id not in storage_dict:
-          storage_dict = self.create_empty_dict_entry(storage_dict, patient_id, scene_path)
+          storage_dict = json_dict_logic.create_empty_dict_entry(storage_dict, patient_id, scene_path)
 
         if not hierarchy:  # we are at the end
           return storage_dict

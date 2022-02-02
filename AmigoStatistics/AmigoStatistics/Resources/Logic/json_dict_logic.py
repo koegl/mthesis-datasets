@@ -36,3 +36,29 @@ def check_dictionary_for_completeness(data_dict):
 
     return data_missing
 
+
+def create_empty_dict_entry(dictionary, mrm, path):
+    """
+    Add an empty dict entry
+    """
+
+    dictionary[mrm] = {
+      "path": [path],
+      "pre-op imaging": [],
+      "intra-op imaging": {
+        "ultrasounds": [],
+        "rest": []
+      },
+      "continuous tracking data": {
+        "pre-imri tracking": [],
+        "post-imri tracking": []
+      },
+      "segmentations": {
+        "pre-op fmri segmentations": [],
+        "pre-op brainlab manual dti tractography segmentations": [],
+        "rest": []
+      }
+    }
+
+    return dictionary
+
