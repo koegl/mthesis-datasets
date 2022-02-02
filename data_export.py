@@ -73,6 +73,64 @@ def create_empty_data_matrix(data_summary_length, max_array_lengths_sum):
 
     return empty_data_matrix
 
+
+def fill_empty_matrix_with_summary_dict(summary_dict, data_matrix, max_lengths_dict):
+    """
+    Fill the empty data matrix with all the values from the summary dict
+    :param summary_dict: The dict containing all the summarised patient data
+    :param data_matrix: The empty data matrix that will be filled
+    :param max_lengths_dict: The dict containing the max lengths of the data arrays
+    :return: The filled data_matrix
+    """
+
+    id_index = 1
+    row_index = 2
+
+    for key, value in summary_dict.items():
+        data_matrix[id_index][row_index - 2] = key
+        data_matrix[id_index][row_index - 1] = value["path"]
+
+        data_matrix[0][row_index + 1] = "pre-op imaging"
+        data_matrix[id_index][row_index+1:row_index+1+len(value["pre-op imaging"])] = value["pre-op imaging"]
+        row_index += max_lengths_dict["pre_op_im"] + 1
+
+        data_matrix[0][row_index + 1] = "intra-op US"
+        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["ultrasounds"])] = \
+            value["intra-op imaging"]["ultrasounds"]
+        row_index += max_lengths_dict["intra_us"] + 1
+        data_matrix[0][row_index + 1] = "intra-op REST"
+        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["rest"])] = \
+            value["intra-op imaging"]["rest"]
+        row_index += max_lengths_dict["intra_rest"] + 1
+
+        data_matrix[0][row_index + 1] = "tracking PRE"
+        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["continuous tracking data"]["pre-imri tracking"])]\
+            = value["continuous tracking data"]["pre-imri tracking"]
+        row_index += max_lengths_dict["tracking_pre"] + 1
+        data_matrix[0][row_index + 1] = "tracking POST"
+        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["continuous tracking data"]["post-imri tracking"])] \
+            = value["continuous tracking data"]["post-imri tracking"]
+        row_index += max_lengths_dict["tracking_post"] + 1
+
+        data_matrix[0][row_index + 1] = "segmentations fMRI"
+        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op fmri segmentations"])] \
+            = value["segmentations"]["pre-op fmri segmentations"]
+        row_index += max_lengths_dict["seg_fmir"] + 1
+        data_matrix[0][row_index + 1] = "segmentations DTI"
+        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op brainlab manual dti tractography segmentations"])] \
+            = value["segmentations"]["pre-op brainlab manual dti tractography segmentations"]
+        row_index += max_lengths_dict["seg_dti"] + 1
+        data_matrix[0][row_index + 1] = "segmentations REST"
+        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["rest"])] \
+            = value["segmentations"]["rest"]
+        row_index += max_lengths_dict["seg_rest"] + 1
+
+        id_index += 1
+        row_index = 2
+
+    return data_matrix
+
+
 def main(params):
     # load full dict
     full_dict_path = params.summary_file
@@ -91,52 +149,11 @@ def main(params):
     # get max max_lengths
     max_lengths = get_max_lengths_of_data_arrays(full_data)
 
+    # get empty data matrix
     data_matrix = create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
 
-    id_index = 1
-    row_index = 2
-
-    for key, value in full_data.items():
-        data_matrix[id_index][row_index - 2] = key
-        data_matrix[id_index][row_index - 1] = value["path"]
-
-        data_matrix[0][row_index + 1] = "pre-op imaging"
-        data_matrix[id_index][row_index+1:row_index+1+len(value["pre-op imaging"])] = value["pre-op imaging"]
-        row_index += max_lengths["pre_op_im"] + 1
-
-        data_matrix[0][row_index + 1] = "intra-op US"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["ultrasounds"])] = \
-            value["intra-op imaging"]["ultrasounds"]
-        row_index += max_lengths["intra_us"] + 1
-        data_matrix[0][row_index + 1] = "intra-op REST"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["rest"])] = \
-            value["intra-op imaging"]["rest"]
-        row_index += max_lengths["intra_rest"] + 1
-
-        data_matrix[0][row_index + 1] = "tracking PRE"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["continuous tracking data"]["pre-imri tracking"])]\
-            = value["continuous tracking data"]["pre-imri tracking"]
-        row_index += max_lengths["tracking_pre"] + 1
-        data_matrix[0][row_index + 1] = "tracking POST"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["continuous tracking data"]["post-imri tracking"])] \
-            = value["continuous tracking data"]["post-imri tracking"]
-        row_index += max_lengths["tracking_post"] + 1
-
-        data_matrix[0][row_index + 1] = "segmentations fMRI"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op fmri segmentations"])] \
-            = value["segmentations"]["pre-op fmri segmentations"]
-        row_index += max_lengths["seg_fmir"] + 1
-        data_matrix[0][row_index + 1] = "segmentations DTI"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op brainlab manual dti tractography segmentations"])] \
-            = value["segmentations"]["pre-op brainlab manual dti tractography segmentations"]
-        row_index += max_lengths["seg_dti"] + 1
-        data_matrix[0][row_index + 1] = "segmentations REST"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["rest"])] \
-            = value["segmentations"]["rest"]
-        row_index += max_lengths["seg_rest"] + 1
-
-        id_index += 1
-        row_index = 2
+    # fill empty data matrix with values from the summary dict
+    data_matrix = fill_empty_matrix_with_summary_dict(full_data, data_matrix, max_lengths)
 
     df = pd.DataFrame(data=data_matrix)
     df = (df.T)
