@@ -200,8 +200,9 @@ def combine_single_summaries(summary_paths, save_path):
         full_summary_dict.update(json.load(single_sumary))
         single_sumary.close()
 
-        # remove the single summary file
-        os.remove(data_summary_path)
+    # remove the single summary files
+    # for data_summary_path in summary_paths:
+    #     os.remove(data_summary_path)
 
     # save full dict
     full_summary_file = open(save_path, 'w')
