@@ -220,28 +220,37 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       igt2_paths_dict = json.load(igt2_paths_file)
       igt2_paths = igt2_paths_dict["paths"]
 
+      # get paths from UI
+      paths_from_ui = self.ui.plainTextEdit.toPlainText()
+
+      if paths_from_ui:  # if they are non empty
+        paths = paths_from_ui.split('\n')
+      elif igt2_paths:  # if they are non empty
+        paths = igt2_paths
+      else:
+        raise ValueError("No files specified")
+
       # close any previously opened scene
       slicer.mrmlScene.Clear(0)
       print("\n\n")
 
-      for index, path in enumerate(igt2_paths):
+      for index, path in enumerate(paths):
 
-        # get id
+        """
+        # get id from path
         path_for_id = path.split("/")  # todo do this with os. so its cross platform
         subject_id = path_for_id[-2]
         subject_id = subject_id.split(" ")
         subject_id = subject_id[2]
-
+        
         # for dropbox
         # id = path[-11:-5]
-
-        data_summary_path_full = data_summary_path_partial + subject_id + ".json"
-        self.data_summary_paths.append(data_summary_path_full)
+        """
 
         # if the file exists, continue to the next one
-        if exists(data_summary_path_full):
-          print("{} was already processed. Skipping to the next one.".format(data_summary_path_full))
-          continue
+        # if exists(data_summary_path_full):
+        #   print("{} was already processed. Skipping to the next one.\n".format(data_summary_path_full))
+        #   continue
 
         try:
           slicer.util.loadScene(path)
@@ -249,6 +258,23 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           pass
 
         try:
+          # get id from .mrb
+          shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+          slicer.app.ioManager().addDefaultStorageNodes()
+          sh_folder_item_id = shNode.GetSceneItemID()
+          child_ids = vtk.vtkIdList()
+          sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+          sh_node.GetItemChildren(sh_folder_item_id, child_ids)
+          itemIdIndex = 0
+          sh_item_id = child_ids.GetId(itemIdIndex)
+          case_name = sh_node.GetItemName(sh_item_id)
+
+          case_name_split = case_name.split(' ')
+          subject_id = case_name_split[-1]
+
+          data_summary_path_full = data_summary_path_partial + subject_id + ".json"
+          self.data_summary_paths.append(data_summary_path_full)
+
           print('Processing: {}({}/{})'.format(subject_id, index + 1, len(igt2_paths)))
           json_dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
           print('Finished processing: {}\n\n'.format(subject_id))
@@ -271,7 +297,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
                        "/patient_summary"
       summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if
-                            isfile(join(directory_path, f)) and "summary" in f]
+                            isfile(join(directory_path, f)) and "patient_data_summary" in f]
       json_dict_logic.combine_single_summaries(summary_file_paths, os.path.join(directory_path, "full_summary.json"))
 
     except:
