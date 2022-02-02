@@ -223,8 +223,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     for index, path in enumerate(igt2_paths):
 
-      print("Processing file {}/{}".format(index, len(igt2_paths)))
-
       # get id
       path_for_id = path.split("/")  # todo do this with os. so its cross platform
       subject_id = path_for_id[-2]
@@ -243,13 +241,15 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       try:
         slicer.util.loadScene(path)
-      except:
+      except:  # needs to be so broad because loading causes an error which is irrelevant for the rest of the code
         pass
 
       try:
-        json_dict_logic.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
+        print('Processing: {}({}/{})\n'.format(subject_id, index, len(igt2_paths)))
+        json_dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
+        print('Finished processing: {}\n\n'.format(subject_id))
       except Exception as e:
-        print("Could not process patient {} (path: {}). Skipping to the next one.\n({})".format(subject_id, path, e))
+        print("Could not process patient {} (path: {}).\nSkipping to the next one.\n({})".format(subject_id, path, e))
         slicer.mrmlScene.Clear(0)
         continue
       slicer.mrmlScene.Clear(0)
@@ -262,7 +262,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     print("\n\n\nCompleteness checked.")
 
   @staticmethod
-  def export_nodes(self, shFolderItemId, outputFolder=""):
+  def export_nodes(shFolderItemId, outputFolder=""):
     # Get items in the folder
     childIds = vtk.vtkIdList()
     shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
