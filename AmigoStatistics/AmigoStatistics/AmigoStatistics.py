@@ -1,5 +1,5 @@
 import Resources.Logic.xlsx_exporting_logic as xlsx_exporting_logic
-
+import Resources.Logic.json_dict_logic as json_dict_logic
 
 import vtk, slicer
 from slicer.ScriptedLoadableModule import *
@@ -335,40 +335,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     print('Finished rocessing: {}\n'.format(patient_id))
 
-  def check_dictionary_for_completeness(self, data_dict):
-    """
-    Check if each array in the dict is populated, if not write some kind of error log
-    """
-    data_missing = {}
-
-    for key, item in data_dict.items():
-      data_missing[key] = [item["path"]]
-
-      if len(item["pre-op imaging"]) == 0:
-        data_missing[key].append("pre-op imaging")
-
-      if len(item["intra-op imaging"]["ultrasounds"]) == 0:
-        data_missing[key].append("intra-op imaging - ultrasounds")
-      if len(item["intra-op imaging"]["rest"]) == 0:
-        data_missing[key].append("intra-op imaging - rest")
-
-      if len(item["continuous tracking data"]["pre-imri tracking"]) == 0:
-        data_missing[key].append("continuous tracking data - pre-imri tracking")
-      if len(item["continuous tracking data"]["post-imri tracking"]) == 0:
-        data_missing[key].append("continuous tracking data - post-imri tracking")
-
-      if len(item["segmentations"]["pre-op fmri segmentations"]) == 0:
-        data_missing[key].append("segmentations - pre-op fmri segmentations")
-      if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) == 0:
-        data_missing[key].append("segmentations - pre-op brainlab manual dti tractography segmentations")
-      if len(item["segmentations"]["rest"]) == 0:
-        data_missing[key].append("segmentations - rest")
-
-      if len(data_missing[key]) == 1:  # if nothing missing was found, remove the entry (1 means we only added the path)
-        del data_missing[key]
-
-    return data_missing
-
   def dump_full_completenes_dict_to_json(self, summary_paths, save_path):
     """
     Gather all summary files and combine into one completness dict
@@ -394,7 +360,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if not patients_check_dict:  # if dict is empty
         data_missing.append({data_summary_path: "NO DATA COULD BE EXTRACTED"})
       else:
-        data_missing.append(self.check_dictionary_for_completeness(patients_check_dict))
+        data_missing.append(json_dict_logic.check_dictionary_for_completeness(patients_check_dict))
 
     # delete the json completeness file if a previous version exists
     if exists(save_path):
