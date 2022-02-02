@@ -1,17 +1,21 @@
-import unittest
-import numpy as np
-import logging
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
-import SegmentEditorEffects
-import functools
 import os
 from os.path import exists
 import json
-import random
 from os import listdir
 from os.path import isfile, join
+
+try:
+    import pandas as pd
+except:
+    slicer.util.pip_install('library_name')
+    import pandas as pd
+slicer.util.pip_install('xlsxwriter')
+
+import Resources.exporting_logic as exporting_logic
+
 
 #
 # AmigoStatistics
@@ -98,6 +102,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.hierarchyDumpButton.connect('clicked(bool)', self.onHierarchyDumpButton)
     self.ui.printCurrentHierarchyButton.connect('clicked(bool)', self.onPrintCurrentHierarchyButton)
     self.ui.checkCompletenessButton.connect('clicked(bool)', self.onCheckCompletenessButton)
+    self.ui.saveToXlsxButton.connect('clicked(bool)', self.onSaveToXlsxButton)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -409,7 +414,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     data_summary_path_partial = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/patient_data_summary_"
     self.data_summary_paths = []
     self.data_completeness_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/data_completeness.json"
-    igt2_paths_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_paths.json"
+    igt2_paths_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_dropbox_paths.json"
 
     dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
                   r"AG2160 Uncompressed\Case AG2160.mrml",
@@ -447,13 +452,11 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         continue
 
       try:
-        print("loading scene")
         slicer.util.loadScene(path)
       except:
         pass
 
       try:
-        print("trying to dump")
         self.dump_hierarchy_to_json(patient_id=subject_id, data_json_path=data_summary_path_full, scene_path=path)
       except Exception as e:
         print("Could not process patient {} (path: {}). Skipping to the next one.\n({})".format(subject_id, path, e))
@@ -531,6 +534,47 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     except:
       slicer.util.errorDisplay("Could not combine and check files.\n{}".format(Exception))
       return
+
+  def onSaveToXlsxButton(self):
+    """
+    Save the full summary dict to a spreadsheet
+    """
+
+    directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
+                     "/patient_summary"
+
+    # load full dict
+    full_dict_path = os.path.join(directory_path, "full_summary.json")
+
+    full_data = None
+
+    # replace '%' with ' '
+    exporting_logic.replace_character_in_file(full_dict_path, '%', ' ')
+
+    # load dict
+    with open(full_dict_path, 'r') as f:
+      full_data = json.load(f)
+
+    if full_data is None:
+      raise ValueError("Loaded dict is empty")
+
+    # get max max_lengths
+    max_lengths = exporting_logic.get_max_lengths_of_data_arrays(full_data)
+
+    # get empty data matrix
+    data_matrix = exporting_logic.create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
+
+    # fill empty data matrix with values from the summary dict
+    data_matrix = exporting_logic.fill_empty_matrix_with_summary_dict(full_data, data_matrix, max_lengths)
+
+    # format the data_matrix to a spreadsheet
+    writer = exporting_logic.format_data_matrix_to_excel(data_matrix, max_lengths, os.path.join(directory_path,
+                                                                                                "full_summary.xlsx"))
+
+    # save the spreadsheet
+    writer.save()
+
+
 
 #
 # AmigoStatisticsLogic
