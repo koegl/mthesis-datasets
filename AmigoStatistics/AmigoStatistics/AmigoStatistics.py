@@ -14,7 +14,7 @@ except:
     import pandas as pd
 slicer.util.pip_install('xlsxwriter')
 
-import Resources.exporting_logic as exporting_logic
+import Resources.xlsx_exporting_logic as exporting_logic
 
 
 #
