@@ -71,6 +71,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
 
+    self.dict_logic = json_dict_logic.JsonDictLogic()
+
   def setup(self):
     """
     Called when the user opens the module the first time and the widget is initialized.
@@ -278,10 +280,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.data_summary_paths.append(data_summary_path_full)
 
           print('Processing: {}({}/{})'.format(subject_id, index + 1, len(paths)))
-          json_dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
+          self.dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
           print('Finished processing: {}\n\n'.format(subject_id))
         except Exception as e:
-          print("Could not process patient {} (path: {}).\nSkipping to the next one.\n({})".format(subject_id, path, e))
+          print("Could not process: {}).\nSkipping to the next one.\n({})".format(path, e))
           slicer.mrmlScene.Clear(0)
           continue
         slicer.mrmlScene.Clear(0)
@@ -300,37 +302,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                        "/patient_summary"
       summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if
                             isfile(join(directory_path, f)) and "patient_data_summary" in f]
-      json_dict_logic.combine_single_summaries(summary_file_paths, os.path.join(directory_path, "full_summary.json"))
+      self.dict_logic.combine_single_summaries(summary_file_paths, os.path.join(directory_path, "full_summary.json"))
 
     except:
       slicer.util.errorDisplay("Could not execute onCombineHierarchiesButton.\n{}".format(Exception))
-
-  @staticmethod
-  def export_nodes(shFolderItemId, outputFolder=""):
-    # Get items in the folder
-    childIds = vtk.vtkIdList()
-    shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    shNode.GetItemChildren(shFolderItemId, childIds)
-    if childIds.GetNumberOfIds() == 0:
-      return
-
-    # Write each child item to file
-    for itemIdIndex in range(childIds.GetNumberOfIds()):
-      shItemId = childIds.GetId(itemIdIndex)
-
-      # Write node to file (if storable)
-      dataNode = shNode.GetItemDataNode(shItemId)
-      if dataNode and dataNode.IsA("vtkMRMLStorableNode") and dataNode.GetStorageNode():
-        storageNode = dataNode.GetStorageNode()
-        filename = os.path.basename(storageNode.GetFileName())
-        filepath = outputFolder + "/" + filename
-        print(filepath)
-
-      # Write all children of this child item
-      grandChildIds = vtk.vtkIdList()
-      shNode.GetItemChildren(shItemId, grandChildIds)
-      if grandChildIds.GetNumberOfIds() > 0:
-        AmigoStatisticsWidget.export_nodes(shItemId, outputFolder + "/" + shNode.GetItemName(shItemId))
 
   def onPrintCurrentHierarchyButton(self):
     """
@@ -341,7 +316,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print("Current hierarchy:")
       shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
       slicer.app.ioManager().addDefaultStorageNodes()
-      self.export_nodes(shNode.GetSceneItemID())
+      all_nodes = self.dict_logic.get_fake_paths_of_all_nodes(shNode.GetSceneItemID())
+      for node in all_nodes:
+        print(node)
+
     except:
       slicer.util.errorDisplay("Could not execute onPrintCurrentHierarchyButton.\n{}".format(Exception))
 
@@ -360,7 +338,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       full_dict_path = os.path.join(directory_path, "full_summary.json")
       full_save_path = os.path.join(directory_path, "full_completeness.json")
 
-      json_dict_logic.dump_full_completenes_dict_to_json(full_dict_path, full_save_path)
+      self.dict_logic.dump_full_completenes_dict_to_json(full_dict_path, full_save_path)
 
       print("\n\n\nCompleteness checked.")
 
