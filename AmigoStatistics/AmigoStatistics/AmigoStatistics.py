@@ -74,6 +74,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.single_patient_logic = SinglePatientDictLogic()
     self.summary_patient_logic = SummaryPatientDictLogic()
 
+    self.data_summary_paths = []
+
   def setup(self):
     """
     Called when the user opens the module the first time and the widget is initialized.
@@ -205,52 +207,76 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
+  def get_paths(self):
+    """
+    Returns all the paths used for analysis
+    :return: Paths
+    """
+    save_directory = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/"
+    path_to_file_with_paths = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_dropbox_paths.json"
+
+    dropbox_paths = [
+      r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
+      r"AG2160 Uncompressed\Case AG2160.mrml",
+      r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2146\Case "
+      r"AG2146 Uncompressed\Case AG2146.mrml",
+      r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2152\Case "
+      r"AG2152 Uncompressed\Case AG2152.mrml"]
+
+    # read igt2 paths
+    paths_file = open(path_to_file_with_paths, "r")
+    paths_file_dict = json.load(paths_file)
+    paths_from_file = paths_file_dict["paths"]
+
+    # get paths from UI
+    paths_from_ui = self.ui.plainTextEdit.toPlainText()
+
+    if paths_from_ui:  # if they are non empty
+      mrb_paths = paths_from_ui.split('\n')
+    elif paths_from_file:  # if they are non empty
+      mrb_paths = paths_from_file
+    else:
+      raise ValueError("No files specified")
+
+    return mrb_paths, save_directory
+
+  def get_id(self, path):
+    """
+    Gets the ID from an opened .mrb
+    :return: ID
+    """
+
+    # our three demo cases
+    if all(x in path.lower() for x in ["dropbox", "AG", "Neurosurgery", "uncompressed"]):
+      return path[-11:-5]
+
+    else:
+
+      shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      slicer.app.ioManager().addDefaultStorageNodes()
+      sh_folder_item_id = shNode.GetSceneItemID()
+      child_ids = vtk.vtkIdList()
+      sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      sh_node.GetItemChildren(sh_folder_item_id, child_ids)
+      itemIdIndex = 0
+      sh_item_id = child_ids.GetId(itemIdIndex)
+      case_name = sh_node.GetItemName(sh_item_id)
+
+      case_name_split = case_name.split(' ')
+
+      return case_name_split[-1]
+
   def onHierarchyDumpButton(self):
 
     try:
-      data_summary_path_partial = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/patient_data_summary_"
-      self.data_summary_paths = []
-      self.data_completeness_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/patient_summary/data_completeness.json"
-      igt2_paths_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/igt2_dropbox_paths.json"
+      print("\n\n")
 
-      dropbox_paths = [r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2160\Case "
-                    r"AG2160 Uncompressed\Case AG2160.mrml",
-                    r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2146\Case "
-                    r"AG2146 Uncompressed\Case AG2146.mrml",
-                    r"C:\Users\fryde\Dropbox (Partners HealthCare)\Neurosurgery MR-US Registration Data\Case AG2152\Case "
-                    r"AG2152 Uncompressed\Case AG2152.mrml"]
-
-      # read igt2 paths
-      igt2_paths_file = open(igt2_paths_path, "r")
-      igt2_paths_dict = json.load(igt2_paths_file)
-      igt2_paths = igt2_paths_dict["paths"]
-
-      # get paths from UI
-      paths_from_ui = self.ui.plainTextEdit.toPlainText()
-
-      if paths_from_ui:  # if they are non empty
-        paths = paths_from_ui.split('\n')
-      elif igt2_paths:  # if they are non empty
-        paths = igt2_paths
-      else:
-        raise ValueError("No files specified")
+      mrb_paths, save_directory = self.get_paths()
 
       # close any previously opened scene
       slicer.mrmlScene.Clear(0)
-      print("\n\n")
 
-      for index, path in enumerate(paths):
-
-        """
-        # get id from path
-        path_for_id = path.split("/")  # todo do this with os. so its cross platform
-        subject_id = path_for_id[-2]
-        subject_id = subject_id.split(" ")
-        subject_id = subject_id[2]
-        
-        # for dropbox
-        # id = path[-11:-5]
-        """
+      for index, path in enumerate(mrb_paths):
 
         try:
           slicer.util.loadScene(path)
@@ -259,23 +285,12 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         try:
           # get id from .mrb
-          shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-          slicer.app.ioManager().addDefaultStorageNodes()
-          sh_folder_item_id = shNode.GetSceneItemID()
-          child_ids = vtk.vtkIdList()
-          sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-          sh_node.GetItemChildren(sh_folder_item_id, child_ids)
-          itemIdIndex = 0
-          sh_item_id = child_ids.GetId(itemIdIndex)
-          case_name = sh_node.GetItemName(sh_item_id)
+          subject_id = self.get_id(path)
 
-          case_name_split = case_name.split(' ')
-          subject_id = case_name_split[-1]
-
-          data_summary_path_full = data_summary_path_partial + subject_id + ".json"
+          data_summary_path_full = save_directory + "patient_data_summary_" + subject_id + ".json"
           self.data_summary_paths.append(data_summary_path_full)
 
-          print('Processing: {}({}/{})'.format(subject_id, index + 1, len(paths)))
+          print('Processing: {}({}/{})'.format(subject_id, index + 1, len(mrb_paths)))
           self.single_patient_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
           print('Finished processing: {}\n\n'.format(subject_id))
         except Exception as e:
