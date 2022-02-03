@@ -1,5 +1,5 @@
 import Resources.Logic.xlsx_exporting_logic as xlsx_exporting_logic
-import Resources.Logic.json_dict_logic as json_dict_logic
+from Resources.Logic.json_dict_logic import SinglePatientDictLogic, SummaryPatientDictLogic
 
 import vtk, slicer
 from slicer.ScriptedLoadableModule import *
@@ -71,8 +71,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
 
-    self.single_patient_logic = json_dict_logic.SinglePatientDictLogic()
-    self.dict_logic = json_dict_logic.JsonDictLogic()
+    self.single_patient_logic = SinglePatientDictLogic()
+    self.summary_patient_logic = SummaryPatientDictLogic()
 
   def setup(self):
     """
@@ -252,11 +252,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # id = path[-11:-5]
         """
 
-        # if the file exists, continue to the next one
-        # if exists(data_summary_path_full):
-        #   print("{} was already processed. Skipping to the next one.\n".format(data_summary_path_full))
-        #   continue
-
         try:
           slicer.util.loadScene(path)
         except:  # needs to be so broad because loading causes an error which is irrelevant for the rest of the code
@@ -303,26 +298,11 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                        "/patient_summary"
       summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if
                             isfile(join(directory_path, f)) and "patient_data_summary" in f]
-      self.dict_logic.combine_single_summaries(summary_file_paths, os.path.join(directory_path, "full_summary.json"))
+      SummaryPatientDictLogic.combine_single_summaries(summary_file_paths, os.path.join(directory_path,
+                                                                                        "full_summary.json"))
 
     except:
       slicer.util.errorDisplay("Could not execute onCombineHierarchiesButton.\n{}".format(Exception))
-
-  def onPrintCurrentHierarchyButton(self):
-    """
-    Prints the current hierarchy
-    """
-
-    try:
-      print("Current hierarchy:")
-      shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-      slicer.app.ioManager().addDefaultStorageNodes()
-      all_nodes = self.dict_logic.get_fake_paths_of_all_nodes(shNode.GetSceneItemID())
-      for node in all_nodes:
-        print(node)
-
-    except:
-      slicer.util.errorDisplay("Could not execute onPrintCurrentHierarchyButton.\n{}".format(Exception))
 
   def onCheckCompletenessButton(self):
     """
@@ -339,7 +319,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       full_dict_path = os.path.join(directory_path, "full_summary.json")
       full_save_path = os.path.join(directory_path, "full_completeness.json")
 
-      self.dict_logic.dump_full_completenes_dict_to_json(full_dict_path, full_save_path)
+      self.summary_patient_logic.dump_full_completenes_dict_to_json(full_dict_path, full_save_path)
 
       print("\n\n\nCompleteness checked.")
 
@@ -389,6 +369,22 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     except:
       slicer.util.errorDisplay("Could not execute onSaveToXlsxButton.\n{}".format(Exception))
+
+  def onPrintCurrentHierarchyButton(self):
+    """
+    Prints the current hierarchy
+    """
+
+    try:
+      print("Current hierarchy:")
+      shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      slicer.app.ioManager().addDefaultStorageNodes()
+      all_nodes = self.single_patient_logic.get_fake_paths_of_all_nodes(shNode.GetSceneItemID())
+      for node in all_nodes:
+        print(node)
+
+    except:
+      slicer.util.errorDisplay("Could not execute onPrintCurrentHierarchyButton.\n{}".format(Exception))
 
 
 #
