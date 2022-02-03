@@ -153,28 +153,23 @@ def dump_hierarchy_to_json(patient_id, data_json_path, scene_path):
     """
 
     if exists(data_json_path):
-        # check if file is empty
-        if os.stat(data_json_path).st_size == 0:
-            patients_dict = {}
-            os.remove(data_json_path)
-        else:  # if not empty, we can load it (we assume it is correct)
-            load_file = open(data_json_path, "r+")
-            patients_dict = json.load(load_file)
-            load_file.truncate(0)  # clear file so we can store the updated dict
-            load_file.close()
-            os.remove(data_json_path)
-    else:
-        patients_dict = {}
+        data_json_path = data_json_path[:-5]
+
+        for i in range(2, 100):  # create a new path with an index at the end
+            if not exists("{}_{}.json".format(data_json_path, i)):
+                data_json_path = "{}_{}.json".format(data_json_path, i)
+                break
+
+    patients_dict = {}
 
     shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
     slicer.app.ioManager().addDefaultStorageNodes()
 
-    if str(patient_id) not in patients_dict:  # it was already parsed at some point
-        patients_dict = populate_dict_with_hierarchy(shNode.GetSceneItemID(), patient_id, patients_dict, scene_path)
+    patients_dict = populate_dict_with_hierarchy(shNode.GetSceneItemID(), patient_id, patients_dict, scene_path)
 
-        f = open(data_json_path, "a")
-        json.dump(patients_dict, f)
-        f.close()
+    f = open(data_json_path, "w")
+    json.dump(patients_dict, f)
+    f.close()
 
 
 def combine_single_summaries(summary_paths, save_path):
