@@ -71,6 +71,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
 
+    self.single_patient_logic = json_dict_logic.SinglePatientDictLogic()
     self.dict_logic = json_dict_logic.JsonDictLogic()
 
   def setup(self):
@@ -280,7 +281,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.data_summary_paths.append(data_summary_path_full)
 
           print('Processing: {}({}/{})'.format(subject_id, index + 1, len(paths)))
-          self.dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
+          self.single_patient_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
           print('Finished processing: {}\n\n'.format(subject_id))
         except Exception as e:
           print("Could not process: {}).\nSkipping to the next one.\n({})".format(path, e))

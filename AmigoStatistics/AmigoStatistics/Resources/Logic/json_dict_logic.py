@@ -5,42 +5,11 @@ import vtk
 import slicer
 
 
-class JsonDictLogic:
-    def __init__(self, main_folder):
+class SinglePatientDictLogic:
+    def __init__(self):
         self.all_fake_paths = []
         self.data_missing = {}
-
-    def check_dictionary_for_completeness(self, data_dict):
-        """
-        Check if each array in the dict is populated, if not write some kind of error log. Works on a full completeness dict
-        """
-
-        for key, item in data_dict.items():
-            self.data_missing[key] = [item["path"]]
-
-            if len(item["pre-op imaging"]) == 0:
-                self.data_missing[key].append("pre-op imaging")
-
-            if len(item["intra-op imaging"]["ultrasounds"]) == 0:
-                self.data_missing[key].append("intra-op imaging - ultrasounds")
-            if len(item["intra-op imaging"]["rest"]) == 0:
-                self.data_missing[key].append("intra-op imaging - rest")
-
-            if len(item["continuous tracking data"]["pre-imri tracking"]) == 0:
-                self.data_missing[key].append("continuous tracking data - pre-imri tracking")
-            if len(item["continuous tracking data"]["post-imri tracking"]) == 0:
-                self.data_missing[key].append("continuous tracking data - post-imri tracking")
-
-            if len(item["segmentations"]["pre-op fmri segmentations"]) == 0:
-                self.data_missing[key].append("segmentations - pre-op fmri segmentations")
-            if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) == 0:
-                self.data_missing[key].append("segmentations - pre-op brainlab manual dti tractography segmentations")
-            if len(item["segmentations"]["rest"]) == 0:
-                self.data_missing[key].append("segmentations - rest")
-
-            if len(self.data_missing[
-                       key]) == 1:  # if nothing missing was found, remove the entry (1 means we only added the path)
-                del self.data_missing[key]
+        self.single_patients_dict = {}
 
     @staticmethod
     def create_empty_dict_entry(mrm, path):
@@ -111,35 +80,42 @@ class JsonDictLogic:
         slicer.app.ioManager().addDefaultStorageNodes()
         self.get_fake_paths_of_all_nodes(shNode.GetSceneItemID())
 
-        storage_dict = self.create_empty_dict_entry(patient_id, patient_path)
-
-        # extract node name (get last term in path and then remove the extension)
-        node_name = self.all_fake_paths[0].split('/')[-1].split('.')[0]
+        self.single_patients_dict = self.create_empty_dict_entry(patient_id, patient_path)
 
         # populate the dict
         for path in self.all_fake_paths:
-            if all(x in path.lower() for x in ["pre", "op", "imaging"]):
-                storage_dict[patient_id]["pre-op imaging"].append(node_name)
 
-            elif all(x in path.lower() for x in ["intra", "op", "imaging", "ultrasound"]):
-                storage_dict[patient_id]["intra-op imaging"]["ultrasounds"].append(node_name)
-            elif all(x in path.lower() for x in ["intra", "op", "imaging"]):
-                storage_dict[patient_id]["intra-op imaging"]["rest"].append(node_name)
+            # extract node name (get last term in path and then remove the extension)
+            node_name = path.split('/')[-1].split('.')[0]
 
-            elif all(x in path.lower() for x in ["contin", "tracking", "post"]):
-                storage_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(node_name)
-            elif all(x in path.lower() for x in ["contin", "tracking", "pre"]):
-                storage_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(node_name)
+            if all(x in path.lower() for x in ["pre", "op", "imaging"]) \
+                    and not any(x in path.lower() for x in ["ultrasound", "intra", "contin", "tracking", "segmentati"]):
+                self.single_patients_dict[patient_id]["pre-op imaging"].append(node_name)
 
-            elif all(x in path.lower() for x in ["segmentation", "pre-op", "fmri"]):
-                storage_dict[patient_id]["segmentation"]["pre-op fmri segmentations"].append(node_name)
-            elif all(x in path.lower() for x in ["segmentation", "brainlab", "dti"]):
-                storage_dict[patient_id]["segmentations"]["pre-op brainlab manual dti tractography segmentations"]\
-                    .append(node_name)
-            elif all(x in path.lower() for x in ["segmentation"]):
-                storage_dict[patient_id]["segmentations"]["rest"].append(node_name)
+            elif all(x in path.lower() for x in ["intra", "op", "imaging", "ultrasound"]) \
+                    and not any(x in path.lower() for x in ["pre-op", "contin", "tracking", "segmentati"]):
+                self.single_patients_dict[patient_id]["intra-op imaging"]["ultrasounds"].append(node_name)
+            elif all(x in path.lower() for x in ["intra", "op", "imaging"]) \
+                    and not any(x in path.lower() for x in ["pre-op", "contin", "tracking", "segmentati"]):
+                self.single_patients_dict[patient_id]["intra-op imaging"]["rest"].append(node_name)
 
-        return storage_dict
+            elif all(x in path.lower() for x in ["contin", "tracking", "post"]) \
+                    and not any(x in path.lower() for x in ["segmentati", "imaging"]):
+                self.single_patients_dict[patient_id]["continuous tracking data"]["post-imri tracking"].append(node_name)
+            elif all(x in path.lower() for x in ["contin", "tracking", "pre"]) \
+                    and not any(x in path.lower() for x in ["segmentati", "imaging"]):
+                self.single_patients_dict[patient_id]["continuous tracking data"]["pre-imri tracking"].append(node_name)
+
+            elif all(x in path.lower() for x in ["segmentation", "pre-op", "fmri"]) \
+                    and not any(x in path.lower() for x in ["contin", "tracking", "imaging"]):
+                self.single_patients_dict[patient_id]["segmentation"]["pre-op fmri segmentations"].append(node_name)
+            elif all(x in path.lower() for x in ["segmentation", "brainlab", "dti"]) \
+                    and not any(x in path.lower() for x in ["contin", "tracking", "imaging"]):
+                self.single_patients_dict[patient_id]["segmentations"]["pre-op brainlab manual dti tractography " \
+                                                                       "segmentations"].append(node_name)
+            elif all(x in path.lower() for x in ["segmentation"]) \
+                    and not any(x in path.lower() for x in ["contin", "tracking", "imaging"]):
+                self.single_patients_dict[patient_id]["segmentations"]["rest"].append(node_name)
 
     def dump_hierarchy_to_json(self, patient_id, data_json_path, scene_path):
         """
@@ -159,11 +135,49 @@ class JsonDictLogic:
         # shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         # slicer.app.ioManager().addDefaultStorageNodes()
 
-        patients_dict = self.populate_dict_with_hierarchy_new(patient_id, scene_path)
+        self.populate_dict_with_hierarchy_new(patient_id, scene_path)
 
         f = open(data_json_path, "w")
-        json.dump(patients_dict, f)
+        json.dump(self.single_patients_dict, f)
         f.close()
+
+class JsonDictLogic:
+    def __init__(self, main_folder=None):
+        self.all_fake_paths = []
+        self.data_missing = {}
+        self.single_patients_dict = {}
+
+    def check_dictionary_for_completeness(self, data_dict):
+        """
+        Check if each array in the dict is populated, if not write some kind of error log. Works on a full completeness dict
+        """
+
+        for key, item in data_dict.items():
+            self.data_missing[key] = [item["path"]]
+
+            if len(item["pre-op imaging"]) == 0:
+                self.data_missing[key].append("pre-op imaging")
+
+            if len(item["intra-op imaging"]["ultrasounds"]) == 0:
+                self.data_missing[key].append("intra-op imaging - ultrasounds")
+            if len(item["intra-op imaging"]["rest"]) == 0:
+                self.data_missing[key].append("intra-op imaging - rest")
+
+            if len(item["continuous tracking data"]["pre-imri tracking"]) == 0:
+                self.data_missing[key].append("continuous tracking data - pre-imri tracking")
+            if len(item["continuous tracking data"]["post-imri tracking"]) == 0:
+                self.data_missing[key].append("continuous tracking data - post-imri tracking")
+
+            if len(item["segmentations"]["pre-op fmri segmentations"]) == 0:
+                self.data_missing[key].append("segmentations - pre-op fmri segmentations")
+            if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) == 0:
+                self.data_missing[key].append("segmentations - pre-op brainlab manual dti tractography segmentations")
+            if len(item["segmentations"]["rest"]) == 0:
+                self.data_missing[key].append("segmentations - rest")
+
+            if len(self.data_missing[
+                       key]) == 1:  # if nothing missing was found, remove the entry (1 means we only added the path)
+                del self.data_missing[key]
 
     def combine_single_summaries(self, summary_paths, save_path):
         """
