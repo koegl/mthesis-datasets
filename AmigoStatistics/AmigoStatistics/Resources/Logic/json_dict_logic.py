@@ -57,7 +57,6 @@ class SinglePatientDictLogic:
                 filepath = output_folder + "/" + filename
 
                 self.all_fake_paths.append(filepath)
-                # print(filepath)
 
             # Write all children of this child item
             grandChildIds = vtk.vtkIdList()
