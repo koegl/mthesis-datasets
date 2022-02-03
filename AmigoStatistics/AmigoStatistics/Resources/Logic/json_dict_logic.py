@@ -8,43 +8,42 @@ import slicer
 class JsonDictLogic:
     def __init__(self, main_folder):
         self.all_fake_paths = []
+        self.data_missing = {}
 
     def check_dictionary_for_completeness(self, data_dict):
         """
         Check if each array in the dict is populated, if not write some kind of error log. Works on a full completeness dict
         """
-        data_missing = {}
 
         for key, item in data_dict.items():
-            data_missing[key] = [item["path"]]
+            self.data_missing[key] = [item["path"]]
 
             if len(item["pre-op imaging"]) == 0:
-                data_missing[key].append("pre-op imaging")
+                self.data_missing[key].append("pre-op imaging")
 
             if len(item["intra-op imaging"]["ultrasounds"]) == 0:
-                data_missing[key].append("intra-op imaging - ultrasounds")
+                self.data_missing[key].append("intra-op imaging - ultrasounds")
             if len(item["intra-op imaging"]["rest"]) == 0:
-                data_missing[key].append("intra-op imaging - rest")
+                self.data_missing[key].append("intra-op imaging - rest")
 
             if len(item["continuous tracking data"]["pre-imri tracking"]) == 0:
-                data_missing[key].append("continuous tracking data - pre-imri tracking")
+                self.data_missing[key].append("continuous tracking data - pre-imri tracking")
             if len(item["continuous tracking data"]["post-imri tracking"]) == 0:
-                data_missing[key].append("continuous tracking data - post-imri tracking")
+                self.data_missing[key].append("continuous tracking data - post-imri tracking")
 
             if len(item["segmentations"]["pre-op fmri segmentations"]) == 0:
-                data_missing[key].append("segmentations - pre-op fmri segmentations")
+                self.data_missing[key].append("segmentations - pre-op fmri segmentations")
             if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) == 0:
-                data_missing[key].append("segmentations - pre-op brainlab manual dti tractography segmentations")
+                self.data_missing[key].append("segmentations - pre-op brainlab manual dti tractography segmentations")
             if len(item["segmentations"]["rest"]) == 0:
-                data_missing[key].append("segmentations - rest")
+                self.data_missing[key].append("segmentations - rest")
 
-            if len(data_missing[
+            if len(self.data_missing[
                        key]) == 1:  # if nothing missing was found, remove the entry (1 means we only added the path)
-                del data_missing[key]
+                del self.data_missing[key]
 
-        return data_missing
-
-    def create_empty_dict_entry(self, mrm, path):
+    @staticmethod
+    def create_empty_dict_entry(mrm, path):
         """
         Add an empty dict entry
         """
@@ -214,13 +213,13 @@ class JsonDictLogic:
             raise ValueError("No data found in the .json to check for completeness")
 
         # populate the missing data dict
-        data_missing = self.check_dictionary_for_completeness(full_summary)
+        self.check_dictionary_for_completeness(full_summary)
 
         # save completeness dict
         completeness_file = open(save_path, "w+")
         completeness_file.truncate(0)
-        json.dump(data_missing, completeness_file)
+        json.dump(self.data_missing, completeness_file)
         completeness_file.close()
 
-        for key, item in data_missing.items():
+        for key, item in self.data_missing.items():
             print("\nCase {}({}) misses the following data:\n{}\n".format(key, item[0], item[1:]))
