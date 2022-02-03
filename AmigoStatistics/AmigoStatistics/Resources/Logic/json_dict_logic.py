@@ -6,10 +6,9 @@ import slicer
 
 
 class SinglePatientDictLogic:
+
     def __init__(self):
         self.all_fake_paths = []
-        self.data_missing = {}
-        self.single_patients_dict = {}
 
     @staticmethod
     def create_empty_dict_entry(mrm, path):
@@ -58,7 +57,7 @@ class SinglePatientDictLogic:
                 filepath = output_folder + "/" + filename
 
                 self.all_fake_paths.append(filepath)
-                print(filepath)
+                # print(filepath)
 
             # Write all children of this child item
             grandChildIds = vtk.vtkIdList()
@@ -89,10 +88,10 @@ class SinglePatientDictLogic:
             node_name = path.split('/')[-1].split('.')[0]
 
             if all(x in path.lower() for x in ["pre", "op", "imaging"]) \
-                    and not any(x in path.lower() for x in ["ultrasound", "intra", "contin", "tracking", "segmentati"]):
+                    and not any(x in path.lower() for x in ["ultrasound", "contin", "tracking", "segmentati"]):
                 self.single_patients_dict[patient_id]["pre-op imaging"].append(node_name)
 
-            elif all(x in path.lower() for x in ["intra", "op", "imaging", "ultrasound"]) \
+            elif all(x in path.lower() for x in ["intra", "op", "imagi", "ultrasound"]) \
                     and not any(x in path.lower() for x in ["pre-op", "contin", "tracking", "segmentati"]):
                 self.single_patients_dict[patient_id]["intra-op imaging"]["ultrasounds"].append(node_name)
             elif all(x in path.lower() for x in ["intra", "op", "imaging"]) \
@@ -108,7 +107,7 @@ class SinglePatientDictLogic:
 
             elif all(x in path.lower() for x in ["segmentation", "pre-op", "fmri"]) \
                     and not any(x in path.lower() for x in ["contin", "tracking", "imaging"]):
-                self.single_patients_dict[patient_id]["segmentation"]["pre-op fmri segmentations"].append(node_name)
+                self.single_patients_dict[patient_id]["segmentations"]["pre-op fmri segmentations"].append(node_name)
             elif all(x in path.lower() for x in ["segmentation", "brainlab", "dti"]) \
                     and not any(x in path.lower() for x in ["contin", "tracking", "imaging"]):
                 self.single_patients_dict[patient_id]["segmentations"]["pre-op brainlab manual dti tractography " \
@@ -130,22 +129,47 @@ class SinglePatientDictLogic:
                     data_json_path = "{}_{}.json".format(data_json_path, i)
                     break
 
-        # patients_dict = {}
-        #
-        # shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-        # slicer.app.ioManager().addDefaultStorageNodes()
-
         self.populate_dict_with_hierarchy_new(patient_id, scene_path)
 
         f = open(data_json_path, "w")
         json.dump(self.single_patients_dict, f)
         f.close()
 
-class JsonDictLogic:
-    def __init__(self, main_folder=None):
+
+class SummaryPatientDictLogic:
+    def __init__(self):
         self.all_fake_paths = []
         self.data_missing = {}
         self.single_patients_dict = {}
+
+    @staticmethod
+    def combine_single_summaries(summary_paths, save_path):
+        """
+        Combines single summaries into one big summary (and deletes the single files)
+        :param summary_paths: The paths to be combined
+        :param save_path: The main summary to be created
+        """
+
+        full_summary_dict = {}
+
+        for data_summary_path in summary_paths:
+            # check if dict contains something
+            if not exists(data_summary_path):
+                print("{} to combine could not be found".format(data_summary_path))
+                continue
+            if os.stat(data_summary_path).st_size == 0:
+                print("No data found in the .json to combine")
+                continue
+
+            # load dict with all data
+            single_sumary = open(data_summary_path, "r")
+            full_summary_dict.update(json.load(single_sumary))
+            single_sumary.close()
+
+        # save full dict
+        full_summary_file = open(save_path, 'w')
+        json.dump(full_summary_dict, full_summary_file)
+        full_summary_file.close()
 
     def check_dictionary_for_completeness(self, data_dict):
         """
@@ -178,38 +202,6 @@ class JsonDictLogic:
             if len(self.data_missing[
                        key]) == 1:  # if nothing missing was found, remove the entry (1 means we only added the path)
                 del self.data_missing[key]
-
-    def combine_single_summaries(self, summary_paths, save_path):
-        """
-        Combines single summaries into one big summary (and deletes the single files)
-        :param summary_paths: The paths to be combined
-        :param save_path: The main summary to be created
-        """
-
-        full_summary_dict = {}
-
-        for data_summary_path in summary_paths:
-            # check if dict contains something
-            if not exists(data_summary_path):
-                print("{} to combine could not be found".format(data_summary_path))
-                continue
-            if os.stat(data_summary_path).st_size == 0:
-                print("No data found in the .json to combine")
-                continue
-
-            # load dict with all data
-            single_sumary = open(data_summary_path, "r")
-            full_summary_dict.update(json.load(single_sumary))
-            single_sumary.close()
-
-        # remove the single summary files
-        # for data_summary_path in summary_paths:
-        #     os.remove(data_summary_path)
-
-        # save full dict
-        full_summary_file = open(save_path, 'w')
-        json.dump(full_summary_dict, full_summary_file)
-        full_summary_file.close()
 
     def dump_full_completenes_dict_to_json(self, full_summary_path, save_path):
         """
