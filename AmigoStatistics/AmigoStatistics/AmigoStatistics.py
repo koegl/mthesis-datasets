@@ -17,6 +17,8 @@ except:
     import pandas as pd
 slicer.util.pip_install('xlsxwriter')
 
+# TODO ADD A TEXT FIELD FOR ALL THE PATHS - were to save the .jsons etc
+
 
 
 #
