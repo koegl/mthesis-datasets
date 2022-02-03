@@ -135,6 +135,9 @@ class SinglePatientDictLogic:
         json.dump(self.single_patients_dict, f)
         f.close()
 
+        # clear all previous paths
+        self.all_fake_paths = []
+
 
 class SummaryPatientDictLogic:
     def __init__(self):
