@@ -275,7 +275,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           data_summary_path_full = data_summary_path_partial + subject_id + ".json"
           self.data_summary_paths.append(data_summary_path_full)
 
-          print('Processing: {}({}/{})'.format(subject_id, index + 1, len(igt2_paths)))
+          print('Processing: {}({}/{})'.format(subject_id, index + 1, len(paths)))
           json_dict_logic.dump_hierarchy_to_json(subject_id, data_summary_path_full, path)
           print('Finished processing: {}\n\n'.format(subject_id))
         except Exception as e:
