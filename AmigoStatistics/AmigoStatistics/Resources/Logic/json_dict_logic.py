@@ -88,7 +88,7 @@ class SinglePatientDictLogic:
             node_name = path.split('/')[-1].split('.')[0]
 
             if all(x in path.lower() for x in ["pre", "op", "imaging"]) \
-                    and not any(x in path.lower() for x in ["ultrasound", "contin", "tracking", "segmentati"]):
+                    and not any(x in path.lower() for x in ["ultrasound", "intra-op", "contin", "tracking", "segmentati"]):
                 self.single_patients_dict[patient_id]["pre-op imaging"].append(node_name)
 
             elif all(x in path.lower() for x in ["intra", "op", "imagi", "ultrasound"]) \
