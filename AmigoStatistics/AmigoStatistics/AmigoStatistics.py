@@ -309,12 +309,16 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     try:
       # combine single files
+      print("\n\n\nCombining hierarchies...\n")
+
       directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
                        "/patient_summary"
       summary_file_paths = [join(directory_path, f) for f in listdir(directory_path) if
                             isfile(join(directory_path, f)) and "patient_data_summary" in f]
       SummaryPatientDictLogic.combine_single_summaries(summary_file_paths, os.path.join(directory_path,
                                                                                         "full_summary.json"))
+
+      print("\n\nHierarchies combined.")
 
     except:
       slicer.util.errorDisplay("Could not execute onCombineHierarchiesButton.\n{}".format(Exception))
@@ -326,7 +330,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     try:
       # check completeness
-      print("\n\n\nChecking completness...")
+      print("\n\n\nChecking completness...\n")
 
       directory_path = "/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync" \
                        "/patient_summary"
@@ -336,7 +340,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.summary_patient_logic.dump_full_completenes_dict_to_json(full_dict_path, full_save_path)
 
-      print("\n\n\nCompleteness checked.")
+      print("\n\nCompleteness checked.")
 
     except:
       slicer.util.errorDisplay("Could not combine and check files.\n{}".format(Exception))
