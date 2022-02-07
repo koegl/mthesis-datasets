@@ -147,11 +147,7 @@ class SummarySpreadsheetSaver:
 
     def __format_data_matrix_to_excel(self):
         """
-        Takes in the data_matrix and formats it
-        :param data_matrix: The matrix to be formatted and saved
-        :param max_lengths_dict: The dict containing the max lengths of the data arrays
-        :param save_path: Path where the data will be saved
-        :return writer: The writer which can be used to save the data
+        Formats the data_matrix and formats it
         """
 
         df = pd.DataFrame(data=self.data_matrix)
