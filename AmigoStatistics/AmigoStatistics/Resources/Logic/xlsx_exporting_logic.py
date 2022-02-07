@@ -99,6 +99,10 @@ class SummarySpreadsheetSaver:
         id_index = 1
         row_index = 2
 
+        # set 'path' and 'id' values
+        self.data_matrix[0][0] = 'ID'
+        self.data_matrix[0][1] = 'file path'
+
         for key, value in self.full_data_dict.items():
             self.data_matrix[id_index][row_index - 2] = key
             self.data_matrix[id_index][row_index - 1] = value["path"][0]
