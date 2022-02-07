@@ -171,17 +171,14 @@ class SummarySpreadsheetSaver:
 
         # make first row bold
         bold_font = workbook.add_format({'bold': True})
-        worksheet.set_column('A:A', None, bold_font)
-        # worksheet.set_row(0, None, bold_font)
+        worksheet.set_row(0, None, bold_font)
 
         # merge
-        # for key, value in self.max_lengths.items():
-        #     worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
-        #
-        #     range_start += value + 1
-        #     index += 1
+        for key, value in self.max_lengths.items():
+            worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
 
-
+            range_start += value + 1
+            index += 1
 
     def save(self):
 
