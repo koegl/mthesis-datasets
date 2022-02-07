@@ -38,6 +38,47 @@ class SummarySpreadsheetSaver:
             f.truncate(0)
             f.write(text)
 
+    @staticmethod
+    def __remove_list_element_by_content(pop_list: list, content: str) -> list:
+        """
+        Removes all lists elements that contain 'content'. Returns list and amount of elements removed.
+        Matches exactly, not by all lower case
+        :return: List and success bool
+        """
+        for element in pop_list:
+            if content in element:
+                pop_list.remove(element)
+
+        # if it didn't find anything
+        return pop_list
+
+    @staticmethod
+    def __remove_list_element_by_content_invert(pop_list: list, content: str) -> list:
+        """
+        Removes all lists elements that do not contain 'content'. Returns list and amount of elements removed.
+        Matches exactly, not by all lower case
+        :return: List and success bool
+        """
+        for element in pop_list:
+            if content not in element:
+                pop_list.remove(element)
+
+        # if it didn't find anything
+        return pop_list
+
+    def __fine_tune__summary_dict(self):
+        """
+        Additional fien tuning of the summary dict
+        :return:
+        """
+        for key, value in self.full_data_dict.items():
+            # remove volumes in pre-op imaging that do not contain '3D'
+            self.full_data_dict[key]["pre-op imaging"] = \
+                self.__remove_list_element_by_content_invert(self.full_data_dict[key]["pre-op imaging"], "3D")
+
+            # remove volumes in pre-op imaging that contain 'CT'
+            self.full_data_dict[key]["pre-op imaging"] = \
+                self.__remove_list_element_by_content(self.full_data_dict[key]["pre-op imaging"], "CT")
     def __get_max_lengths_of_data_arrays(self):
         """
         Takes a patient summary dict and fills a dict with the max max_lengths for each data array
@@ -99,10 +140,6 @@ class SummarySpreadsheetSaver:
         id_index = 0
         row_index = 1
 
-        # set 'path' and 'id' values
-        # self.data_matrix[0][0] = 'ID'
-        # self.data_matrix[0][1] = 'file path'
-
         self.column_headers = []
 
         for key, value in self.full_data_dict.items():
@@ -157,7 +194,7 @@ class SummarySpreadsheetSaver:
         """
         # todo implement this as own functin to remove borders:
         # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
-        
+
         row_names = [' ' for x in range(sum(self.max_lengths.values()) + 9)]
 
         df = pd.DataFrame(data=self.data_matrix, index=self.column_headers, columns=row_names)
@@ -197,6 +234,9 @@ class SummarySpreadsheetSaver:
         # load full summary dict
         with open(self.full_dict_path, 'r') as f:
             self.full_data_dict = json.load(f)
+
+        # remove some additional elements from the summary dict
+        self.__fine_tune__summary_dict()
 
         if self.full_data_dict is None:
             raise ValueError("Loaded dict is empty")
