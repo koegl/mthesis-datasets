@@ -87,6 +87,10 @@ class SummarySpreadsheetSaver:
             # remove volumes in pre-op imaging that contain 'CT'
             self.full_data_dict[key]["pre-op imaging"] = \
                 self.__remove_list_element_by_content(self.full_data_dict[key]["pre-op imaging"], "CT")
+
+            # remove volumes in intra-op imaging rest that do not contain '3D'
+            self.full_data_dict[key]["intra-op imaging"]["rest"] = \
+                self.__remove_list_element_by_content_invert(self.full_data_dict[key]["intra-op imaging"]["rest"], "3D")
     
     def __get_max_lengths_of_data_arrays(self):
         """
@@ -197,6 +201,82 @@ class SummarySpreadsheetSaver:
             id_index += 1
             row_index = 1
 
+    @staticmethod
+    def __list_contains(check_list: list, content: str) -> bool:
+        """
+        Check if anywere in the list the content is present. Case in-sensitive.
+        :param check_list: List to check for content
+        :param content: Content
+        :return: True if content is in list, else False
+        """
+
+        for element in check_list:
+            if content.lower() in element.lower():
+                return True
+
+        # base case (nothing found)
+        return False
+
+    def __assign_warning_colours(self):
+        """
+        Assign colours to cells to warn the user
+        """
+
+        # https://xlsxwriter.readthedocs.io/working_with_conditional_formats.html
+        format_orange = self.workbook.add_format({'bg_color': '#FFA500'})
+
+        header_index = 1
+        # https://cxn03651.github.io/write_xlsx/conditional_formatting.html
+        for key, value in self.full_data_dict.items():
+
+            # check if they contain T1 and T2
+            if not (self.__list_contains(value["pre-op imaging"], 't2')
+                    and self.__list_contains(value["pre-op imaging"], 't1')):
+
+                # first_row, first_col, last_row, last_col
+                self.worksheet.conditional_format(1, header_index, 1, header_index, {'type': 'cell',
+                                                                                     'criteria': '>=',
+                                                                                     'value': -999999999,
+                                                                                     'format': format_orange})
+
+                col_start = 3
+                col_end = col_start + self.max_lengths["pre_op_im"] - 1
+                self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_orange})
+
+            # check if there are less than two US images
+            if len(value["intra-op imaging"]["ultrasounds"]) <= 2:
+                self.worksheet.conditional_format(1, header_index, 1, header_index, {'type': 'cell',
+                                                                                     'criteria': '>=',
+                                                                                     'value': -999999999,
+                                                                                     'format': format_orange})
+                col_start = 3 + self.max_lengths["pre_op_im"] - 1 + 2
+                col_end = col_start + self.max_lengths["intra_us"] - 1
+                self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_orange})
+
+            # check if there are more than 0 intra-op MRs
+            if len(value["intra-op imaging"]["rest"]) == 0:
+                self.worksheet.conditional_format(1, header_index, 1, header_index, {'type': 'cell',
+                                                                                     'criteria': '>=',
+                                                                                     'value': -999999999,
+                                                                                     'format': format_orange})
+                col_start = 3 + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
+                col_end = col_start + self.max_lengths["intra_rest"] - 1
+                self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_orange})
+
+            header_index += 1
+
     def __format_data_matrix_to_excel(self):
         """
         Formats the data_matrix and formats it
@@ -214,26 +294,35 @@ class SummarySpreadsheetSaver:
 
         self.writer = pd.ExcelWriter(self.spreadsheet_save_path, engine='xlsxwriter')
         df.to_excel(self.writer, sheet_name='Sheet1')  #, index=False, header=False)
-        worksheet = self.writer.sheets['Sheet1']
-        workbook = self.writer.book
-        merge_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
+        self.worksheet = self.writer.sheets['Sheet1']
+        self.workbook = self.writer.book
+        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
 
         index = 0
-        names = ["pre-op imaging", "intra-op US", "intra-op REST", "tracking PRE", "tracking POST",
+        names = ["pre-op imaging", "intra-op US", "intra-op MR", "tracking PRE", "tracking POST",
                  "segmentations fMRI",
                  "segmentations DTI", "segmentations REST"]
         range_start = 0
 
         # make first row bold
-        bold_font = workbook.add_format({'bold': True})
-        worksheet.set_row(0, None, bold_font)
+        bold_font = self.workbook.add_format({'bold': True})
+        self.worksheet.set_row(0, None, bold_font)
 
         # merge
         for key, value in self.max_lengths.items():
-            worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
+            self.worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
 
             range_start += value + 1
             index += 1
+
+        # colours
+        self.__assign_warning_colours()
+        # format_orange = self.workbook.add_format({'bg_color': '#FFA500'})
+        #
+        # self.worksheet.conditional_format(1,1,4,4, {'type': 'cell',
+        #                                             'criteria': '>=',
+        #                                             'value': -999999999,
+        #                                             'format': format_orange})
 
     def save(self):
 
