@@ -1,6 +1,3 @@
-from Resources.Logic.json_dict_logic import SinglePatientDictLogic, SummaryPatientDictLogic
-from Resources.Logic.xlsx_exporting_logic import SummarySpreadsheetSaver
-
 import vtk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
