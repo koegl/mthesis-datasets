@@ -153,6 +153,8 @@ class SummarySpreadsheetSaver:
         """
         Formats the data_matrix and formats it
         """
+        # todo implement this as own functin to remove borders:
+        # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
 
         df = pd.DataFrame(data=self.data_matrix)
         df = (df.T)
