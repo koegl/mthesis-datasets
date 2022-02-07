@@ -369,35 +369,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       print("Spreadsheet saved.")
 
-      # # preprocess summary file
-      # # replace '%' with ' ' in summary file
-      # SummarySpreadsheetSaver.replace_character_in_file(full_dict_path, '%', ' ')
-      #
-      # # load full summary dict
-      # full_data = None
-      #
-      # with open(full_dict_path, 'r') as f:
-      #   full_data = json.load(f)
-      #
-      # if full_data is None:
-      #   raise ValueError("Loaded dict is empty")
-      #
-      # # get max max_lengths
-      # max_lengths = xlsx_exporting_logic.get_max_lengths_of_data_arrays(full_data)
-      #
-      # # get empty data matrix
-      # data_matrix = xlsx_exporting_logic.create_empty_data_matrix(len(full_data), sum(max_lengths.values()))
-      #
-      # # fill empty data matrix with values from the summary dict
-      # data_matrix = xlsx_exporting_logic.fill_empty_matrix_with_summary_dict(full_data, data_matrix, max_lengths)
-      #
-      # # format the data_matrix to a spreadsheet
-      # writer = xlsx_exporting_logic.format_data_matrix_to_excel(data_matrix, max_lengths,
-      #                                                           os.path.join(directory_path, "full_summary.xlsx"))
-      #
-      # # save the spreadsheet
-      # writer.save()
-
     except:
       slicer.util.errorDisplay("Could not execute onSaveToXlsxButton.\n{}".format(Exception))
 
