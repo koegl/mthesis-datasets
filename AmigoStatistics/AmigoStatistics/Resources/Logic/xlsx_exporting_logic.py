@@ -79,6 +79,7 @@ class SummarySpreadsheetSaver:
             # remove volumes in pre-op imaging that contain 'CT'
             self.full_data_dict[key]["pre-op imaging"] = \
                 self.__remove_list_element_by_content(self.full_data_dict[key]["pre-op imaging"], "CT")
+    
     def __get_max_lengths_of_data_arrays(self):
         """
         Takes a patient summary dict and fills a dict with the max max_lengths for each data array
