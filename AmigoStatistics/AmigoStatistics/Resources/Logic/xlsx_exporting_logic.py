@@ -1,167 +1,252 @@
+import os
+import json
+
 try:
     import pandas as pd
 except:
     slicer.util.pip_install('library_name')
+    slicer.util.pip_install('Jinja2')
     import pandas as pd
 
-# todo (in xlsx branch) - export to spreadsheet in chronological order
-def replace_character_in_file(path_to_file, old_character, new_character):
-    """
-    :param path_to_file: File to be edited
-    :param old_character: The character that will be replaced
-    :param new_character: The replacement character
-    """
 
-    # read in text and replace in the string
-    with open(path_to_file, 'r') as f:
-        text = f.read()
-        text = text.replace(old_character, new_character)
+class SummarySpreadsheetSaver:
+    def __init__(self, save_directory_path, full_dict_path, spreadsheet_save_path):
+        self.save_directory_path = save_directory_path
+        self.full_dict_path = full_dict_path
+        self.spreadsheet_save_path = spreadsheet_save_path
+        self.full_data_dict = None
+        self.max_lengths = {"pre_op_im": 0, "intra_us": 0, "intra_rest": 0, "tracking_pre": 0, "tracking_post": 0,
+                            "seg_fmir": 0, "seg_dti": 0, "seg_rest": 0}
+        self.data_matrix = None
+        self.writer = None
 
-    # clear file and write the string to it
-    with open(path_to_file, 'w+') as f:
-        f.truncate(0)
-        f.write(text)
+    @staticmethod
+    def replace_character_in_file(path_to_file, old_character, new_character):
+        """
+        :param path_to_file: File to be edited
+        :param old_character: The character that will be replaced
+        :param new_character: The replacement character
+        """
 
+        # read in text and replace in the string
+        with open(path_to_file, 'r') as f:
+            text = f.read()
+            text = text.replace(old_character, new_character)
 
-def get_max_lengths_of_data_arrays(data_dict: dict) -> dict:
-    """
-    Takes a patient summary dict and returns a dict with the max max_lengths for each data array
-    :param data_dict: The summary dict
-    :return: The max_lengths dict
-    """
+        # clear file and write the string to it
+        with open(path_to_file, 'w+') as f:
+            f.truncate(0)
+            f.write(text)
 
-    max_lengths = {"pre_op_im": 0, "intra_us": 0, "intra_rest": 0, "tracking_pre": 0, "tracking_post": 0, "seg_fmir": 0,
-                   "seg_dti": 0, "seg_rest": 0}
+    @staticmethod
+    def __remove_list_element_by_content(pop_list: list, content: str) -> list:
+        """
+        Removes all lists elements that contain 'content'. Returns list and amount of elements removed.
+        Matches exactly, not by all lower case
+        :return: List and success bool
+        """
+        for element in pop_list:
+            if content in element:
+                pop_list.remove(element)
 
-    for key, item in data_dict.items():
-        # data_matrix[0].append(key)
-        if len(item["pre-op imaging"]) > max_lengths["pre_op_im"]:
-            max_lengths["pre_op_im"] = len(item["pre-op imaging"])
-        if len(item["intra-op imaging"]["ultrasounds"]) > max_lengths["intra_us"]:
-            max_lengths["intra_us"] = len(item["intra-op imaging"]["ultrasounds"])
-        if len(item["intra-op imaging"]["rest"]) > max_lengths["intra_rest"]:
-            max_lengths["intra_rest"] = len(item["intra-op imaging"]["rest"])
-        if len(item["continuous tracking data"]["pre-imri tracking"]) > max_lengths["tracking_pre"]:
-            max_lengths["tracking_pre"] = len(item["continuous tracking data"]["pre-imri tracking"])
-        if len(item["continuous tracking data"]["post-imri tracking"]) > max_lengths["tracking_post"]:
-            max_lengths["tracking_post"] = len(item["continuous tracking data"]["post-imri tracking"])
-        if len(item["segmentations"]["pre-op fmri segmentations"]) > max_lengths["seg_fmir"]:
-            max_lengths["seg_fmir"] = len(item["segmentations"]["pre-op fmri segmentations"])
-        if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) > max_lengths["seg_dti"]:
-            max_lengths["seg_dti"] = len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"])
-        if len(item["segmentations"]["rest"]) > max_lengths["seg_rest"]:
-            max_lengths["seg_rest"] = len(item["segmentations"]["rest"])
+        # if it didn't find anything
+        return pop_list
 
-    return max_lengths
+    @staticmethod
+    def __remove_list_element_by_content_invert(pop_list: list, content: str) -> list:
+        """
+        Removes all lists elements that do not contain 'content'. Returns list and amount of elements removed.
+        Matches exactly, not by all lower case
+        :return: List and success bool
+        """
+        for element in pop_list:
+            if content not in element:
+                pop_list.remove(element)
 
+        # if it didn't find anything
+        return pop_list
 
-def create_empty_data_matrix(data_summary_length, max_array_lengths_sum):
-    """
-    Create an empty data matrix that will be written to an excel spreadsheet
-    :param data_summary_length: Amount of different patients
-    :param max_array_lengths_sum: The sum of all the maximal lengths of the data arrays
-    :return:
-    """
+    def __fine_tune__summary_dict(self):
+        """
+        Additional fien tuning of the summary dict
+        :return:
+        """
+        for key, value in self.full_data_dict.items():
+            # remove volumes in pre-op imaging that do not contain '3D'
+            self.full_data_dict[key]["pre-op imaging"] = \
+                self.__remove_list_element_by_content_invert(self.full_data_dict[key]["pre-op imaging"], "3D")
 
-    data_summary_length += 2  # '+ 2' for volume type and empty column at the back to stop spill
-    max_array_lengths_sum += 10  # '+ 10' for titles, paths and empty rows
+            # remove volumes in pre-op imaging that contain 'CT'
+            self.full_data_dict[key]["pre-op imaging"] = \
+                self.__remove_list_element_by_content(self.full_data_dict[key]["pre-op imaging"], "CT")
+    
+    def __get_max_lengths_of_data_arrays(self):
+        """
+        Takes a patient summary dict and fills a dict with the max max_lengths for each data array
+        :param data_dict: The summary dict
+        """
 
-    empty_data_matrix = []
+        for key, item in self.full_data_dict.items():
+            if len(item["pre-op imaging"]) > self.max_lengths["pre_op_im"]:
+                self.max_lengths["pre_op_im"] = len(item["pre-op imaging"])
+            if len(item["intra-op imaging"]["ultrasounds"]) > self.max_lengths["intra_us"]:
+                self.max_lengths["intra_us"] = len(item["intra-op imaging"]["ultrasounds"])
+            if len(item["intra-op imaging"]["rest"]) > self.max_lengths["intra_rest"]:
+                self.max_lengths["intra_rest"] = len(item["intra-op imaging"]["rest"])
+            if len(item["continuous tracking data"]["pre-imri tracking"]) > self.max_lengths["tracking_pre"]:
+                self.max_lengths["tracking_pre"] = len(item["continuous tracking data"]["pre-imri tracking"])
+            if len(item["continuous tracking data"]["post-imri tracking"]) > self.max_lengths["tracking_post"]:
+                self.max_lengths["tracking_post"] = len(item["continuous tracking data"]["post-imri tracking"])
+            if len(item["segmentations"]["pre-op fmri segmentations"]) > self.max_lengths["seg_fmir"]:
+                self.max_lengths["seg_fmir"] = len(item["segmentations"]["pre-op fmri segmentations"])
+            if len(item["segmentations"]["pre-op brainlab manual dti tractography segmentations"]) > self.max_lengths[
+                "seg_dti"]:
+                self.max_lengths["seg_dti"] = len(
+                    item["segmentations"]["pre-op brainlab manual dti tractography segmentations"])
+            if len(item["segmentations"]["rest"]) > self.max_lengths["seg_rest"]:
+                self.max_lengths["seg_rest"] = len(item["segmentations"]["rest"])
 
-    for i in range(data_summary_length):  # '+2' for volume type and empty column
-        empty_data_matrix.append([])
-        for j in range(max_array_lengths_sum + 10):  # '+1' for titles and paths
-            empty_data_matrix[i].append(' ')
+    def __create_empty_data_matrix(self):
+        """
+        Create an empty data matrix that will be written to an excel spreadsheet
+        :param data_summary_length: Amount of different patients
+        :param max_array_lengths_sum: The sum of all the maximal lengths of the data arrays
+        :return:
+        """
 
-    return empty_data_matrix
+        data_summary_length = len(self.full_data_dict)# + 2  # '+ 2' for volume type and empty column at the back to stop
+        # spill
+        max_array_lengths_sum = sum(self.max_lengths.values()) + 9  # '+ 10' for titles, paths and empty rows
 
+        empty_data_matrix = []
 
-def fill_empty_matrix_with_summary_dict(summary_dict, data_matrix, max_lengths_dict):
-    """
-    Fill the empty data matrix with all the values from the summary dict
-    :param summary_dict: The dict containing all the summarised patient data
-    :param data_matrix: The empty data matrix that will be filled
-    :param max_lengths_dict: The dict containing the max lengths of the data arrays
-    :return: The filled data_matrix
-    """
+        for i in range(data_summary_length):
+            empty_data_matrix.append([])
+            for j in range(max_array_lengths_sum):
+                empty_data_matrix[i].append(' ')
 
-    id_index = 1
-    row_index = 2
+        return empty_data_matrix
 
-    for key, value in summary_dict.items():
-        data_matrix[id_index][row_index - 2] = key
-        data_matrix[id_index][row_index - 1] = value["path"][0]
+    def __create_matrix_from_summary_dict(self):
+        """
+        Create a data matrix with all the values from the summary dict
+        :return: The filled data_matrix
+        """
 
-        data_matrix[0][row_index + 1] = "pre-op imaging"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op imaging"]
-        row_index += max_lengths_dict["pre_op_im"] + 1
+        # get max max_lengths
+        self.__get_max_lengths_of_data_arrays()
 
-        data_matrix[0][row_index + 1] = "intra-op US"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["ultrasounds"])] = \
-            value["intra-op imaging"]["ultrasounds"]
-        row_index += max_lengths_dict["intra_us"] + 1
-        data_matrix[0][row_index + 1] = "intra-op REST"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["rest"])] = \
-            value["intra-op imaging"]["rest"]
-        row_index += max_lengths_dict["intra_rest"] + 1
+        self.data_matrix = self.__create_empty_data_matrix()
 
-        data_matrix[0][row_index + 1] = "tracking PRE"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["continuous tracking data"]["pre-imri tracking"])] \
-            = value["continuous tracking data"]["pre-imri tracking"]
-        row_index += max_lengths_dict["tracking_pre"] + 1
-        data_matrix[0][row_index + 1] = "tracking POST"
-        data_matrix[id_index][
-        row_index + 1:row_index + 1 + len(value["continuous tracking data"]["post-imri tracking"])] \
-            = value["continuous tracking data"]["post-imri tracking"]
-        row_index += max_lengths_dict["tracking_post"] + 1
+        id_index = 0
+        row_index = 1
 
-        data_matrix[0][row_index + 1] = "segmentations fMRI"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op fmri segmentations"])] \
-            = value["segmentations"]["pre-op fmri segmentations"]
-        row_index += max_lengths_dict["seg_fmir"] + 1
-        data_matrix[0][row_index + 1] = "segmentations DTI"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(
-            value["segmentations"]["pre-op brainlab manual dti tractography segmentations"])] \
-            = value["segmentations"]["pre-op brainlab manual dti tractography segmentations"]
-        row_index += max_lengths_dict["seg_dti"] + 1
-        data_matrix[0][row_index + 1] = "segmentations REST"
-        data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["rest"])] \
-            = value["segmentations"]["rest"]
-        row_index += max_lengths_dict["seg_rest"] + 1
+        self.column_headers = []
 
-        id_index += 1
-        row_index = 2
+        for key, value in self.full_data_dict.items():
+            self.column_headers.append(key)  # self.data_matrix[id_index][row_index - 2] = key
+            self.data_matrix[id_index][row_index - 1] = value["path"][0]
 
-    return data_matrix
+            # self.data_matrix[0][row_index + 1] = "pre-op imaging"
+            self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op imaging"]
+            row_index += self.max_lengths["pre_op_im"] + 1
 
+            # self.data_matrix[0][row_index + 1] = "intra-op US"
+            self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["ultrasounds"])] = \
+                value["intra-op imaging"]["ultrasounds"]
+            row_index += self.max_lengths["intra_us"] + 1
+            # self.data_matrix[0][row_index + 1] = "intra-op REST"
+            self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["rest"])] = \
+                value["intra-op imaging"]["rest"]
+            row_index += self.max_lengths["intra_rest"] + 1
 
-def format_data_matrix_to_excel(data_matrix, max_lengths_dict, save_path):
-    """
-    Takes in the data_matrix and formats it
-    :param data_matrix: The matrix to be formatted and saved
-    :param max_lengths_dict: The dict containing the max lengths of the data arrays
-    :param save_path: Path where the data will be saved
-    :return writer: The writer which can be used to save the data
-    """
+            # self.data_matrix[0][row_index + 1] = "tracking PRE"
+            self.data_matrix[id_index][
+            row_index + 1:row_index + 1 + len(value["continuous tracking data"]["pre-imri tracking"])] \
+                = value["continuous tracking data"]["pre-imri tracking"]
+            row_index += self.max_lengths["tracking_pre"] + 1
+            # self.data_matrix[0][row_index + 1] = "tracking POST"
+            self.data_matrix[id_index][
+            row_index + 1:row_index + 1 + len(value["continuous tracking data"]["post-imri tracking"])] \
+                = value["continuous tracking data"]["post-imri tracking"]
+            row_index += self.max_lengths["tracking_post"] + 1
 
-    df = pd.DataFrame(data=data_matrix)
-    df = (df.T)
+            # self.data_matrix[0][row_index + 1] = "segmentations fMRI"
+            self.data_matrix[id_index][
+            row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op fmri segmentations"])] \
+                = value["segmentations"]["pre-op fmri segmentations"]
+            row_index += self.max_lengths["seg_fmir"] + 1
+            # self.data_matrix[0][row_index + 1] = "segmentations DTI"
+            self.data_matrix[id_index][row_index + 1:row_index + 1 + len(
+                value["segmentations"]["pre-op brainlab manual dti tractography segmentations"])] \
+                = value["segmentations"]["pre-op brainlab manual dti tractography segmentations"]
+            row_index += self.max_lengths["seg_dti"] + 1
+            # self.data_matrix[0][row_index + 1] = "segmentations REST"
+            self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["rest"])] \
+                = value["segmentations"]["rest"]
+            row_index += self.max_lengths["seg_rest"] + 1
 
-    writer = pd.ExcelWriter(save_path, engine='xlsxwriter')
-    df.to_excel(writer, sheet_name='Sheet1', index=False, header=False)
-    worksheet = writer.sheets['Sheet1']
-    workbook = writer.book
-    merge_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
+            id_index += 1
+            row_index = 1
 
-    index = 0
-    names = ["pre-op imaging", "intra-op US", "intra-op REST", "tracking PRE", "tracking POST", "segmentations fMRI",
-             "segmentations DTI", "segmentations REST"]
-    range_start = 0
+    def __format_data_matrix_to_excel(self):
+        """
+        Formats the data_matrix and formats it
+        """
+        # todo implement this as own functin to remove borders:
+        # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
 
-    for key, value in max_lengths_dict.items():
-        worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
+        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 9)]
 
-        range_start += value + 1
-        index += 1
+        df = pd.DataFrame(data=self.data_matrix, index=self.column_headers, columns=row_names)
+        df = (df.T)
 
-    return writer
+        # sort by date
+        # df.sort_values(by=['Row2'])
+
+        self.writer = pd.ExcelWriter(self.spreadsheet_save_path, engine='xlsxwriter')
+        df.to_excel(self.writer, sheet_name='Sheet1')  #, index=False, header=False)
+        worksheet = self.writer.sheets['Sheet1']
+        workbook = self.writer.book
+        merge_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
+
+        index = 0
+        names = ["pre-op imaging", "intra-op US", "intra-op REST", "tracking PRE", "tracking POST",
+                 "segmentations fMRI",
+                 "segmentations DTI", "segmentations REST"]
+        range_start = 0
+
+        # make first row bold
+        bold_font = workbook.add_format({'bold': True})
+        worksheet.set_row(0, None, bold_font)
+
+        # merge
+        for key, value in self.max_lengths.items():
+            worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
+
+            range_start += value + 1
+            index += 1
+
+    def save(self):
+
+        # preprocess summary file - replace '%' with ' ' in summary file
+        self.replace_character_in_file(self.full_dict_path, '%', ' ')
+
+        # load full summary dict
+        with open(self.full_dict_path, 'r') as f:
+            self.full_data_dict = json.load(f)
+
+        # remove some additional elements from the summary dict
+        self.__fine_tune__summary_dict()
+
+        if self.full_data_dict is None:
+            raise ValueError("Loaded dict is empty")
+
+        # create data matrix with values from the summary dict
+        self.__create_matrix_from_summary_dict()
+
+        # format the data_matrix to a spreadsheet
+        self.__format_data_matrix_to_excel()
+
+        # save the spreadsheet
+        self.writer.save()
