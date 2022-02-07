@@ -45,12 +45,16 @@ class SummarySpreadsheetSaver:
         Matches exactly, not by all lower case
         :return: List and success bool
         """
+
+        # a copy is needed, otherwise popping on a running list results in problesm
+        return_list = pop_list.copy()
+
         for element in pop_list:
             if content in element:
-                pop_list.remove(element)
+                return_list.remove(element)
 
         # if it didn't find anything
-        return pop_list
+        return return_list
 
     @staticmethod
     def __remove_list_element_by_content_invert(pop_list: list, content: str) -> list:
@@ -59,12 +63,16 @@ class SummarySpreadsheetSaver:
         Matches exactly, not by all lower case
         :return: List and success bool
         """
+
+        # a copy is needed, otherwise popping on a running list results in problesm
+        return_list = pop_list.copy()
+
         for element in pop_list:
             if content not in element:
-                pop_list.remove(element)
+                return_list.remove(element)
 
         # if it didn't find anything
-        return pop_list
+        return return_list
 
     def __fine_tune__summary_dict(self):
         """
