@@ -72,15 +72,15 @@ class SummarySpreadsheetSaver:
         :return:
         """
 
-        data_summary_length = len(self.full_data_dict) + 2  # '+ 2' for volume type and empty column at the back to stop
+        data_summary_length = len(self.full_data_dict)# + 2  # '+ 2' for volume type and empty column at the back to stop
         # spill
-        max_array_lengths_sum = sum(self.max_lengths.values()) + 10  # '+ 10' for titles, paths and empty rows
+        max_array_lengths_sum = sum(self.max_lengths.values()) + 9  # '+ 10' for titles, paths and empty rows
 
         empty_data_matrix = []
 
-        for i in range(data_summary_length):  # '+2' for volume type and empty column
+        for i in range(data_summary_length):
             empty_data_matrix.append([])
-            for j in range(max_array_lengths_sum + 10):  # '+1' for titles and paths
+            for j in range(max_array_lengths_sum):
                 empty_data_matrix[i].append(' ')
 
         return empty_data_matrix
@@ -96,58 +96,60 @@ class SummarySpreadsheetSaver:
 
         self.data_matrix = self.__create_empty_data_matrix()
 
-        id_index = 1
-        row_index = 2
+        id_index = 0
+        row_index = 1
 
         # set 'path' and 'id' values
-        self.data_matrix[0][0] = 'ID'
-        self.data_matrix[0][1] = 'file path'
+        # self.data_matrix[0][0] = 'ID'
+        # self.data_matrix[0][1] = 'file path'
+
+        self.column_headers = []
 
         for key, value in self.full_data_dict.items():
-            self.data_matrix[id_index][row_index - 2] = key
+            self.column_headers.append(key)  # self.data_matrix[id_index][row_index - 2] = key
             self.data_matrix[id_index][row_index - 1] = value["path"][0]
 
-            self.data_matrix[0][row_index + 1] = "pre-op imaging"
+            # self.data_matrix[0][row_index + 1] = "pre-op imaging"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op imaging"]
             row_index += self.max_lengths["pre_op_im"] + 1
 
-            self.data_matrix[0][row_index + 1] = "intra-op US"
+            # self.data_matrix[0][row_index + 1] = "intra-op US"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["ultrasounds"])] = \
                 value["intra-op imaging"]["ultrasounds"]
             row_index += self.max_lengths["intra_us"] + 1
-            self.data_matrix[0][row_index + 1] = "intra-op REST"
+            # self.data_matrix[0][row_index + 1] = "intra-op REST"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["rest"])] = \
                 value["intra-op imaging"]["rest"]
             row_index += self.max_lengths["intra_rest"] + 1
 
-            self.data_matrix[0][row_index + 1] = "tracking PRE"
+            # self.data_matrix[0][row_index + 1] = "tracking PRE"
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["continuous tracking data"]["pre-imri tracking"])] \
                 = value["continuous tracking data"]["pre-imri tracking"]
             row_index += self.max_lengths["tracking_pre"] + 1
-            self.data_matrix[0][row_index + 1] = "tracking POST"
+            # self.data_matrix[0][row_index + 1] = "tracking POST"
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["continuous tracking data"]["post-imri tracking"])] \
                 = value["continuous tracking data"]["post-imri tracking"]
             row_index += self.max_lengths["tracking_post"] + 1
 
-            self.data_matrix[0][row_index + 1] = "segmentations fMRI"
+            # self.data_matrix[0][row_index + 1] = "segmentations fMRI"
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op fmri segmentations"])] \
                 = value["segmentations"]["pre-op fmri segmentations"]
             row_index += self.max_lengths["seg_fmir"] + 1
-            self.data_matrix[0][row_index + 1] = "segmentations DTI"
+            # self.data_matrix[0][row_index + 1] = "segmentations DTI"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(
                 value["segmentations"]["pre-op brainlab manual dti tractography segmentations"])] \
                 = value["segmentations"]["pre-op brainlab manual dti tractography segmentations"]
             row_index += self.max_lengths["seg_dti"] + 1
-            self.data_matrix[0][row_index + 1] = "segmentations REST"
+            # self.data_matrix[0][row_index + 1] = "segmentations REST"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["rest"])] \
                 = value["segmentations"]["rest"]
             row_index += self.max_lengths["seg_rest"] + 1
 
             id_index += 1
-            row_index = 2
+            row_index = 1
 
     def __format_data_matrix_to_excel(self):
         """
@@ -155,12 +157,17 @@ class SummarySpreadsheetSaver:
         """
         # todo implement this as own functin to remove borders:
         # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
+        
+        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 9)]
 
-        df = pd.DataFrame(data=self.data_matrix)
+        df = pd.DataFrame(data=self.data_matrix, index=self.column_headers, columns=row_names)
         df = (df.T)
 
+        # sort by date
+        # df.sort_values(by=['Row2'])
+
         self.writer = pd.ExcelWriter(self.spreadsheet_save_path, engine='xlsxwriter')
-        df.to_excel(self.writer, sheet_name='Sheet1', index=False, header=False)
+        df.to_excel(self.writer, sheet_name='Sheet1')  #, index=False, header=False)
         worksheet = self.writer.sheets['Sheet1']
         workbook = self.writer.book
         merge_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
