@@ -1,19 +1,14 @@
-import vtk, slicer
+import vtk
+import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
+import DICOMScalarVolumePlugin
+
 import os
 from os.path import exists
 import json
 from os import listdir
 from os.path import isfile, join
-
-try:
-    import pandas as pd
-except:
-    slicer.util.pip_install('library_name')
-    import pandas as pd
-slicer.util.pip_install('xlsxwriter')
-
 
 # TODO ADD A TEXT FIELD FOR ALL THE PATHS - were to save the .jsons etc
 
