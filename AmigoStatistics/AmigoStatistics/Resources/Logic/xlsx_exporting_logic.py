@@ -1,5 +1,6 @@
 import os
 import json
+from operator import itemgetter
 
 try:
     import pandas as pd
@@ -153,10 +154,12 @@ class SummarySpreadsheetSaver:
         id_index = 0
         row_index = 1
 
-        self.column_headers = []
+        self.column_headers = [[], []]
 
         for key, value in self.full_data_dict.items():
-            self.column_headers.append(key)  # self.data_matrix[id_index][row_index - 2] = key
+            self.column_headers[0].append(key)
+            self.column_headers[1].append(value["path"][0])
+
             self.data_matrix[id_index][row_index - 1] = value["path"][0]
 
             # self.data_matrix[0][row_index + 1] = "pre-op imaging"
@@ -201,6 +204,29 @@ class SummarySpreadsheetSaver:
             id_index += 1
             row_index = 1
 
+    def __sort_data_matrix(self):
+        """
+        Sorts the data matrix according to the dates (paths)
+        """
+        self.data_matrix = sorted(self.data_matrix, key=itemgetter(0))
+
+        # the headers list has to be sorted because for assigning warning colours we access the full dict - so we need
+        # the sorted keys
+        
+        # transpose the headers list
+        headers_transpose = []
+        for key, path in zip(self.column_headers[0], self.column_headers[1]):
+            headers_transpose.append([key, path])
+
+        # sort the headers list
+        headers_transpose = sorted(headers_transpose, key=itemgetter(1))
+
+        # transpose the transposed
+        self.column_headers = [[],[]]
+        for key, path in headers_transpose:
+            self.column_headers[0].append(key)
+            self.column_headers[1].append(path)
+
     @staticmethod
     def __list_contains(check_list: list, content: str) -> bool:
         """
@@ -227,7 +253,10 @@ class SummarySpreadsheetSaver:
 
         header_index = 1
         # https://cxn03651.github.io/write_xlsx/conditional_formatting.html
-        for key, value in self.full_data_dict.items():
+        # dict is not sorted, so we have to use the sorted headers
+        for key in self.column_headers[0]:
+            value = self.full_data_dict[key]
+            # for key, value in self.full_data_dict.items():
 
             # check if they contain T1 and T2
             if not (self.__list_contains(value["pre-op imaging"], 't2')
@@ -285,18 +314,14 @@ class SummarySpreadsheetSaver:
         # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
 
         row_names = [' ' for x in range(sum(self.max_lengths.values()) + 9)]
-
-        df = pd.DataFrame(data=self.data_matrix, index=self.column_headers, columns=row_names)
+        row_names[0] = "path"
+        df = pd.DataFrame(data=self.data_matrix, index=self.column_headers[0], columns=row_names)
         df = (df.T)
 
-        # sort by date
-        # df.sort_values(by=['Row2'])
-
         self.writer = pd.ExcelWriter(self.spreadsheet_save_path, engine='xlsxwriter')
-        df.to_excel(self.writer, sheet_name='Sheet1')  #, index=False, header=False)
+        df.to_excel(self.writer, sheet_name='Sheet1')
         self.worksheet = self.writer.sheets['Sheet1']
         self.workbook = self.writer.book
-        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
 
         index = 0
         names = ["pre-op imaging", "intra-op US", "intra-op MR", "tracking PRE", "tracking POST",
@@ -309,6 +334,8 @@ class SummarySpreadsheetSaver:
         self.worksheet.set_row(0, None, bold_font)
 
         # merge
+        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
+
         for key, value in self.max_lengths.items():
             self.worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
 
@@ -317,12 +344,6 @@ class SummarySpreadsheetSaver:
 
         # colours
         self.__assign_warning_colours()
-        # format_orange = self.workbook.add_format({'bg_color': '#FFA500'})
-        #
-        # self.worksheet.conditional_format(1,1,4,4, {'type': 'cell',
-        #                                             'criteria': '>=',
-        #                                             'value': -999999999,
-        #                                             'format': format_orange})
 
     def save(self):
 
@@ -341,6 +362,9 @@ class SummarySpreadsheetSaver:
 
         # create data matrix with values from the summary dict
         self.__create_matrix_from_summary_dict()
+
+        # sort data matrix
+        self.__sort_data_matrix()
 
         # format the data_matrix to a spreadsheet
         self.__format_data_matrix_to_excel()
