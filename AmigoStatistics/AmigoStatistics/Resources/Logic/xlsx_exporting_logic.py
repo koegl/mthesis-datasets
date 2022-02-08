@@ -21,6 +21,12 @@ class SummarySpreadsheetSaver:
         self.data_matrix = None
         self.writer = None
 
+        # load frontiers ids and convert to ints
+        with open("/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync/frontiers_ids"
+                  ".json") as frontiers_ids_file:
+            frontiers_dict = json.load(frontiers_ids_file)
+            self.frontiers_ids = frontiers_dict["ids"]
+
     @staticmethod
     def replace_character_in_file(path_to_file, old_character, new_character):
         """
@@ -92,7 +98,7 @@ class SummarySpreadsheetSaver:
             # remove volumes in intra-op imaging rest that do not contain '3D'
             self.full_data_dict[key]["intra-op imaging"]["rest"] = \
                 self.__remove_list_element_by_content_invert(self.full_data_dict[key]["intra-op imaging"]["rest"], "3D")
-    
+
     def __get_max_lengths_of_data_arrays(self):
         """
         Takes a patient summary dict and fills a dict with the max max_lengths for each data array
@@ -127,9 +133,10 @@ class SummarySpreadsheetSaver:
         :return:
         """
 
-        data_summary_length = len(self.full_data_dict)# + 2  # '+ 2' for volume type and empty column at the back to stop
+        data_summary_length = len(
+            self.full_data_dict)  # + 2  # '+ 2' for volume type and empty column at the back to stop
         # spill
-        max_array_lengths_sum = sum(self.max_lengths.values()) + 9  # '+ 10' for titles, paths and empty rows
+        max_array_lengths_sum = sum(self.max_lengths.values()) + 10  # '+ 10' for path, frontiers and empty rows
 
         empty_data_matrix = []
 
@@ -152,7 +159,7 @@ class SummarySpreadsheetSaver:
         self.data_matrix = self.__create_empty_data_matrix()
 
         id_index = 0
-        row_index = 1
+        row_index = 2
 
         self.column_headers = [[], []]
 
@@ -160,10 +167,16 @@ class SummarySpreadsheetSaver:
             self.column_headers[0].append(key)
             self.column_headers[1].append(value["path"][0])
 
+            # add frontiers mark (if the case was in frontiers)
+            if key in self.frontiers_ids:
+                self.data_matrix[id_index][row_index - 2] = "FRONTIERS"
+
+            # add path
             self.data_matrix[id_index][row_index - 1] = value["path"][0]
 
             # self.data_matrix[0][row_index + 1] = "pre-op imaging"
-            self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op imaging"]
+            self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op " \
+                                                                                                           "imaging"]
             row_index += self.max_lengths["pre_op_im"] + 1
 
             # self.data_matrix[0][row_index + 1] = "intra-op US"
@@ -202,17 +215,18 @@ class SummarySpreadsheetSaver:
             row_index += self.max_lengths["seg_rest"] + 1
 
             id_index += 1
-            row_index = 1
+            row_index = 2
+
+        print(self.column_headers)
 
     def __sort_data_matrix(self):
         """
         Sorts the data matrix according to the dates (paths)
         """
-        self.data_matrix = sorted(self.data_matrix, key=itemgetter(0))
+        self.data_matrix = sorted(self.data_matrix, key=itemgetter(1))
 
         # the headers list has to be sorted because for assigning warning colours we access the full dict - so we need
         # the sorted keys
-        
         # transpose the headers list
         headers_transpose = []
         for key, path in zip(self.column_headers[0], self.column_headers[1]):
@@ -222,7 +236,7 @@ class SummarySpreadsheetSaver:
         headers_transpose = sorted(headers_transpose, key=itemgetter(1))
 
         # transpose the transposed
-        self.column_headers = [[],[]]
+        self.column_headers = [[], []]
         for key, path in headers_transpose:
             self.column_headers[0].append(key)
             self.column_headers[1].append(path)
@@ -252,6 +266,8 @@ class SummarySpreadsheetSaver:
         format_orange = self.workbook.add_format({'bg_color': '#FFA500'})
 
         header_index = 1
+        col_init = 4
+        path_row = 2
         # https://cxn03651.github.io/write_xlsx/conditional_formatting.html
         # dict is not sorted, so we have to use the sorted headers
         for key in self.column_headers[0]:
@@ -261,14 +277,13 @@ class SummarySpreadsheetSaver:
             # check if they contain T1 and T2
             if not (self.__list_contains(value["pre-op imaging"], 't2')
                     and self.__list_contains(value["pre-op imaging"], 't1')):
-
                 # first_row, first_col, last_row, last_col
-                self.worksheet.conditional_format(1, header_index, 1, header_index, {'type': 'cell',
+                self.worksheet.conditional_format(path_row, header_index, path_row, header_index, {'type': 'cell',
                                                                                      'criteria': '>=',
                                                                                      'value': -999999999,
                                                                                      'format': format_orange})
 
-                col_start = 3
+                col_start = col_init
                 col_end = col_start + self.max_lengths["pre_op_im"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -278,11 +293,11 @@ class SummarySpreadsheetSaver:
 
             # check if there are less than two US images
             if len(value["intra-op imaging"]["ultrasounds"]) <= 2:
-                self.worksheet.conditional_format(1, header_index, 1, header_index, {'type': 'cell',
+                self.worksheet.conditional_format(path_row, header_index, path_row, header_index, {'type': 'cell',
                                                                                      'criteria': '>=',
                                                                                      'value': -999999999,
                                                                                      'format': format_orange})
-                col_start = 3 + self.max_lengths["pre_op_im"] - 1 + 2
+                col_start = col_init + self.max_lengths["pre_op_im"] - 1 + 2
                 col_end = col_start + self.max_lengths["intra_us"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -292,11 +307,11 @@ class SummarySpreadsheetSaver:
 
             # check if there are more than 0 intra-op MRs
             if len(value["intra-op imaging"]["rest"]) == 0:
-                self.worksheet.conditional_format(1, header_index, 1, header_index, {'type': 'cell',
+                self.worksheet.conditional_format(path_row, header_index, path_row, header_index, {'type': 'cell',
                                                                                      'criteria': '>=',
                                                                                      'value': -999999999,
                                                                                      'format': format_orange})
-                col_start = 3 + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
+                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
                 col_end = col_start + self.max_lengths["intra_rest"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -313,8 +328,8 @@ class SummarySpreadsheetSaver:
         # todo implement this as own functin to remove borders:
         # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
 
-        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 9)]
-        row_names[0] = "path"
+        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 10)]
+        row_names[1] = "path"
         df = pd.DataFrame(data=self.data_matrix, index=self.column_headers[0], columns=row_names)
         df = (df.T)
 
