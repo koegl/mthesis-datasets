@@ -198,10 +198,36 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             print("\n\nExporting current scene to DICOM...\n")
 
+            volume_name = "US Scan 1 (Ultrasound)"
+            output_folder = "/Users/fryderykkogl/Documents/university/master/thesis/data.nosync"
+
+            # Create patient and study and put the volume under the study
+            hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+
+            patient_item_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), "123456789")
+            # patient_item_id = hierarchy_node.GetItemByName("123456789")
+
+            study_item_id = hierarchy_node.CreateStudyItem(patient_item_id, "intra-op_us")
+            # study_item_id = hierarchy_node.GetItemByName("pre-op_imaging")
+
+            volume_sh_item_id = hierarchy_node.GetItemByName(volume_name)
+            hierarchy_node.SetItemParent(volume_sh_item_id, study_item_id)
+
+            exporter = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
+            exportables = exporter.examineForExport(volume_sh_item_id)
+
+            if not exportables:
+                raise ValueError("Nothing found to export.")
+
+            for exp in exportables:
+                exp.directory = output_folder
+
+            exporter.export(exportables)
+
             print("\nFinished exporting to DICOM.")
 
-        except:
-            slicer.util.errorDisplay("Couldn't export current scene to DICOM/\n{}".format(str(Exception)),
+        except Exception as e:
+            slicer.util.errorDisplay("Couldn't export current scene to DICOM.\n{}".format(e),
                                      windowTitle="Export error")
 
 
