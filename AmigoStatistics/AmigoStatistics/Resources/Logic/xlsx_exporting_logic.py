@@ -393,7 +393,7 @@ class SummarySpreadsheetSaver:
         self.worksheet.set_row(0, None, bold_font)
 
         # merge
-        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
+        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter', 'bold': True})  # , 'border': 2})
 
         for key, value in self.max_lengths.items():
             self.worksheet.merge_range(range_start + 4, 0, range_start + value + 3, 0, names[index], merge_format)
@@ -403,6 +403,8 @@ class SummarySpreadsheetSaver:
 
         # colours
         self.__assign_warning_colours()
+
+        self.worksheet.set_column('A:A', None, bold_font)
 
     def save(self):
 
