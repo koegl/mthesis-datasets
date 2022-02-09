@@ -142,7 +142,7 @@ class SummarySpreadsheetSaver:
 
         data_summary_length = len(self.full_data_dict) + 1  # '+ 2' for volume type and empty column at the back to stop
         # spill
-        max_array_lengths_sum = sum(self.max_lengths.values()) + 11  # '+ 10' for id, path, frontiers and empty rows
+        max_array_lengths_sum = sum(self.max_lengths.values()) + 3  # '+ 3' for id, path, frontiers and empty rows
 
         empty_data_matrix = []
 
@@ -167,13 +167,7 @@ class SummarySpreadsheetSaver:
         id_index = 0
         row_index = 3
 
-        self.column_headers = [[], []]
-
         for key, value in self.full_data_dict.items():
-            # append id and path
-            self.column_headers[0].append(key)
-            self.column_headers[1].append(value["path"][0])
-
             self.data_matrix[id_index][0] = key
 
             # add path
@@ -183,45 +177,37 @@ class SummarySpreadsheetSaver:
             if key in self.frontiers_ids:
                 self.data_matrix[id_index][row_index - 1] = "FRONTIERS"
 
-            # self.data_matrix[0][row_index + 1] = "pre-op imaging"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op " \
                                                                                                            "imaging"]
-            row_index += self.max_lengths["pre_op_im"] + 1
+            row_index += self.max_lengths["pre_op_im"] #  + 1
 
-            # self.data_matrix[0][row_index + 1] = "intra-op US"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["ultrasounds"])] = \
                 value["intra-op imaging"]["ultrasounds"]
-            row_index += self.max_lengths["intra_us"] + 1
-            # self.data_matrix[0][row_index + 1] = "intra-op REST"
+            row_index += self.max_lengths["intra_us"] #  + 1
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["rest"])] = \
                 value["intra-op imaging"]["rest"]
-            row_index += self.max_lengths["intra_rest"] + 1
+            row_index += self.max_lengths["intra_rest"] #  + 1
 
-            # self.data_matrix[0][row_index + 1] = "tracking PRE"
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["continuous tracking data"]["pre-imri tracking"])] \
                 = value["continuous tracking data"]["pre-imri tracking"]
-            row_index += self.max_lengths["tracking_pre"] + 1
-            # self.data_matrix[0][row_index + 1] = "tracking POST"
+            row_index += self.max_lengths["tracking_pre"] #  + 1
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["continuous tracking data"]["post-imri tracking"])] \
                 = value["continuous tracking data"]["post-imri tracking"]
-            row_index += self.max_lengths["tracking_post"] + 1
+            row_index += self.max_lengths["tracking_post"] #  + 1
 
-            # self.data_matrix[0][row_index + 1] = "segmentations fMRI"
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op fmri segmentations"])] \
                 = value["segmentations"]["pre-op fmri segmentations"]
-            row_index += self.max_lengths["seg_fmir"] + 1
-            # self.data_matrix[0][row_index + 1] = "segmentations DTI"
+            row_index += self.max_lengths["seg_fmir"] #  + 1
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(
                 value["segmentations"]["pre-op brainlab manual dti tractography segmentations"])] \
                 = value["segmentations"]["pre-op brainlab manual dti tractography segmentations"]
-            row_index += self.max_lengths["seg_dti"] + 1
-            # self.data_matrix[0][row_index + 1] = "segmentations REST"
+            row_index += self.max_lengths["seg_dti"] #  + 1
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["rest"])] \
                 = value["segmentations"]["rest"]
-            row_index += self.max_lengths["seg_rest"] + 1
+            row_index += self.max_lengths["seg_rest"] #  + 1
 
             id_index += 1
             row_index = 3
@@ -314,7 +300,7 @@ class SummarySpreadsheetSaver:
                                                    'criteria': '>=',
                                                    'value': -999999999,
                                                    'format': format_no_data})
-                col_start = col_init + self.max_lengths["pre_op_im"] - 1 + 2
+                col_start = col_init + self.max_lengths["pre_op_im"] - 1 + 2 - 1
                 col_end = col_start + self.max_lengths["intra_us"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -330,7 +316,7 @@ class SummarySpreadsheetSaver:
                                                    'criteria': '>=',
                                                    'value': -999999999,
                                                    'format': format_no_3dt2})
-                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
+                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 1
                 col_end = col_start + self.max_lengths["intra_rest"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -345,7 +331,7 @@ class SummarySpreadsheetSaver:
                                                    'criteria': '>=',
                                                    'value': -999999999,
                                                    'format': format_no_data})
-                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
+                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 1
                 col_end = col_start + self.max_lengths["intra_rest"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -360,7 +346,48 @@ class SummarySpreadsheetSaver:
         Sets outer border of a range to a given thickness
         :param thickness: Thickness of the border
         """
-        pass
+        top_format = self.workbook.add_format({'top': 2, 'left': 1, 'right': 1})
+        bottom_format = self.workbook.add_format({'bottom': 0, 'left': 1, 'right': 1})
+        vertical_format = self.workbook.add_format({'left': 1, 'right': 1})
+
+        col_start = 0
+        col_end = len(self.data_matrix) - 2
+
+        max_vals = [3,
+                    self.max_lengths["pre_op_im"],
+                    self.max_lengths["intra_us"],
+                    self.max_lengths["intra_rest"],
+                    self.max_lengths["tracking_pre"],
+                    self.max_lengths["tracking_post"],
+                    self.max_lengths["seg_fmir"],
+                    self.max_lengths["seg_dti"],
+                    self.max_lengths["seg_rest"]]
+
+        # horizontal thick lines
+        # top
+        row = 1
+        for max_val in max_vals[:-1]:
+            row += max_val
+            self.worksheet.conditional_format(row, col_start, row, col_end, {'type': 'cell',
+                                                                             'criteria': '>=',
+                                                                             'value': -999999999,
+                                                                             'format': top_format})
+
+        # bottom
+        row = 1
+        for max_val in max_vals[1:]:
+            row += max_val
+            self.worksheet.conditional_format(row, col_start, row, col_end, {'type': 'cell',
+                                                                             'criteria': '>=',
+                                                                             'value': -999999999,
+                                                                             'format': bottom_format})
+
+        # vertical thin lines
+        self.worksheet.conditional_format(0, 1, len(self.data_matrix[0]), len(self.data_matrix) - 2,
+                                          {'type': 'cell',
+                                           'criteria': '>=',
+                                           'value': -999999999,
+                                           'format': vertical_format})
 
     def __format_data_matrix_to_excel(self):
         """
@@ -370,9 +397,9 @@ class SummarySpreadsheetSaver:
         # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
 
         # add empty elements to last row
-        self.data_matrix.append([' ' for x in range(sum(self.max_lengths.values()) + 11)])
+        self.data_matrix.append([' ' for x in range(sum(self.max_lengths.values()) + 3)])
 
-        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 11)]
+        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 3)]
         row_names[1] = "path"
 
         # remove problematic patient
@@ -401,7 +428,7 @@ class SummarySpreadsheetSaver:
         for key, value in self.max_lengths.items():
             self.worksheet.merge_range(range_start + 4, 0, range_start + value + 3, 0, names[index], merge_format)
 
-            range_start += value + 1
+            range_start += value #  + 1
             index += 1
 
         # colours
@@ -415,6 +442,9 @@ class SummarySpreadsheetSaver:
 
         # adjust width of the first column
         self.writer.sheets['Sheet1'].set_column(0, 0, 17)
+
+        # add cell borders
+        self.__set_outer_border_of_range()
 
     def save(self):
 
