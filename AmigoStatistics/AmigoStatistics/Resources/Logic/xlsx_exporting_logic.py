@@ -241,16 +241,21 @@ class SummarySpreadsheetSaver:
             self.column_headers[1].append(path)
 
     @staticmethod
-    def __list_contains(check_list: list, content: str) -> bool:
+    def __list_contains(check_list: list, content: list) -> bool:
         """
-        Check if anywere in the list the content is present. Case in-sensitive.
+        Check if anywhere in the list the content (can be more than one string) is present. Case-insensitive.
         :param check_list: List to check for content
-        :param content: Content
+        :param content: List with contents that have to be included
         :return: True if content is in list, else False
         """
 
+        # make content lower
+        for idx, element in enumerate(content):
+            content[idx] = element.lower()
+
+        # check if all values of content are in any of the entries of the list
         for element in check_list:
-            if content.lower() in element.lower():
+            if all(x in element.lower() for x in content):
                 return True
 
         # base case (nothing found)
