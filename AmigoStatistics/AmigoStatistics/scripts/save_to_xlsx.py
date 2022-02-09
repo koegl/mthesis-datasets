@@ -1,7 +1,7 @@
 import os
 import argparse
 
-from Resources.Logic.xlsx_exporting_logic import SummarySpreadsheetSaver
+from AmigoStatistics.AmigoStatistics.Resources.Logic.xlsx_exporting_logic import SummarySpreadsheetSaver
 
 
 def main():
