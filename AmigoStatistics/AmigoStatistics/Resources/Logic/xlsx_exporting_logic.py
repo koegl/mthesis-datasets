@@ -27,6 +27,13 @@ class SummarySpreadsheetSaver:
             frontiers_dict = json.load(frontiers_ids_file)
             self.frontiers_ids = frontiers_dict["ids"]
 
+        # load problematic patients
+        with open("/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync"
+                  "/problematic_patients.json") as problematic_file:
+            problematic_dict = json.load(problematic_file)
+            self.problematic_id = problematic_dict["ids"][0]
+            self.problematic_id_buf = 0
+
     @staticmethod
     def replace_character_in_file(path_to_file, old_character, new_character):
         """
@@ -167,8 +174,6 @@ class SummarySpreadsheetSaver:
             self.column_headers[0].append(key)
             self.column_headers[1].append(value["path"][0])
 
-            if "charles" in key.lower():
-                key = "1"
             self.data_matrix[id_index][0] = key
 
             # add path
@@ -263,7 +268,12 @@ class SummarySpreadsheetSaver:
         path_row = 2
         # https://cxn03651.github.io/write_xlsx/conditional_formatting.html
         # dict is not sorted, so we have to use the sorted headers
-        for key in self.column_headers[0]:
+        for patient in self.data_matrix[1:-1]:
+            key = patient[0]
+
+            if key == '1':  # problematic patient
+                key = self.problematic_id_buf
+
             value = self.full_data_dict[key]
 
             # check if they contain T2 (2D or 3D)
@@ -357,6 +367,12 @@ class SummarySpreadsheetSaver:
 
         row_names = [' ' for x in range(sum(self.max_lengths.values()) + 11)]
         row_names[1] = "path"
+
+        # remove problematic patient
+        for idx, patient in enumerate(self.data_matrix):
+            if self.problematic_id.lower() in patient[0].lower():
+                self.problematic_id_buf = patient[0]
+                self.data_matrix[idx][0] = "1"
 
         df = pd.DataFrame(data=self.data_matrix)
         df = (df.T)
