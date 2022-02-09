@@ -164,6 +164,7 @@ class SummarySpreadsheetSaver:
         self.column_headers = [[], []]
 
         for key, value in self.full_data_dict.items():
+            # append id and path
             self.column_headers[0].append(key)
             self.column_headers[1].append(value["path"][0])
 
@@ -216,8 +217,6 @@ class SummarySpreadsheetSaver:
 
             id_index += 1
             row_index = 2
-
-        print(self.column_headers)
 
     def __sort_data_matrix(self):
         """
