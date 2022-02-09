@@ -88,16 +88,16 @@ class SummarySpreadsheetSaver:
         """
         for key, value in self.full_data_dict.items():
             # remove volumes in pre-op imaging that do not contain '3D'
-            self.full_data_dict[key]["pre-op imaging"] = \
-                self.__remove_list_element_by_content_invert(self.full_data_dict[key]["pre-op imaging"], "3D")
+            # self.full_data_dict[key]["pre-op imaging"] = \
+            #     self.__remove_list_element_by_content_invert(self.full_data_dict[key]["pre-op imaging"], "3D")
 
             # remove volumes in pre-op imaging that contain 'CT'
             self.full_data_dict[key]["pre-op imaging"] = \
                 self.__remove_list_element_by_content(self.full_data_dict[key]["pre-op imaging"], "CT")
 
             # remove volumes in intra-op imaging rest that do not contain '3D'
-            self.full_data_dict[key]["intra-op imaging"]["rest"] = \
-                self.__remove_list_element_by_content_invert(self.full_data_dict[key]["intra-op imaging"]["rest"], "3D")
+            # self.full_data_dict[key]["intra-op imaging"]["rest"] = \
+            #   self.__remove_list_element_by_content_invert(self.full_data_dict[key]["intra-op imaging"]["rest"], "3D")
 
     def __get_max_lengths_of_data_arrays(self):
         """
