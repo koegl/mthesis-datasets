@@ -88,16 +88,16 @@ class SummarySpreadsheetSaver:
         """
         for key, value in self.full_data_dict.items():
             # remove volumes in pre-op imaging that do not contain '3D'
-            self.full_data_dict[key]["pre-op imaging"] = \
-                self.__remove_list_element_by_content_invert(self.full_data_dict[key]["pre-op imaging"], "3D")
+            # self.full_data_dict[key]["pre-op imaging"] = \
+            #     self.__remove_list_element_by_content_invert(self.full_data_dict[key]["pre-op imaging"], "3D")
 
             # remove volumes in pre-op imaging that contain 'CT'
             self.full_data_dict[key]["pre-op imaging"] = \
                 self.__remove_list_element_by_content(self.full_data_dict[key]["pre-op imaging"], "CT")
 
             # remove volumes in intra-op imaging rest that do not contain '3D'
-            self.full_data_dict[key]["intra-op imaging"]["rest"] = \
-                self.__remove_list_element_by_content_invert(self.full_data_dict[key]["intra-op imaging"]["rest"], "3D")
+            # self.full_data_dict[key]["intra-op imaging"]["rest"] = \
+            #   self.__remove_list_element_by_content_invert(self.full_data_dict[key]["intra-op imaging"]["rest"], "3D")
 
     def __get_max_lengths_of_data_arrays(self):
         """
@@ -164,6 +164,7 @@ class SummarySpreadsheetSaver:
         self.column_headers = [[], []]
 
         for key, value in self.full_data_dict.items():
+            # append id and path
             self.column_headers[0].append(key)
             self.column_headers[1].append(value["path"][0])
 
@@ -217,8 +218,6 @@ class SummarySpreadsheetSaver:
             id_index += 1
             row_index = 2
 
-        print(self.column_headers)
-
     def __sort_data_matrix(self):
         """
         Sorts the data matrix according to the dates (paths)
@@ -242,16 +241,21 @@ class SummarySpreadsheetSaver:
             self.column_headers[1].append(path)
 
     @staticmethod
-    def __list_contains(check_list: list, content: str) -> bool:
+    def __list_contains(check_list: list, content: list) -> bool:
         """
-        Check if anywere in the list the content is present. Case in-sensitive.
+        Check if anywhere in the list the content (can be more than one string) is present. Case-insensitive.
         :param check_list: List to check for content
-        :param content: Content
+        :param content: List with contents that have to be included
         :return: True if content is in list, else False
         """
 
+        # make content lower
+        for idx, element in enumerate(content):
+            content[idx] = element.lower()
+
+        # check if all values of content are in any of the entries of the list
         for element in check_list:
-            if content.lower() in element.lower():
+            if all(x in element.lower() for x in content):
                 return True
 
         # base case (nothing found)
@@ -259,11 +263,16 @@ class SummarySpreadsheetSaver:
 
     def __assign_warning_colours(self):
         """
-        Assign colours to cells to warn the user
+        Assign colours to cells to warn the user.
+        No ultrasound: green #1DE227
+        No 3D T2: orange #FFA500
+        No T2: red #E21D1D
         """
-
+        # todo how to assign colours to the headers and not just cells?
         # https://xlsxwriter.readthedocs.io/working_with_conditional_formats.html
-        format_orange = self.workbook.add_format({'bg_color': '#FFA500'})
+        format_no_data = self.workbook.add_format({'bg_color': '#858585'})
+        format_no_3dt2 = self.workbook.add_format({'bg_color': '#FFA500'})
+        format_no_t2 = self.workbook.add_format({'bg_color': '#E21D1D'})
 
         header_index = 1
         col_init = 4
@@ -272,52 +281,83 @@ class SummarySpreadsheetSaver:
         # dict is not sorted, so we have to use the sorted headers
         for key in self.column_headers[0]:
             value = self.full_data_dict[key]
-            # for key, value in self.full_data_dict.items():
 
-            # check if they contain T1 and T2
-            if not (self.__list_contains(value["pre-op imaging"], 't2')
-                    and self.__list_contains(value["pre-op imaging"], 't1')):
+            # check if they contain T2 (2D or 3D)
+            if not self.__list_contains(value["pre-op imaging"], ['t2']):
                 # first_row, first_col, last_row, last_col
-                self.worksheet.conditional_format(path_row, header_index, path_row, header_index, {'type': 'cell',
-                                                                                     'criteria': '>=',
-                                                                                     'value': -999999999,
-                                                                                     'format': format_orange})
-
+                self.worksheet.conditional_format(path_row, header_index, path_row, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_no_t2})
                 col_start = col_init
                 col_end = col_start + self.max_lengths["pre_op_im"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
                                                    'criteria': '>=',
                                                    'value': -999999999,
-                                                   'format': format_orange})
+                                                   'format': format_no_t2})
 
-            # check if there are less than two US images
-            if len(value["intra-op imaging"]["ultrasounds"]) <= 2:
-                self.worksheet.conditional_format(path_row, header_index, path_row, header_index, {'type': 'cell',
-                                                                                     'criteria': '>=',
-                                                                                     'value': -999999999,
-                                                                                     'format': format_orange})
+            # check if they contain 3D T2
+            if not self.__list_contains(value["pre-op imaging"], ['t2', '3d']):
+                self.worksheet.conditional_format(path_row, header_index, path_row, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_no_3dt2})
+                col_start = col_init
+                col_end = col_start + self.max_lengths["pre_op_im"] - 1
+                self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_no_3dt2})
+
+            # check if there are no US images
+            if len(value["intra-op imaging"]["ultrasounds"]) == 0:
+                self.worksheet.conditional_format(path_row, header_index, path_row, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_no_data})
                 col_start = col_init + self.max_lengths["pre_op_im"] - 1 + 2
                 col_end = col_start + self.max_lengths["intra_us"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
                                                    'criteria': '>=',
                                                    'value': -999999999,
-                                                   'format': format_orange})
+                                                   'format': format_no_data})
 
-            # check if there are more than 0 intra-op MRs
-            if len(value["intra-op imaging"]["rest"]) == 0:
-                self.worksheet.conditional_format(path_row, header_index, path_row, header_index, {'type': 'cell',
-                                                                                     'criteria': '>=',
-                                                                                     'value': -999999999,
-                                                                                     'format': format_orange})
+            # check if the intra op mrs contain T2 3D
+            if (not self.__list_contains(value["intra-op imaging"]["rest"], ['t2', '3d']))\
+                    and len(value["intra-op imaging"]["rest"]) != 0:
+                self.worksheet.conditional_format(path_row, header_index, path_row, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_no_3dt2})
                 col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
                 col_end = col_start + self.max_lengths["intra_rest"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
                                                    'criteria': '>=',
                                                    'value': -999999999,
-                                                   'format': format_orange})
+                                                   'format': format_no_3dt2})
+
+            # check if the intra op contains anything
+            if len(value["intra-op imaging"]["rest"]) == 0:
+                self.worksheet.conditional_format(path_row, header_index, path_row, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_no_data})
+                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
+                col_end = col_start + self.max_lengths["intra_rest"] - 1
+                self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
+                                                  {'type': 'cell',
+                                                   'criteria': '>=',
+                                                   'value': -999999999,
+                                                   'format': format_no_data})
 
             header_index += 1
 
@@ -330,7 +370,14 @@ class SummarySpreadsheetSaver:
 
         row_names = [' ' for x in range(sum(self.max_lengths.values()) + 10)]
         row_names[1] = "path"
-        df = pd.DataFrame(data=self.data_matrix, index=self.column_headers[0], columns=row_names)
+        # remove charles
+        header_copy = self.column_headers[0].copy()
+
+        for idx, header in enumerate(header_copy):
+            if "charles" in header.lower():
+                header_copy[idx] = '1234'
+
+        df = pd.DataFrame(data=self.data_matrix, index=header_copy, columns=row_names)
         df = (df.T)
 
         self.writer = pd.ExcelWriter(self.spreadsheet_save_path, engine='xlsxwriter')
@@ -352,7 +399,7 @@ class SummarySpreadsheetSaver:
         merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
 
         for key, value in self.max_lengths.items():
-            self.worksheet.merge_range(range_start + 3, 0, range_start + value + 2, 0, names[index], merge_format)
+            self.worksheet.merge_range(range_start + 4, 0, range_start + value + 3, 0, names[index], merge_format)
 
             range_start += value + 1
             index += 1
