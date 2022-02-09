@@ -133,10 +133,9 @@ class SummarySpreadsheetSaver:
         :return:
         """
 
-        data_summary_length = len(
-            self.full_data_dict)  # + 2  # '+ 2' for volume type and empty column at the back to stop
+        data_summary_length = len(self.full_data_dict) + 1  # '+ 2' for volume type and empty column at the back to stop
         # spill
-        max_array_lengths_sum = sum(self.max_lengths.values()) + 10  # '+ 10' for path, frontiers and empty rows
+        max_array_lengths_sum = sum(self.max_lengths.values()) + 11  # '+ 10' for id, path, frontiers and empty rows
 
         empty_data_matrix = []
 
@@ -159,7 +158,7 @@ class SummarySpreadsheetSaver:
         self.data_matrix = self.__create_empty_data_matrix()
 
         id_index = 0
-        row_index = 2
+        row_index = 3
 
         self.column_headers = [[], []]
 
@@ -168,12 +167,14 @@ class SummarySpreadsheetSaver:
             self.column_headers[0].append(key)
             self.column_headers[1].append(value["path"][0])
 
-            # add frontiers mark (if the case was in frontiers)
-            if key in self.frontiers_ids:
-                self.data_matrix[id_index][row_index - 2] = "FRONTIERS"
+            self.data_matrix[id_index][0] = key
 
             # add path
-            self.data_matrix[id_index][row_index - 1] = value["path"][0]
+            self.data_matrix[id_index][row_index - 2] = value["path"][0]
+
+            # add frontiers mark (if the case was in frontiers)
+            if key in self.frontiers_ids:
+                self.data_matrix[id_index][row_index - 1] = "FRONTIERS"
 
             # self.data_matrix[0][row_index + 1] = "pre-op imaging"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op " \
@@ -216,7 +217,7 @@ class SummarySpreadsheetSaver:
             row_index += self.max_lengths["seg_rest"] + 1
 
             id_index += 1
-            row_index = 2
+            row_index = 3
 
     def __sort_data_matrix(self):
         """
@@ -368,7 +369,10 @@ class SummarySpreadsheetSaver:
         # todo implement this as own functin to remove borders:
         # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
 
-        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 10)]
+        # add empty elements to last row
+        self.data_matrix.append([' ' for x in range(sum(self.max_lengths.values()) + 11)])
+
+        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 11)]
         row_names[1] = "path"
         # remove charles
         header_copy = self.column_headers[0].copy()
@@ -377,11 +381,11 @@ class SummarySpreadsheetSaver:
             if "charles" in header.lower():
                 header_copy[idx] = '1234'
 
-        df = pd.DataFrame(data=self.data_matrix, index=header_copy, columns=row_names)
+        df = pd.DataFrame(data=self.data_matrix, index=None, columns=None) # header_copy, columns=row_names)
         df = (df.T)
 
         self.writer = pd.ExcelWriter(self.spreadsheet_save_path, engine='xlsxwriter')
-        df.to_excel(self.writer, sheet_name='Sheet1')
+        df.to_excel(self.writer, sheet_name='Sheet1', index=False, header=False)
         self.worksheet = self.writer.sheets['Sheet1']
         self.workbook = self.writer.book
 
