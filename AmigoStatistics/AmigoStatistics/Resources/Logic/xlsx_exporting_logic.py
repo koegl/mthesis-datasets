@@ -221,27 +221,8 @@ class SummarySpreadsheetSaver:
             id_index += 1
             row_index = 3
 
-    def __sort_data_matrix(self):
-        """
-        Sorts the data matrix according to the dates (paths)
-        """
+        # sort matrix according to dates (contained in the paths)
         self.data_matrix = sorted(self.data_matrix, key=itemgetter(1))
-
-        # the headers list has to be sorted because for assigning warning colours we access the full dict - so we need
-        # the sorted keys
-        # transpose the headers list
-        headers_transpose = []
-        for key, path in zip(self.column_headers[0], self.column_headers[1]):
-            headers_transpose.append([key, path])
-
-        # sort the headers list
-        headers_transpose = sorted(headers_transpose, key=itemgetter(1))
-
-        # transpose the transposed
-        self.column_headers = [[], []]
-        for key, path in headers_transpose:
-            self.column_headers[0].append(key)
-            self.column_headers[1].append(path)
 
     @staticmethod
     def __list_contains(check_list: list, content: list) -> bool:
@@ -424,9 +405,6 @@ class SummarySpreadsheetSaver:
 
         # create data matrix with values from the summary dict
         self.__create_matrix_from_summary_dict()
-
-        # sort data matrix
-        self.__sort_data_matrix()
 
         # format the data_matrix to a spreadsheet
         self.__format_data_matrix_to_excel()
