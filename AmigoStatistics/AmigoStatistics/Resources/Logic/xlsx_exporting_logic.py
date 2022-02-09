@@ -167,6 +167,8 @@ class SummarySpreadsheetSaver:
             self.column_headers[0].append(key)
             self.column_headers[1].append(value["path"][0])
 
+            if "charles" in key.lower():
+                key = "1"
             self.data_matrix[id_index][0] = key
 
             # add path
@@ -374,14 +376,8 @@ class SummarySpreadsheetSaver:
 
         row_names = [' ' for x in range(sum(self.max_lengths.values()) + 11)]
         row_names[1] = "path"
-        # remove charles
-        header_copy = self.column_headers[0].copy()
 
-        for idx, header in enumerate(header_copy):
-            if "charles" in header.lower():
-                header_copy[idx] = '1234'
-
-        df = pd.DataFrame(data=self.data_matrix, index=None, columns=None) # header_copy, columns=row_names)
+        df = pd.DataFrame(data=self.data_matrix)
         df = (df.T)
 
         self.writer = pd.ExcelWriter(self.spreadsheet_save_path, engine='xlsxwriter')
