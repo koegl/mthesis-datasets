@@ -21,6 +21,9 @@ def main():
 
     summary_saver.save()
 
+    os.system("open /Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync"
+              "/patient_summary/full_summary.xlsx")
+
 
 if __name__ == "__main__":
 

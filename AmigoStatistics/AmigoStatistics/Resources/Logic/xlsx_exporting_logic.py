@@ -1,6 +1,6 @@
-import os
 import json
 from operator import itemgetter
+from styleframe import StyleFrame
 
 try:
     import pandas as pd
@@ -26,6 +26,13 @@ class SummarySpreadsheetSaver:
                   ".json") as frontiers_ids_file:
             frontiers_dict = json.load(frontiers_ids_file)
             self.frontiers_ids = frontiers_dict["ids"]
+
+        # load problematic patients
+        with open("/Users/fryderykkogl/Documents/university/master/thesis/code/patient_hierarchy.nosync"
+                  "/problematic_patients.json") as problematic_file:
+            problematic_dict = json.load(problematic_file)
+            self.problematic_id = problematic_dict["ids"][0]
+            self.problematic_id_buf = 0
 
     @staticmethod
     def replace_character_in_file(path_to_file, old_character, new_character):
@@ -133,10 +140,9 @@ class SummarySpreadsheetSaver:
         :return:
         """
 
-        data_summary_length = len(
-            self.full_data_dict)  # + 2  # '+ 2' for volume type and empty column at the back to stop
+        data_summary_length = len(self.full_data_dict) + 1  # '+ 2' for volume type and empty column at the back to stop
         # spill
-        max_array_lengths_sum = sum(self.max_lengths.values()) + 10  # '+ 10' for path, frontiers and empty rows
+        max_array_lengths_sum = sum(self.max_lengths.values()) + 3  # '+ 3' for id, path, frontiers and empty rows
 
         empty_data_matrix = []
 
@@ -159,86 +165,55 @@ class SummarySpreadsheetSaver:
         self.data_matrix = self.__create_empty_data_matrix()
 
         id_index = 0
-        row_index = 2
-
-        self.column_headers = [[], []]
+        row_index = 3
 
         for key, value in self.full_data_dict.items():
-            # append id and path
-            self.column_headers[0].append(key)
-            self.column_headers[1].append(value["path"][0])
+            self.data_matrix[id_index][0] = key
+
+            # add path
+            self.data_matrix[id_index][row_index - 2] = value["path"][0]
 
             # add frontiers mark (if the case was in frontiers)
             if key in self.frontiers_ids:
-                self.data_matrix[id_index][row_index - 2] = "FRONTIERS"
+                self.data_matrix[id_index][row_index - 1] = "FRONTIERS"
 
-            # add path
-            self.data_matrix[id_index][row_index - 1] = value["path"][0]
-
-            # self.data_matrix[0][row_index + 1] = "pre-op imaging"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["pre-op imaging"])] = value["pre-op " \
                                                                                                            "imaging"]
-            row_index += self.max_lengths["pre_op_im"] + 1
+            row_index += self.max_lengths["pre_op_im"] #  + 1
 
-            # self.data_matrix[0][row_index + 1] = "intra-op US"
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["ultrasounds"])] = \
                 value["intra-op imaging"]["ultrasounds"]
-            row_index += self.max_lengths["intra_us"] + 1
-            # self.data_matrix[0][row_index + 1] = "intra-op REST"
+            row_index += self.max_lengths["intra_us"] #  + 1
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["intra-op imaging"]["rest"])] = \
                 value["intra-op imaging"]["rest"]
-            row_index += self.max_lengths["intra_rest"] + 1
+            row_index += self.max_lengths["intra_rest"] #  + 1
 
-            # self.data_matrix[0][row_index + 1] = "tracking PRE"
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["continuous tracking data"]["pre-imri tracking"])] \
                 = value["continuous tracking data"]["pre-imri tracking"]
-            row_index += self.max_lengths["tracking_pre"] + 1
-            # self.data_matrix[0][row_index + 1] = "tracking POST"
+            row_index += self.max_lengths["tracking_pre"] #  + 1
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["continuous tracking data"]["post-imri tracking"])] \
                 = value["continuous tracking data"]["post-imri tracking"]
-            row_index += self.max_lengths["tracking_post"] + 1
+            row_index += self.max_lengths["tracking_post"] #  + 1
 
-            # self.data_matrix[0][row_index + 1] = "segmentations fMRI"
             self.data_matrix[id_index][
             row_index + 1:row_index + 1 + len(value["segmentations"]["pre-op fmri segmentations"])] \
                 = value["segmentations"]["pre-op fmri segmentations"]
-            row_index += self.max_lengths["seg_fmir"] + 1
-            # self.data_matrix[0][row_index + 1] = "segmentations DTI"
+            row_index += self.max_lengths["seg_fmir"] #  + 1
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(
                 value["segmentations"]["pre-op brainlab manual dti tractography segmentations"])] \
                 = value["segmentations"]["pre-op brainlab manual dti tractography segmentations"]
-            row_index += self.max_lengths["seg_dti"] + 1
-            # self.data_matrix[0][row_index + 1] = "segmentations REST"
+            row_index += self.max_lengths["seg_dti"] #  + 1
             self.data_matrix[id_index][row_index + 1:row_index + 1 + len(value["segmentations"]["rest"])] \
                 = value["segmentations"]["rest"]
-            row_index += self.max_lengths["seg_rest"] + 1
+            row_index += self.max_lengths["seg_rest"] #  + 1
 
             id_index += 1
-            row_index = 2
+            row_index = 3
 
-    def __sort_data_matrix(self):
-        """
-        Sorts the data matrix according to the dates (paths)
-        """
+        # sort matrix according to dates (contained in the paths)
         self.data_matrix = sorted(self.data_matrix, key=itemgetter(1))
-
-        # the headers list has to be sorted because for assigning warning colours we access the full dict - so we need
-        # the sorted keys
-        # transpose the headers list
-        headers_transpose = []
-        for key, path in zip(self.column_headers[0], self.column_headers[1]):
-            headers_transpose.append([key, path])
-
-        # sort the headers list
-        headers_transpose = sorted(headers_transpose, key=itemgetter(1))
-
-        # transpose the transposed
-        self.column_headers = [[], []]
-        for key, path in headers_transpose:
-            self.column_headers[0].append(key)
-            self.column_headers[1].append(path)
 
     @staticmethod
     def __list_contains(check_list: list, content: list) -> bool:
@@ -276,10 +251,15 @@ class SummarySpreadsheetSaver:
 
         header_index = 1
         col_init = 4
-        path_row = 2
+        path_row = 0
         # https://cxn03651.github.io/write_xlsx/conditional_formatting.html
         # dict is not sorted, so we have to use the sorted headers
-        for key in self.column_headers[0]:
+        for patient in self.data_matrix[1:-1]:
+            key = patient[0]
+
+            if key == '1':  # problematic patient
+                key = self.problematic_id_buf
+
             value = self.full_data_dict[key]
 
             # check if they contain T2 (2D or 3D)
@@ -320,7 +300,7 @@ class SummarySpreadsheetSaver:
                                                    'criteria': '>=',
                                                    'value': -999999999,
                                                    'format': format_no_data})
-                col_start = col_init + self.max_lengths["pre_op_im"] - 1 + 2
+                col_start = col_init + self.max_lengths["pre_op_im"] - 1 + 2 - 1
                 col_end = col_start + self.max_lengths["intra_us"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -336,7 +316,7 @@ class SummarySpreadsheetSaver:
                                                    'criteria': '>=',
                                                    'value': -999999999,
                                                    'format': format_no_3dt2})
-                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
+                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 1
                 col_end = col_start + self.max_lengths["intra_rest"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -351,7 +331,7 @@ class SummarySpreadsheetSaver:
                                                    'criteria': '>=',
                                                    'value': -999999999,
                                                    'format': format_no_data})
-                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 2 + 1
+                col_start = col_init + self.max_lengths["pre_op_im"] + self.max_lengths["intra_us"] - 1 + 1
                 col_end = col_start + self.max_lengths["intra_rest"] - 1
                 self.worksheet.conditional_format(col_start, header_index, col_end, header_index,
                                                   {'type': 'cell',
@@ -361,6 +341,54 @@ class SummarySpreadsheetSaver:
 
             header_index += 1
 
+    def __set_outer_border_of_range(self, thickness=1):
+        """
+        Sets outer border of a range to a given thickness
+        :param thickness: Thickness of the border
+        """
+        top_format = self.workbook.add_format({'top': 2, 'left': 1, 'right': 1})
+        bottom_format = self.workbook.add_format({'bottom': 0, 'left': 1, 'right': 1})
+        vertical_format = self.workbook.add_format({'left': 1, 'right': 1})
+
+        col_start = 0
+        col_end = len(self.data_matrix) - 2
+
+        max_vals = [3,
+                    self.max_lengths["pre_op_im"],
+                    self.max_lengths["intra_us"],
+                    self.max_lengths["intra_rest"],
+                    self.max_lengths["tracking_pre"],
+                    self.max_lengths["tracking_post"],
+                    self.max_lengths["seg_fmir"],
+                    self.max_lengths["seg_dti"],
+                    self.max_lengths["seg_rest"]]
+
+        # horizontal thick lines
+        # top
+        row = 1
+        for max_val in max_vals[:-1]:
+            row += max_val
+            self.worksheet.conditional_format(row, col_start, row, col_end, {'type': 'cell',
+                                                                             'criteria': '>=',
+                                                                             'value': -999999999,
+                                                                             'format': top_format})
+
+        # bottom
+        row = 1
+        for max_val in max_vals[1:]:
+            row += max_val
+            self.worksheet.conditional_format(row, col_start, row, col_end, {'type': 'cell',
+                                                                             'criteria': '>=',
+                                                                             'value': -999999999,
+                                                                             'format': bottom_format})
+
+        # vertical thin lines
+        self.worksheet.conditional_format(0, 1, len(self.data_matrix[0]), len(self.data_matrix) - 2,
+                                          {'type': 'cell',
+                                           'criteria': '>=',
+                                           'value': -999999999,
+                                           'format': vertical_format})
+
     def __format_data_matrix_to_excel(self):
         """
         Formats the data_matrix and formats it
@@ -368,20 +396,23 @@ class SummarySpreadsheetSaver:
         # todo implement this as own functin to remove borders:
         # https://xlsxwriter.readthedocs.io/working_with_pandas.html#formatting-of-the-dataframe-headers
 
-        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 10)]
+        # add empty elements to last row
+        self.data_matrix.append([' ' for x in range(sum(self.max_lengths.values()) + 3)])
+
+        row_names = [' ' for x in range(sum(self.max_lengths.values()) + 3)]
         row_names[1] = "path"
-        # remove charles
-        header_copy = self.column_headers[0].copy()
 
-        for idx, header in enumerate(header_copy):
-            if "charles" in header.lower():
-                header_copy[idx] = '1234'
+        # remove problematic patient
+        for idx, patient in enumerate(self.data_matrix):
+            if self.problematic_id.lower() in patient[0].lower():
+                self.problematic_id_buf = patient[0]
+                self.data_matrix[idx][0] = "1"
 
-        df = pd.DataFrame(data=self.data_matrix, index=header_copy, columns=row_names)
+        df = pd.DataFrame(data=self.data_matrix)
         df = (df.T)
 
         self.writer = pd.ExcelWriter(self.spreadsheet_save_path, engine='xlsxwriter')
-        df.to_excel(self.writer, sheet_name='Sheet1')
+        df.to_excel(self.writer, sheet_name='Sheet1', index=False, header=False)
         self.worksheet = self.writer.sheets['Sheet1']
         self.workbook = self.writer.book
 
@@ -391,21 +422,29 @@ class SummarySpreadsheetSaver:
                  "segmentations DTI", "segmentations REST"]
         range_start = 0
 
-        # make first row bold
-        bold_font = self.workbook.add_format({'bold': True})
-        self.worksheet.set_row(0, None, bold_font)
-
         # merge
-        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter'})  # , 'border': 2})
+        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter', 'bold': True})
 
         for key, value in self.max_lengths.items():
             self.worksheet.merge_range(range_start + 4, 0, range_start + value + 3, 0, names[index], merge_format)
 
-            range_start += value + 1
+            range_start += value #  + 1
             index += 1
 
         # colours
         self.__assign_warning_colours()
+
+        # make first row and column bold
+        bold_font = self.workbook.add_format({'bold': True})
+
+        self.worksheet.set_row(0, None, bold_font)
+        self.worksheet.set_column('A:A', None, bold_font)
+
+        # adjust width of the first column
+        self.writer.sheets['Sheet1'].set_column(0, 0, 17)
+
+        # add cell borders
+        self.__set_outer_border_of_range()
 
     def save(self):
 
@@ -424,9 +463,6 @@ class SummarySpreadsheetSaver:
 
         # create data matrix with values from the summary dict
         self.__create_matrix_from_summary_dict()
-
-        # sort data matrix
-        self.__sort_data_matrix()
 
         # format the data_matrix to a spreadsheet
         self.__format_data_matrix_to_excel()
