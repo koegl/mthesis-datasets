@@ -1,6 +1,6 @@
-import os
 import json
 from operator import itemgetter
+from styleframe import StyleFrame
 
 try:
     import pandas as pd
@@ -265,7 +265,7 @@ class SummarySpreadsheetSaver:
 
         header_index = 1
         col_init = 4
-        path_row = 2
+        path_row = 0
         # https://cxn03651.github.io/write_xlsx/conditional_formatting.html
         # dict is not sorted, so we have to use the sorted headers
         for patient in self.data_matrix[1:-1]:
@@ -355,6 +355,13 @@ class SummarySpreadsheetSaver:
 
             header_index += 1
 
+    def __set_outer_border_of_range(self, thickness=1):
+        """
+        Sets outer border of a range to a given thickness
+        :param thickness: Thickness of the border
+        """
+        pass
+
     def __format_data_matrix_to_excel(self):
         """
         Formats the data_matrix and formats it
@@ -388,12 +395,8 @@ class SummarySpreadsheetSaver:
                  "segmentations DTI", "segmentations REST"]
         range_start = 0
 
-        # make first row bold
-        bold_font = self.workbook.add_format({'bold': True})
-        self.worksheet.set_row(0, None, bold_font)
-
         # merge
-        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter', 'bold': True})  # , 'border': 2})
+        merge_format = self.workbook.add_format({'align': 'center', 'valign': 'vcenter', 'bold': True})
 
         for key, value in self.max_lengths.items():
             self.worksheet.merge_range(range_start + 4, 0, range_start + value + 3, 0, names[index], merge_format)
@@ -404,7 +407,14 @@ class SummarySpreadsheetSaver:
         # colours
         self.__assign_warning_colours()
 
+        # make first row and column bold
+        bold_font = self.workbook.add_format({'bold': True})
+
+        self.worksheet.set_row(0, None, bold_font)
         self.worksheet.set_column('A:A', None, bold_font)
+
+        # adjust width of the first column
+        self.writer.sheets['Sheet1'].set_column(0, 0, 17)
 
     def save(self):
 
