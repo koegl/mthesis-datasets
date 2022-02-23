@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 import argparse
+import matplotlib.pyplot as plt
+from pydicom import dcmread
+from pydicom.data import get_testdata_file
 
 
 def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/output_video.mp4', codec='MP4V', fps=24):
@@ -42,8 +45,24 @@ def deidentify_us_images(np_array, crop_from_top=0):
     return np_array
 
 
+def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
+    """
+    Function to load DICOMs and return the data as a numpy array of shape AxBx[no. of frames]
+    :param dicom_path: Path to the DICOM
+    :return: The numpy array with the data from DICOM
+    """
+
+    # read dicom
+    fpath = get_testdata_file(dicom_path)
+    ds = dcmread(fpath)
+
+    # return only the pixel values as a numpy array
+    return ds.pixel_array
+
+
 def main(params):
     print(5)
+    load_dicom_to_numpy()
 
 
 if __name__ == "__main__":
