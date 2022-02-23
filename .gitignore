@@ -1,3 +1,7 @@
 /.idea
 /__pycache__
 *.npy
+
+AmigoStatistics/AmigoStatistics/__pycache__/
+
+AmigoStatistics/AmigoStatistics/Resources/Logic/__pycache__/
