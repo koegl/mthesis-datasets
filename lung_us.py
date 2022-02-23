@@ -27,6 +27,21 @@ def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/outpu
     out.release()
 
 
+def deidentify_us_images(np_array, crop_from_top=0):
+    """
+    Function to de-identify (make top x rows black) US images
+    :param np_array: input array of dim: AxBx[no. of frames]
+    :param crop_from_top: how many rows from the top will be made black
+    :return: the de-identified array
+    """
+
+    # make first <crop_from_top> rows black
+    # todo maybe first and second index have to be exchanged
+    np_array[0:crop_from_top, :, :] = 0
+
+    return np_array
+
+
 def main(params):
     print(5)
 
