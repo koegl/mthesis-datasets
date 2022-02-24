@@ -1,7 +1,23 @@
-import cv2
+# Script to create de-identified mp4
+# To run this script, paste the following into the terminal: (MacOS)
+# /Applications/Slicer.app/Contents/MacOS/Slicer --no-splash --no-main-window --python-script "/Users/fryderykkogl/Documents/university/master/thesis/code/mthesis-datasets/lung_us.py"
+
 import numpy as np
-from pydicom import dcmread, read_file
-import matplotlib.pyplot as plt
+from pydicom import read_file
+import sys
+
+try:
+    import cv2
+except:
+    slicer.util.pip_install('opencv-python')
+    import cv2
+try:
+    import matplotlib.pyplot as plt
+except:
+    slicer.util.pip_install('matplotlib')
+    import matplotlib.pyplot as plt
+
+import slicer
 
 
 def plot(array):
@@ -18,15 +34,20 @@ def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/outpu
     :param fps: Frames per second
     """
     # get images shape
-    frame_size = np_array.shape[1:]
+    frame_size = np_array.shape[1:-1]
+
+    # rgb to bgr
+    buf = np_array.copy()
+    np_array[:, :, :, 0] = buf[:, :, :, 2]
+    np_array[:, :, :, 2] = buf[:, :, :, 0]
 
     # create video writer
-    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size, isColor=False)
+    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=True)
 
     # loop through all frames and write them to the video writer
     # dimensions have to be inverted for the VideoWriter
     for i in range(np_array.shape[0]):
-        img = np.transpose(np_array[i, :, :].astype('uint8'))
+        img = np_array[i, :, :, :].astype('uint8')
         out.write(img)
 
     # release the writer
@@ -43,25 +64,9 @@ def deidentify_us_images(np_array, crop_from_left=0, crop_from_top=0):
     """
 
     # crop first <crop_from_top> rows
-    cropped = np_array[:, crop_from_top:, crop_from_left:]
+    cropped = np_array[:, crop_from_top:, crop_from_left:, :]
 
     return cropped
-
-
-def downscale_numpy_to(np_array, new_dimensions):
-    """
-    Takes the input array and downscales it to the new dimensions
-    :param np_array: The array to be downscaled
-    :param new_dimensions: The new dimensions
-    :return: The rescaled array
-    """
-
-    downscaled = np.zeros(new_dimensions)
-
-    for i in range(new_dimensions[0]):  # in range of frames
-        downscaled[i, :, :] = np.transpose(cv2.resize(np_array[i, :, :].astype('float64'), new_dimensions[1:]))
-
-    return downscaled
 
 
 def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
@@ -80,18 +85,31 @@ def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
 
 def main(params):
 
-    us_numpy = load_dicom_to_numpy("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/IM00001")
+    try:
+        # load us volume to slicer
+        us_node = slicer.util.loadVolume("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us"
+                                         "/IM00001")
 
-    # only use first channel
-    us_numpy = us_numpy[:, :, :, 0]  # + us_numpy[:, :, :, 1] + us_numpy[:, :, :, 2]
+        us_numpy = slicer.util.arrayFromVolume(us_node)
 
-    us_numpy = deidentify_us_images(us_numpy.copy(), crop_from_left=0, crop_from_top=42)
+        # us_numpy = load_dicom_to_numpy("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/IM00001")
 
-    us_numpy = downscale_numpy_to(us_numpy, (us_numpy.shape[0], 638, 436))
-    # the numbers are extracted from original file
+        # only use first channel
+        # us_numpy = us_numpy[:, :, :, 0]  # + us_numpy[:, :, :, 1] + us_numpy[:, :, :, 2]
 
-    export_array_to_video(us_numpy, save_path='/Users/fryderykkogl/Documents/university/master/thesis'
-                                              '/data.nosync/lung_us/my/output_video_ori.mp4')
+        us_numpy = deidentify_us_images(us_numpy.copy(), crop_from_left=2, crop_from_top=44)
+
+        # us_numpy = downscale_numpy_to(us_numpy, (us_numpy.shape[0], 638, 436, 3))
+        # the numbers are extracted from original file
+
+        export_array_to_video(us_numpy, save_path='/Users/fryderykkogl/Documents/university/master/thesis'
+                                                  '/data.nosync/lung_us/my/output_video_ori.mp4')
+
+        sys.exit(0)
+
+    except Exception as e:
+        print(f"could not export video.\n{e}")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
