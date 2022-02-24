@@ -34,18 +34,20 @@ def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/outpu
     :param fps: Frames per second
     """
     # get images shape
-    frame_size = np_array.shape[1:]
+    frame_size = np_array.shape[1:-1]
+
+    # rgb to bgr
     buf = np_array.copy()
     np_array[:, :, :, 0] = buf[:, :, :, 2]
     np_array[:, :, :, 2] = buf[:, :, :, 0]
 
     # create video writer
-    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size, isColor=False)
+    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=True)
 
     # loop through all frames and write them to the video writer
     # dimensions have to be inverted for the VideoWriter
     for i in range(np_array.shape[0]):
-        img = np.transpose(np_array[i, :, :].astype('uint8'))
+        img = np_array[i, :, :, :].astype('uint8')
         out.write(img)
 
     # release the writer
@@ -62,7 +64,7 @@ def deidentify_us_images(np_array, crop_from_left=0, crop_from_top=0):
     """
 
     # crop first <crop_from_top> rows
-    cropped = np_array[:, crop_from_top:, crop_from_left:]
+    cropped = np_array[:, crop_from_top:, crop_from_left:, :]
 
     return cropped
 
@@ -90,12 +92,14 @@ def main(params):
 
         us_numpy = slicer.util.arrayFromVolume(us_node)
 
+        # us_numpy = load_dicom_to_numpy("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/IM00001")
+
         # only use first channel
-        us_numpy = us_numpy[:, :, :, 0]  # + us_numpy[:, :, :, 1] + us_numpy[:, :, :, 2]
+        # us_numpy = us_numpy[:, :, :, 0]  # + us_numpy[:, :, :, 1] + us_numpy[:, :, :, 2]
 
-        us_numpy = deidentify_us_images(us_numpy.copy(), crop_from_left=0, crop_from_top=42)
+        us_numpy = deidentify_us_images(us_numpy.copy(), crop_from_left=2, crop_from_top=44)
 
-        us_numpy = downscale_numpy_to(us_numpy, (us_numpy.shape[0], 638, 436))
+        # us_numpy = downscale_numpy_to(us_numpy, (us_numpy.shape[0], 638, 436, 3))
         # the numbers are extracted from original file
 
         export_array_to_video(us_numpy, save_path='/Users/fryderykkogl/Documents/university/master/thesis'
