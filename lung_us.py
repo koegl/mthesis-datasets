@@ -35,6 +35,9 @@ def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/outpu
     """
     # get images shape
     frame_size = np_array.shape[1:]
+    buf = np_array.copy()
+    np_array[:, :, :, 0] = buf[:, :, :, 2]
+    np_array[:, :, :, 2] = buf[:, :, :, 0]
 
     # create video writer
     out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size, isColor=False)
