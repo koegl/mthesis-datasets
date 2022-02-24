@@ -37,8 +37,20 @@ def deidentify_us_images(np_array, black_from_top=0):
     # make first <crop_from_top> rows black
     # todo check which dimension should be balcked out
     np_array[:, 0:black_from_top, :] = 0
+def downscale_numpy_to(np_array, new_dimensions):
+    """
+    Takes the input array and downscales it to the new dimensions
+    :param np_array: The array to be downscaled
+    :param new_dimensions: The new dimensions
+    :return: The rescaled array
+    """
 
-    return np_array
+    downscaled = np.zeros(new_dimensions)
+
+    for i in range(new_dimensions[0]):  # in range of frames
+        downscaled[i, :, :] = np.transpose(cv2.resize(np_array[i, :, :].astype('float64'), new_dimensions[1:]))
+
+    return downscaled
 
 
 def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
