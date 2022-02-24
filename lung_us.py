@@ -1,9 +1,5 @@
 import cv2
-import numpy as np
-import argparse
-import matplotlib.pyplot as plt
-from pydicom import dcmread
-from pydicom.data import get_testdata_file
+from pydicom import dcmread, read_file
 
 
 def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/output_video.mp4', codec='MP4V', fps=24):
@@ -16,31 +12,31 @@ def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/outpu
     """
 
     # get images shape
-    frame_size = np_array.shape[0:2]
+    frame_size = np_array.shape[1:]
 
     # create video writer
-    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size, isColor=False)
+    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=False)
 
     # loop through all frames and write them to the video writer
-    for i in range(np_array.shape[-1]):
-        img = np.ones((500, 500), dtype=np.uint8) * i
+    for i in range(np_array.shape[0]):
+        img = np_array[i, :, :]
         out.write(img)
 
     # release the writer
     out.release()
 
 
-def deidentify_us_images(np_array, crop_from_top=0):
+def deidentify_us_images(np_array, black_from_top=0):
     """
     Function to de-identify (make top x rows black) US images
     :param np_array: input array of dim: AxBx[no. of frames]
-    :param crop_from_top: how many rows from the top will be made black
+    :param black_from_top: how many rows from the top will be made black
     :return: the de-identified array
     """
 
     # make first <crop_from_top> rows black
-    # todo maybe first and second index have to be exchanged
-    np_array[0:crop_from_top, :, :] = 0
+    # todo check which dimension should be balcked out
+    np_array[:, 0:black_from_top, :] = 0
 
     return np_array
 
@@ -53,16 +49,23 @@ def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
     """
 
     # read dicom
-    fpath = get_testdata_file(dicom_path)
-    ds = dcmread(fpath)
+    # fpath = get_testdata_file(dicom_path)
+    ds = read_file(dicom_path)
 
     # return only the pixel values as a numpy array
     return ds.pixel_array
 
 
 def main(params):
-    print(5)
-    load_dicom_to_numpy()
+
+    us_numpy = load_dicom_to_numpy("/Users/fryderykkogl/Downloads/bmode.dcm")
+
+    # todo this is only temporrary for this dicom
+    us_numpy = us_numpy[:, :, :, 0]
+
+    us_numpy_deidentified = deidentify_us_images(us_numpy.copy(), black_from_top=100)
+
+    export_array_to_video(us_numpy_deidentified, save_path='/Users/fryderykkogl/Desktop/output_video_ori.mp4')
 
 
 if __name__ == "__main__":
