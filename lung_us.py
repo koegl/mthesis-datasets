@@ -1,7 +1,23 @@
-import cv2
+# Script to create de-identified mp4
+# To run this script, paste the following into the terminal: (MacOS)
+# /Applications/Slicer.app/Contents/MacOS/Slicer --no-splash --no-main-window --python-script "/Users/fryderykkogl/Documents/university/master/thesis/code/mthesis-datasets/lung_us.py"
+
 import numpy as np
-from pydicom import dcmread, read_file
-import matplotlib.pyplot as plt
+from pydicom import read_file
+import sys
+
+try:
+    import cv2
+except:
+    slicer.util.pip_install('opencv-python')
+    import cv2
+try:
+    import matplotlib.pyplot as plt
+except:
+    slicer.util.pip_install('matplotlib')
+    import matplotlib.pyplot as plt
+
+import slicer
 
 
 def plot(array):
@@ -80,18 +96,29 @@ def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
 
 def main(params):
 
-    us_numpy = load_dicom_to_numpy("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/IM00001")
+    try:
+        # load us volume to slicer
+        us_node = slicer.util.loadVolume("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us"
+                                         "/IM00001")
 
-    # only use first channel
-    us_numpy = us_numpy[:, :, :, 0]  # + us_numpy[:, :, :, 1] + us_numpy[:, :, :, 2]
+        us_numpy = slicer.util.arrayFromVolume(us_node)
 
-    us_numpy = deidentify_us_images(us_numpy.copy(), crop_from_left=0, crop_from_top=42)
+        # only use first channel
+        us_numpy = us_numpy[:, :, :, 0]  # + us_numpy[:, :, :, 1] + us_numpy[:, :, :, 2]
 
-    us_numpy = downscale_numpy_to(us_numpy, (us_numpy.shape[0], 638, 436))
-    # the numbers are extracted from original file
+        us_numpy = deidentify_us_images(us_numpy.copy(), crop_from_left=0, crop_from_top=42)
 
-    export_array_to_video(us_numpy, save_path='/Users/fryderykkogl/Documents/university/master/thesis'
-                                              '/data.nosync/lung_us/my/output_video_ori.mp4')
+        us_numpy = downscale_numpy_to(us_numpy, (us_numpy.shape[0], 638, 436))
+        # the numbers are extracted from original file
+
+        export_array_to_video(us_numpy, save_path='/Users/fryderykkogl/Documents/university/master/thesis'
+                                                  '/data.nosync/lung_us/my/output_video_ori.mp4')
+
+        sys.exit(0)
+
+    except Exception as e:
+        print(f"could not export video.\n{e}")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
