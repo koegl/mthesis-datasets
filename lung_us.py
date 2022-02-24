@@ -17,8 +17,6 @@ except:
     slicer.util.pip_install('matplotlib')
     import matplotlib.pyplot as plt
 
-import slicer
-
 
 def plot(array):
     plt.imshow(array, cmap='gray')
@@ -64,11 +62,53 @@ def deidentify_us_images(np_array, crop_from_left=0, crop_from_top=0):
     """
 
     # crop first <crop_from_top> rows
-    cropped = np_array[:, crop_from_top:, crop_from_left:, :]
+    cropped = np_array[:, crop_from_top:, :-crop_from_left, :]
 
     return cropped
 
 
+def pixel_check(path_vid_ori, path_vid_new):
+    """
+    check if two videos are the same - pixelwise SSD. Returns the SSD of original with itself inversed and of original
+    and the new
+    :param path_vid_ori: Path to the original video
+    :param path_vid_new: Path to the new video
+    :return: (inverse_SSD, SSD)
+    """
+    def ssd(a, b):
+        """
+        Returns the Sum of Squared Differences of 'a' and 'b'
+        :param a: Array 1
+        :param b: Array 2
+        :return: SSD
+        """
+        dif = a.flatten().astype('int64') - b.flatten().astype('int64')
+        return np.dot(dif, dif)
+
+    # load videos as numpy arrays
+    cap = cv2.VideoCapture(path_vid_ori)
+    ret = True
+    ori_frames = []
+    while ret:
+        ret, img = cap.read()  # read one frame from the 'capture' object; img is (H, W, C)
+        if ret:
+            ori_frames.append(img)
+    cap = cv2.VideoCapture(path_vid_new)
+    ret = True
+    new_frames = []
+    while ret:
+        ret, img = cap.read()  # read one frame from the 'capture' object; img is (H, W, C)
+        if ret:
+            new_frames.append(img)
+
+    ori = np.array(ori_frames)
+    ori_inv = 255 - ori
+    new = np.array(new_frames)
+
+    return ssd(ori, ori_inv), ssd(ori, new)
+
+
+# this stays for debugging purposes if we want to load data here
 def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
     """
     Function to load DICOMs and return the data as a numpy array of shape AxBx[no. of frames]
@@ -86,24 +126,28 @@ def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
 def main(params):
 
     try:
+        # ssds = pixel_check("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/US_BEDSIDE_1_1_crop.mp4",
+        #             "/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/my/output_video_ori.mp4")
+
         # load us volume to slicer
         us_node = slicer.util.loadVolume("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us"
                                          "/IM00001")
 
+        # get data array as numpy array
         us_numpy = slicer.util.arrayFromVolume(us_node)
 
-        # us_numpy = load_dicom_to_numpy("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/IM00001")
-
-        # only use first channel
-        # us_numpy = us_numpy[:, :, :, 0]  # + us_numpy[:, :, :, 1] + us_numpy[:, :, :, 2]
-
+        # deidentify by cropping
         us_numpy = deidentify_us_images(us_numpy.copy(), crop_from_left=2, crop_from_top=44)
-
-        # us_numpy = downscale_numpy_to(us_numpy, (us_numpy.shape[0], 638, 436, 3))
-        # the numbers are extracted from original file
 
         export_array_to_video(us_numpy, save_path='/Users/fryderykkogl/Documents/university/master/thesis'
                                                   '/data.nosync/lung_us/my/output_video_ori.mp4')
+
+        # ssd_inv, ssd_new = pixel_check("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/US_BEDSIDE_1_1_crop.mp4",
+        #                                "/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/my/output_video_ori.mp4")
+        #
+        # print(f"\n\n\n\nSSD:\n"
+        #       f"Original vs Inverse:\t{ssd_inv}\n"
+        #       f"Original vs New:\t{ssd_new}")
 
         sys.exit(0)
 
