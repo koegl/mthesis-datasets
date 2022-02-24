@@ -26,17 +26,21 @@ def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/outpu
     out.release()
 
 
-def deidentify_us_images(np_array, black_from_top=0):
+def deidentify_us_images(np_array, crop_from_left=0, crop_from_top=0):
     """
-    Function to de-identify (make top x rows black) US images
+    Function to de-identify (crop top x rows) US images
     :param np_array: input array of dim: AxBx[no. of frames]
-    :param black_from_top: how many rows from the top will be made black
+    :param crop_from_top: how many rows from the top will be cropped
+    :param crop_from_left: how many columns from the left will be cropped
     :return: the de-identified array
     """
 
-    # make first <crop_from_top> rows black
-    # todo check which dimension should be balcked out
-    np_array[:, 0:black_from_top, :] = 0
+    # crop first <crop_from_top> rows
+    cropped = np_array[:, crop_from_top:, crop_from_left:]
+
+    return cropped
+
+
 def downscale_numpy_to(np_array, new_dimensions):
     """
     Takes the input array and downscales it to the new dimensions
