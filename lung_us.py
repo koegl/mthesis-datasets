@@ -67,22 +67,6 @@ def deidentify_us_images(np_array, crop_from_left=0, crop_from_top=0):
     return cropped
 
 
-def downscale_numpy_to(np_array, new_dimensions):
-    """
-    Takes the input array and downscales it to the new dimensions
-    :param np_array: The array to be downscaled
-    :param new_dimensions: The new dimensions
-    :return: The rescaled array
-    """
-
-    downscaled = np.zeros(new_dimensions)
-
-    for i in range(new_dimensions[0]):  # in range of frames
-        downscaled[i, :, :] = np.transpose(cv2.resize(np_array[i, :, :].astype('float64'), new_dimensions[1:]))
-
-    return downscaled
-
-
 def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
     """
     Function to load DICOMs and return the data as a numpy array of shape AxBx[no. of frames]
