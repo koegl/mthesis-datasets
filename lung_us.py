@@ -1,8 +1,15 @@
 import cv2
+import numpy as np
 from pydicom import dcmread, read_file
+import matplotlib.pyplot as plt
 
 
-def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/output_video.mp4', codec='MP4V', fps=24):
+def plot(array):
+    plt.imshow(array, cmap='gray')
+    plt.show()
+
+
+def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/output_video.mp4', codec='H264', fps=26.09):
     """
     Exports numpy array to video
     :param np_array: input array of dim: AxBx[no. of frames]
@@ -10,16 +17,16 @@ def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/outpu
     :param codec: fourcc codec
     :param fps: Frames per second
     """
-
     # get images shape
     frame_size = np_array.shape[1:]
 
     # create video writer
-    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=False)
+    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size, isColor=False)
 
     # loop through all frames and write them to the video writer
+    # dimensions have to be inverted for the VideoWriter
     for i in range(np_array.shape[0]):
-        img = np_array[i, :, :]
+        img = np.transpose(np_array[i, :, :].astype('uint8'))
         out.write(img)
 
     # release the writer
@@ -65,7 +72,6 @@ def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
     """
 
     # read dicom
-    # fpath = get_testdata_file(dicom_path)
     ds = read_file(dicom_path)
 
     # return only the pixel values as a numpy array
