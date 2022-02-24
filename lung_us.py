@@ -74,14 +74,18 @@ def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
 
 def main(params):
 
-    us_numpy = load_dicom_to_numpy("/Users/fryderykkogl/Downloads/bmode.dcm")
+    us_numpy = load_dicom_to_numpy("/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/lung_us/IM00001")
 
-    # todo this is only temporrary for this dicom
-    us_numpy = us_numpy[:, :, :, 0]
+    # only use first channel
+    us_numpy = us_numpy[:, :, :, 0]  # + us_numpy[:, :, :, 1] + us_numpy[:, :, :, 2]
 
-    us_numpy_deidentified = deidentify_us_images(us_numpy.copy(), black_from_top=100)
+    us_numpy = deidentify_us_images(us_numpy.copy(), crop_from_left=0, crop_from_top=42)
 
-    export_array_to_video(us_numpy_deidentified, save_path='/Users/fryderykkogl/Desktop/output_video_ori.mp4')
+    us_numpy = downscale_numpy_to(us_numpy, (us_numpy.shape[0], 638, 436))
+    # the numbers are extracted from original file
+
+    export_array_to_video(us_numpy, save_path='/Users/fryderykkogl/Documents/university/master/thesis'
+                                              '/data.nosync/lung_us/my/output_video_ori.mp4')
 
 
 if __name__ == "__main__":
