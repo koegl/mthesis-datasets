@@ -219,8 +219,24 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onExportCurrentSceneToDicomButton(self):
         """
-    Exports the current scene (according to the hierarchy) to DICOM
-    """
+        Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
+        Scene
+        └── Subject name/mrn
+            ├── Pre-op imaging
+            │   └── volumes
+            ├── Intra-op imaging
+            │   └── volumes
+            ├── Segmentation
+            │   └── lesion segmentation
+            └── Annotations
+                └── landmarks
+
+        1. Get folder structure
+        2. Create studies according to the structure
+        3. Export volumes accordingly
+
+
+        """
 
         try:
             print("\n\nExporting current scene to DICOM...\n")
