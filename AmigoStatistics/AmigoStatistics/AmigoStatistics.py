@@ -4,13 +4,14 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import DICOMScalarVolumePlugin
 
+from Logic.test_import import testf
+from Logic.tree import Tree
+
 import os
 from os.path import exists
 import json
 from os import listdir
 from os.path import isfile, join
-
-# TODO ADD A TEXT FIELD FOR ALL THE PATHS - were to save the .jsons etc
 
 
 #
@@ -228,11 +229,20 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         patient_item_id = self.folder_structure.id
 
         for child_name, child in self.folder_structure.children.items():
+            # create the studies
             temp_study_id = hierarchy_node.CreateStudyItem(patient_item_id, child_name)
 
+            # change parents form folders to studies
             for file_name, file in child.children.items():
                 hierarchy_node.SetItemParent(file.id, temp_study_id)
 
+    # def export_volumes_to_dicom(self):
+    #
+
+    """
+
+
+    """
     def onExportCurrentSceneToDicomButton(self):
         """
         Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
@@ -250,55 +260,40 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         1. Get folder structure
         2. Create studies according to the structure
         3. Export volumes accordingly
-
-
         """
 
         try:
             print("\n\nExporting current scene to DICOM...\n")
 
-            volume_name = "US Scan 1 (Ultrasound)"
-            output_folder = "/Users/fryderykkogl/Documents/university/master/thesis/data.nosync"
+            testf()
 
-            # Create patient and study and put the volume under the study
-            hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+            # 1. Get folder structure
+            self.generate_folder_structure_as_tree()
 
-            patient_item_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), "123456789")
-            # patient_item_id = hierarchy_node.GetItemByName("123456789")
+            # 2. Create studies according to the folder structure
+            self.create_studies_in_slicer()
 
-            study_item_id = hierarchy_node.CreateStudyItem(patient_item_id, "intra-op_us")
-            # study_item_id = hierarchy_node.GetItemByName("pre-op_imaging")
+            # 3. Export volumes according to the studies
+            output_folder = "/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/DICOM_export/exported"
+            exporter = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
 
-            volume_sh_item_id = hierarchy_node.GetItemByName(volume_name)
-            hierarchy_node.SetItemParent(volume_sh_item_id, study_item_id)
-# Tree
-#
-class Tree(object):
-    """Generic tree node."""
-    def __init__(self, name="root", children=None, id=None):
+            for folder_name, folder in self.folder_structure.children.items():
+                for file_name, file in folder.children.items():
+                    exportables = exporter.examineForExport(file.id)
 
-        self.name = name
+                    if not exportables:
+                        raise ValueError("Nothing found to export.")
 
-        self.children = {}
-        if children is not None:
-            for child in children:
-                self.add_child(child)
+                    for exp in exportables:
+                        exp.directory = output_folder
 
-        self.id = id
+                    exporter.export(exportables)
 
-    def __repr__(self):
-        return self.name
+            print("\nFinished exporting to DICOM.")
 
-    def add_child(self, node):
-        assert isinstance(node, Tree)
-        self.children[node.name] = node
-
-    def remove_child(self, name):
-        assert isinstance(name, str)
-        assert name in self.children
-
-        self.children.pop(name)
-
+        except Exception as e:
+            slicer.util.errorDisplay("Couldn't export current scene to DICOM.\n{}".format(e),
+                                     windowTitle="Export error")
 
 
 #
