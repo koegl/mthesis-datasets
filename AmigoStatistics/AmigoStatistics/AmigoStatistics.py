@@ -63,6 +63,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode = None
         self._updatingGUIFromParameterNode = False
 
+        self.folder_structure = None
+
     def setup(self):
         """
     Called when the user opens the module the first time and the widget is initialized.
