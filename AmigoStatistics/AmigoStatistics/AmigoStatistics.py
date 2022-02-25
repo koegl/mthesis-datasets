@@ -217,6 +217,20 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 file_name = subject_hierarchy_node.GetItemName(file_id)
                 self.folder_structure.children[folder_name].add_child(Tree(file_name, id=file_id))
 
+    def create_studies_in_slicer(self):
+        """
+        Create studies according to the folder structure in Slicer
+        """
+        hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+
+        patient_item_id = self.folder_structure.id
+
+        for child_name, child in self.folder_structure.children.items():
+            temp_study_id = hierarchy_node.CreateStudyItem(patient_item_id, child_name)
+
+            for file_name, file in child.children.items():
+                hierarchy_node.SetItemParent(file.id, temp_study_id)
+
     def onExportCurrentSceneToDicomButton(self):
         """
         Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
