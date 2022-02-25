@@ -190,6 +190,33 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self._parameterNode.EndModify(wasModified)
 
+    def generate_folder_structure(self):
+        """
+        Generate the folder structure as a tree
+        """
+        # 1. get item id of subject in hierarchy structure
+        # we assume there is only one child
+        child_ids_subject = vtk.vtkIdList()
+        child_ids_folders = vtk.vtkIdList()
+        subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids_subject)
+        subject_item_id = child_ids_subject.GetId(0)
+        self.folder_structure = Tree("Subject_folders", id=subject_item_id)
+
+        # 2. get item id's of folders
+        subject_hierarchy_node.GetItemChildren(subject_item_id, child_ids_subject)
+        for i in range(child_ids_subject.GetNumberOfIds()):
+            folder_id = child_ids_subject.GetId(i)
+            folder_name = subject_hierarchy_node.GetItemName(folder_id)
+            self.folder_structure.add_child(Tree(folder_name, id=folder_id))
+
+            # add children of folders
+            subject_hierarchy_node.GetItemChildren(folder_id, child_ids_folders)
+            for j in range(child_ids_folders.GetNumberOfIds()):
+                file_id = child_ids_folders.GetId(j)
+                file_name = subject_hierarchy_node.GetItemName(file_id)
+                self.folder_structure.children[folder_name].add_child(Tree(file_name, id=file_id))
+
     def onExportCurrentSceneToDicomButton(self):
         """
     Exports the current scene (according to the hierarchy) to DICOM
