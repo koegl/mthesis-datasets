@@ -2,10 +2,10 @@ import vtk
 import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
-import DICOMScalarVolumePlugin
 
-from Logic.test_import import testf
 from Logic.tree import Tree
+from Logic.dicom_logic import DicomLogic
+
 
 import os
 from os.path import exists
@@ -63,8 +63,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.logic = None
         self._parameterNode = None
         self._updatingGUIFromParameterNode = False
-
-        self.folder_structure = None
 
     def setup(self):
         """
@@ -193,69 +191,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self._parameterNode.EndModify(wasModified)
 
-    def generate_folder_structure_as_tree(self):
-        """
-        Generate the folder structure as a tree
-        """
-        # 1. get item id of subject in hierarchy structure
-        # we assume there is only one child
-        child_ids_subject = vtk.vtkIdList()
-        child_ids_folders = vtk.vtkIdList()
-        subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-        subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids_subject)
-        subject_item_id = child_ids_subject.GetId(0)
-        self.folder_structure = Tree("Subject_folders", id=subject_item_id)
-
-        # 2. get item id's of folders
-        subject_hierarchy_node.GetItemChildren(subject_item_id, child_ids_subject)
-        for i in range(child_ids_subject.GetNumberOfIds()):
-            folder_id = child_ids_subject.GetId(i)
-            folder_name = subject_hierarchy_node.GetItemName(folder_id)
-            self.folder_structure.add_child(Tree(folder_name, id=folder_id))
-
-            # add children of folders
-            subject_hierarchy_node.GetItemChildren(folder_id, child_ids_folders)
-            for j in range(child_ids_folders.GetNumberOfIds()):
-                file_id = child_ids_folders.GetId(j)
-                file_name = subject_hierarchy_node.GetItemName(file_id)
-                self.folder_structure.children[folder_name].add_child(Tree(file_name, id=file_id))
-
-    def create_studies_in_slicer(self):
-        """
-        Create studies according to the folder structure in Slicer
-        """
-        hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-
-        patient_item_id = self.folder_structure.id
-
-        for child_name, child in self.folder_structure.children.items():
-            # create the studies
-            temp_study_id = hierarchy_node.CreateStudyItem(patient_item_id, child_name)
-
-            # change parents form folders to studies
-            for file_name, file in child.children.items():
-                hierarchy_node.SetItemParent(file.id, temp_study_id)
-
-    # def export_volumes_to_dicom(self):
-    #
-
-    """
-
-
-    """
     def onExportCurrentSceneToDicomButton(self):
         """
         Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
-        Scene
-        └── Subject name/mrn
-            ├── Pre-op imaging
-            │   └── volumes
-            ├── Intra-op imaging
-            │   └── volumes
-            ├── Segmentation
-            │   └── lesion segmentation
-            └── Annotations
-                └── landmarks
+
 
         1. Get folder structure
         2. Create studies according to the structure
@@ -265,29 +204,12 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             print("\n\nExporting current scene to DICOM...\n")
 
-            testf()
+            # Create DicomLogic
+            dicom_logic = DicomLogic(output_folder="/Users/fryderykkogl/Documents/university/master/thesis/data"
+                                                   ".nosync/DICOM_export/exported")
 
-            # 1. Get folder structure
-            self.generate_folder_structure_as_tree()
-
-            # 2. Create studies according to the folder structure
-            self.create_studies_in_slicer()
-
-            # 3. Export volumes according to the studies
-            output_folder = "/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/DICOM_export/exported"
-            exporter = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
-
-            for folder_name, folder in self.folder_structure.children.items():
-                for file_name, file in folder.children.items():
-                    exportables = exporter.examineForExport(file.id)
-
-                    if not exportables:
-                        raise ValueError("Nothing found to export.")
-
-                    for exp in exportables:
-                        exp.directory = output_folder
-
-                    exporter.export(exportables)
+            # export to DICOM
+            dicom_logic.full_export()
 
             print("\nFinished exporting to DICOM.")
 

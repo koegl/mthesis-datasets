@@ -1,0 +1,111 @@
+import slicer
+import vtk
+import DICOMScalarVolumePlugin
+
+from Logic.tree import Tree
+
+import os
+
+
+class DicomLogic:
+    """
+    Class to encapsulate logic for exporting a scene to DICOM. Assumed structure:
+    Scene
+    └── Subject name/mrn
+        ├── Pre-op imaging
+        │   └── volumes
+        ├── Intra-op imaging
+        │   └── volumes
+        ├── Segmentation
+        │   └── lesion segmentation
+        └── Annotations
+            └── landmarks
+    """
+    # todo fix exporting with studies (already asked question on discourse)
+    # todo figure out how to export segmentations
+    # todo figure out how to export landmarks
+    # todo figure out workflow for user interaction - probably user prepares the scene and then clicks a button
+
+    def __init__(self, output_folder=None):
+
+        if output_folder is None:
+            self.output_folder = os.getcwd()
+        else:
+            self.output_folder = output_folder
+
+        self.folder_structure = None
+
+    def generate_folder_structure_as_tree(self):
+        """
+        Generate the folder structure as a tree
+        """
+        # 1. get item id of subject in hierarchy structure
+        # we assume there is only one child
+        child_ids_subject = vtk.vtkIdList()
+        child_ids_folders = vtk.vtkIdList()
+        subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids_subject)
+        subject_item_id = child_ids_subject.GetId(0)
+        self.folder_structure = Tree("Subject_folders", id=subject_item_id)
+
+        # 2. get item id's of folders
+        subject_hierarchy_node.GetItemChildren(subject_item_id, child_ids_subject)
+        for i in range(child_ids_subject.GetNumberOfIds()):
+            folder_id = child_ids_subject.GetId(i)
+            folder_name = subject_hierarchy_node.GetItemName(folder_id)
+            self.folder_structure.add_child(Tree(folder_name, id=folder_id))
+
+            # add children of folders
+            subject_hierarchy_node.GetItemChildren(folder_id, child_ids_folders)
+            for j in range(child_ids_folders.GetNumberOfIds()):
+                file_id = child_ids_folders.GetId(j)
+                file_name = subject_hierarchy_node.GetItemName(file_id)
+                self.folder_structure.children[folder_name].add_child(Tree(file_name, id=file_id))
+
+    def create_studies_in_slicer(self):
+        """
+        Create studies according to the folder structure in Slicer
+        """
+        hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+
+        patient_item_id = self.folder_structure.id
+
+        for child_name, child in self.folder_structure.children.items():
+            # create the studies
+            temp_study_id = hierarchy_node.CreateStudyItem(patient_item_id, child_name)
+
+            # change parents form folders to studies
+            for file_name, file in child.children.items():
+                hierarchy_node.SetItemParent(file.id, temp_study_id)
+
+    def export_volumes_to_dicom(self):
+        """
+        Export volumes according to the created structure to DICOM
+        """
+        exporter = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
+
+        for folder_name, folder in self.folder_structure.children.items():
+            for file_name, file in folder.children.items():
+                exportables = exporter.examineForExport(file.id)
+
+                if not exportables:
+                    raise ValueError("Nothing found to export.")
+
+                for exp in exportables:
+                    exp.directory = self.output_folder
+
+                exporter.export(exportables)
+
+    def full_export(self):
+        """
+        Perform all the steps to export
+        """
+
+        # 1. Generate folder structure
+        self.generate_folder_structure_as_tree()
+
+        # 2. Create studies according to the folder structure
+        self.create_studies_in_slicer()
+
+        # 3. Export volumes according to the studies
+        self.export_volumes_to_dicom()
