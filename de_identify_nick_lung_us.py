@@ -1,6 +1,6 @@
 # Script to create de-identified mp4
 # To run this script, paste the following into the terminal: (MacOS)
-# /Applications/Slicer.app/Contents/MacOS/Slicer --no-splash --no-main-window --python-script "/Users/fryderykkogl/Documents/university/master/thesis/code/mthesis-datasets/lung_us.py"
+# /Applications/Slicer.app/Contents/MacOS/Slicer --no-splash --no-main-window --python-script "/Users/fryderykkogl/Documents/university/master/thesis/code/mthesis-datasets/de_identify_nick_lung_us.py"
 import os
 
 import numpy as np
