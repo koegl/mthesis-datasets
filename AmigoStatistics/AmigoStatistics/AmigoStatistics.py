@@ -239,23 +239,34 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             volume_sh_item_id = hierarchy_node.GetItemByName(volume_name)
             hierarchy_node.SetItemParent(volume_sh_item_id, study_item_id)
+# Tree
+#
+class Tree(object):
+    """Generic tree node."""
+    def __init__(self, name="root", children=None, id=None):
 
-            exporter = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
-            exportables = exporter.examineForExport(volume_sh_item_id)
+        self.name = name
 
-            if not exportables:
-                raise ValueError("Nothing found to export.")
+        self.children = {}
+        if children is not None:
+            for child in children:
+                self.add_child(child)
 
-            for exp in exportables:
-                exp.directory = output_folder
+        self.id = id
 
-            exporter.export(exportables)
+    def __repr__(self):
+        return self.name
 
-            print("\nFinished exporting to DICOM.")
+    def add_child(self, node):
+        assert isinstance(node, Tree)
+        self.children[node.name] = node
 
-        except Exception as e:
-            slicer.util.errorDisplay("Couldn't export current scene to DICOM.\n{}".format(e),
-                                     windowTitle="Export error")
+    def remove_child(self, name):
+        assert isinstance(name, str)
+        assert name in self.children
+
+        self.children.pop(name)
+
 
 
 #
