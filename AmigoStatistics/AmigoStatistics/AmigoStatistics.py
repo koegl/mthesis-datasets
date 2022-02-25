@@ -190,7 +190,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self._parameterNode.EndModify(wasModified)
 
-    def generate_folder_structure(self):
+    def generate_folder_structure_as_tree(self):
         """
         Generate the folder structure as a tree
         """
