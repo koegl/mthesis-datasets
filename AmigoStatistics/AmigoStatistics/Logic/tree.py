@@ -20,6 +20,7 @@ class Tree(object):
         assert isinstance(node, Tree)
         self.children[node.name] = node
         self.children[node.name].parent = self
+        return node
 
     def remove_child(self, name):
         assert isinstance(name, str)
