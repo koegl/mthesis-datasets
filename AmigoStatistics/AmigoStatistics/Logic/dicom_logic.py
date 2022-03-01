@@ -104,7 +104,10 @@ class DicomLogic:
     def export_volumes_to_dicom(self):
         """
         Export volumes according to the created structure to DICOM
+
+        UID has to be unique- - that's how they get identified together
         """
+
         exporter = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
 
         for folder_name, folder in self.folder_structure.children.items():
@@ -115,9 +118,10 @@ class DicomLogic:
                     raise ValueError("Nothing found to export.")
 
                 for exp in exportables:
-                    exp.directory = self.output_folder
+                    self.set_dicom_tags(exp, file)
 
                 exporter.export(exportables)
+
 
     def full_export(self):
         """
@@ -128,7 +132,7 @@ class DicomLogic:
         self.generate_folder_structure_as_tree()
 
         # 2. Create studies according to the folder structure
-        self.create_studies_in_slicer()
+        # self.create_studies_in_slicer()
 
         # 3. Export volumes according to the studies
         self.export_volumes_to_dicom()
