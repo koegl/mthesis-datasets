@@ -5,6 +5,7 @@ import DICOMScalarVolumePlugin
 from Logic.tree import Tree
 
 import os
+import hashlib
 
 
 class DicomLogic:
@@ -46,6 +47,7 @@ class DicomLogic:
         subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids_subject)
         subject_item_id = child_ids_subject.GetId(0)
+        # todo change subject_folders to name of patient
         self.folder_structure = Tree("Subject_folders", id=subject_item_id)
 
         # 2. get item id's of folders
@@ -101,6 +103,42 @@ class DicomLogic:
         hashed_mod = hashed % 999999937
 
         return str(hashed_mod)
+
+    def set_dicom_tags(self, exp, file):
+        """
+        Sets dicom tags of one exportable exp
+        @param exp: The exportable
+        @param file: The file in the hierarchy tree
+        """
+
+        # output folder
+        exp.directory = self.output_folder
+
+        # PatientID - get last element of subject name (MRN) and hash it - root name
+        patient_id = self.generate_id(self.folder_structure.name)
+        exp.setTag('PatientID', patient_id)
+
+        # StudyDescription (name of the study in the hierarchy)
+        # todo works only when hierarchy is not deeper than 2
+        study_description = file.parent.name
+        exp.setTag('StudyDescription', study_description)
+
+        # StudyID
+        # todo set study ID (same as StudyInstanceUID)
+
+        # StudyInstanceUID (unique for each study, series are grouped by this ID)
+        study_instance_uid = self.generate_id(study_description)
+        exp.setTag('StudyInstanceUID', study_instance_uid)
+
+        # Modality
+        if "intra" in file.parent.name.lower() and "us" in file.name.lower():
+            exp.setTag('Modality', 'US')
+        else:
+            exp.setTag('Modality', 'MR')
+
+        # SeriesDescription (name of the series in the hierarchy)
+        exp.setTag('SeriesDescription', file.name)
+
     def export_volumes_to_dicom(self):
         """
         Export volumes according to the created structure to DICOM
