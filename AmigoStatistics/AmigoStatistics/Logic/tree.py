@@ -11,12 +11,15 @@ class Tree(object):
 
         self.id = id
 
+        self.parent = None
+
     def __repr__(self):
         return self.name
 
     def add_child(self, node):
         assert isinstance(node, Tree)
         self.children[node.name] = node
+        self.children[node.name].parent = self
 
     def remove_child(self, name):
         assert isinstance(name, str)
