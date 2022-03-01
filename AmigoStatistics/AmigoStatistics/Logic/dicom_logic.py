@@ -22,7 +22,6 @@ class DicomLogic:
         └── Annotations
             └── landmarks
     """
-    # todo fix exporting with studies (already asked question on discourse)
     # todo figure out how to export segmentations
     # todo figure out how to export landmarks
     # todo figure out workflow for user interaction - probably user prepares the scene and then clicks a button
@@ -66,44 +65,6 @@ class DicomLogic:
                     # reference, so we can use this in the next iteration to append nodes
                     nodes_queue.append(sub_child)
                     visited.append(sub_id)
-
-    def generate_folder_structure_as_tree(self):
-        """
-        Generate the folder structure as a tree
-        """
-        # 1. get item id of subject in hierarchy structure
-        # we assume there is only one child
-        child_ids_subject = vtk.vtkIdList()
-        child_ids_folders = vtk.vtkIdList()
-        child_ids_subfolders = vtk.vtkIdList()
-
-        subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-        subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids_subject)
-        subject_item_id = child_ids_subject.GetId(0)
-
-        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(subject_item_id), id=subject_item_id)
-
-        # 2. get item id's of folders
-        subject_hierarchy_node.GetItemChildren(subject_item_id, child_ids_subject)
-        for i in range(child_ids_subject.GetNumberOfIds()):
-            folder_id = child_ids_subject.GetId(i)
-            folder_name = subject_hierarchy_node.GetItemName(folder_id)
-            self.folder_structure.add_child(Tree(folder_name, id=folder_id))
-
-            # add children of folders
-            subject_hierarchy_node.GetItemChildren(folder_id, child_ids_folders)
-            for j in range(child_ids_folders.GetNumberOfIds()):
-                file_id = child_ids_folders.GetId(j)
-                file_name = subject_hierarchy_node.GetItemName(file_id)
-                self.folder_structure.children[folder_name].add_child(Tree(file_name, id=file_id))
-
-                # add sub-children
-                subject_hierarchy_node.GetItemChildren(file_id, child_ids_subfolders)
-                if child_ids_subfolders.GetNumberOfIds() > 0:
-                    for k in range(child_ids_subfolders.GetNumberOfIds()):
-                        sub_file_id = child_ids_subfolders.GetId(k)
-                        sub_file_name = subject_hierarchy_node.GetItemName(sub_file_id)
-                        self.folder_structure.children[folder_name].children[file_name].add_child(Tree(sub_file_name, id=sub_file_id))
 
     def create_studies_in_slicer(self):
         """
@@ -207,10 +168,12 @@ class DicomLogic:
         """
 
         # 1. Generate folder structure
-        self.generate_folder_structure_as_tree()
+        self.bfs_generate_folder_structure_as_tree()
 
         # 2. Create studies according to the folder structure
         # self.create_studies_in_slicer()
 
         # 3. Export volumes according to the studies
         # self.export_volumes_to_dicom()
+
+        print(5)
