@@ -44,11 +44,13 @@ class DicomLogic:
         # we assume there is only one child
         child_ids_subject = vtk.vtkIdList()
         child_ids_folders = vtk.vtkIdList()
+        child_ids_subfolders = vtk.vtkIdList()
+
         subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids_subject)
         subject_item_id = child_ids_subject.GetId(0)
-        # todo change subject_folders to name of patient
-        self.folder_structure = Tree("Subject_folders", id=subject_item_id)
+
+        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(subject_item_id), id=subject_item_id)
 
         # 2. get item id's of folders
         subject_hierarchy_node.GetItemChildren(subject_item_id, child_ids_subject)
@@ -63,6 +65,14 @@ class DicomLogic:
                 file_id = child_ids_folders.GetId(j)
                 file_name = subject_hierarchy_node.GetItemName(file_id)
                 self.folder_structure.children[folder_name].add_child(Tree(file_name, id=file_id))
+
+                # add sub-children
+                subject_hierarchy_node.GetItemChildren(file_id, child_ids_subfolders)
+                if child_ids_subfolders.GetNumberOfIds() > 0:
+                    for k in range(child_ids_subfolders.GetNumberOfIds()):
+                        sub_file_id = child_ids_subfolders.GetId(k)
+                        sub_file_name = subject_hierarchy_node.GetItemName(sub_file_id)
+                        self.folder_structure.children[folder_name].children[file_name].add_child(Tree(sub_file_name, id=sub_file_id))
 
     def create_studies_in_slicer(self):
         """
@@ -123,12 +133,12 @@ class DicomLogic:
         study_description = file.parent.name
         exp.setTag('StudyDescription', study_description)
 
-        # StudyID
-        # todo set study ID (same as StudyInstanceUID)
-
         # StudyInstanceUID (unique for each study, series are grouped by this ID)
         study_instance_uid = self.generate_id(study_description)
         exp.setTag('StudyInstanceUID', study_instance_uid)
+
+        # StudyID
+        exp.setTag('StudyID', study_instance_uid)
 
         # Modality
         if "intra" in file.parent.name.lower() and "us" in file.name.lower():
@@ -158,8 +168,7 @@ class DicomLogic:
                 for exp in exportables:
                     self.set_dicom_tags(exp, file)
 
-                exporter.export(exportables)
-
+                # exporter.export(exportables)
 
     def full_export(self):
         """
@@ -173,4 +182,4 @@ class DicomLogic:
         # self.create_studies_in_slicer()
 
         # 3. Export volumes according to the studies
-        self.export_volumes_to_dicom()
+        # self.export_volumes_to_dicom()
