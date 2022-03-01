@@ -78,6 +78,29 @@ class DicomLogic:
             for file_name, file in child.children.items():
                 hierarchy_node.SetItemParent(file.id, temp_study_id)
 
+    def generate_id(self, hash_string):
+        """
+        Generates a unique id by hashing hash_string. (unique up to 999999999)
+        @param hash_string: The path which will be hashed
+        @return: the id
+        """
+
+        # create hasher
+        hasher = hashlib.sha1()
+
+        # hash the string
+        hasher.update(hash_string.encode('utf-8'))
+
+        # return hex-string of hashed value
+        hex_string = hasher.hexdigest()
+
+        # convert to int base 10
+        hashed = int(hex_string, 16)
+
+        # take the mod with a prime number to reduce the size of the id
+        hashed_mod = hashed % 999999937
+
+        return str(hashed_mod)
     def export_volumes_to_dicom(self):
         """
         Export volumes according to the created structure to DICOM
