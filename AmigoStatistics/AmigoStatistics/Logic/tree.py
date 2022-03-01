@@ -26,3 +26,19 @@ class Tree(object):
         assert name in self.children
 
         self.children.pop(name)
+
+    def root(self):
+
+        if self.parent is None:
+            return self
+
+        parent = self.parent
+
+        while parent is not None:
+            if parent.parent is None:
+                return parent
+            else:
+                parent = parent.parent
+
+
+
