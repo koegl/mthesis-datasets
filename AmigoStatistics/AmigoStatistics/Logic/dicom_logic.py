@@ -107,6 +107,7 @@ class DicomLogic:
 
         return str(hashed_mod)
 
+    # todo why does slicer fuse patients
     def set_dicom_tags(self, exp, file, series_counter):
         """
         Sets dicom tags of one exportable exp
@@ -115,21 +116,20 @@ class DicomLogic:
         @param series_counter: Counts at which series we currently are
         """
 
-        # todo set seires # - probbaly some global counter
-
         # output folder
         exp.directory = self.output_folder
 
         # PatientID - get last element of subject name (MRN) and hash it - root name
         patient_id = self.generate_id(self.folder_structure.name)
         exp.setTag('PatientID', patient_id)
+        exp.setTag('PatientName', patient_id)
 
         # StudyDescription (name of the study in the hierarchy)
         study_description = file.parent.name
         exp.setTag('StudyDescription', study_description)
 
         # StudyInstanceUID (unique for each study, series are grouped by this ID)
-        study_instance_uid = self.generate_id(study_description)
+        study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
         exp.setTag('StudyInstanceUID', study_instance_uid)
 
         # StudyID
