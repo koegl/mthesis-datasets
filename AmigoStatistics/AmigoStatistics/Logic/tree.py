@@ -13,6 +13,8 @@ class Tree(object):
 
         self.parent = None
 
+        self.study_id = None
+
     def __repr__(self):
         return self.name
 
