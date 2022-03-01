@@ -41,5 +41,27 @@ class Tree(object):
             else:
                 parent = parent.parent
 
+    @staticmethod
+    def bfs(node):
+        """
+        DFS on a node, returns nodes in BFS order
+        @param node: The root of the (sub-) tree
+        @return: List of nodes
+        """
+        assert isinstance(node, Tree), "Node is not a Tree"
 
+        # array with visited and FIFO queue with nodes
+        visited = [node.id]
+        return_array = []
+        q = [node]
 
+        while q:
+            s = q.pop(0)
+
+            for child_name, child in s.children.items():
+                if child.id not in visited:
+                    q.append(child)
+                    visited.append(child.id)
+                    return_array.append(child)
+
+        return return_array
