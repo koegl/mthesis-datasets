@@ -107,12 +107,15 @@ class DicomLogic:
 
         return str(hashed_mod)
 
-    def set_dicom_tags(self, exp, file):
+    def set_dicom_tags(self, exp, file, series_counter):
         """
         Sets dicom tags of one exportable exp
         @param exp: The exportable
         @param file: The file in the hierarchy tree
+        @param series_counter: Counts at which series we currently are
         """
+
+        # todo set seires # - probbaly some global counter
 
         # output folder
         exp.directory = self.output_folder
@@ -122,7 +125,6 @@ class DicomLogic:
         exp.setTag('PatientID', patient_id)
 
         # StudyDescription (name of the study in the hierarchy)
-        # todo works only when hierarchy is not deeper than 2
         study_description = file.parent.name
         exp.setTag('StudyDescription', study_description)
 
@@ -134,13 +136,20 @@ class DicomLogic:
         exp.setTag('StudyID', study_instance_uid)
 
         # Modality
-        if "intra" in file.parent.name.lower() and "us" in file.name.lower():
+        if "intra" in file.parent.name.lower() and "us" in file.parent.name.lower() and "us" in file.name.lower():
             exp.setTag('Modality', 'US')
-        else:
+        elif "intra" in file.parent.name.lower() and "mr" in file.parent.name.lower() and "t" in file.name.lower():
             exp.setTag('Modality', 'MR')
+        elif "pre" in file.parent.name.lower() and "imag" in file.parent.name.lower() and "t" in file.name.lower():
+            exp.setTag('Modality', 'MR')
+        elif "segment" in file.parent.name.lower():
+            exp.setTag('Modality', 'MR')  # we say that the segmentation is of the modality where it was created
 
         # SeriesDescription (name of the series in the hierarchy)
         exp.setTag('SeriesDescription', file.name)
+
+        # SeriesNumber
+        exp.setTag('SeriesNumber', series_counter)
 
     def export_volumes_to_dicom(self):
         """
@@ -151,17 +160,27 @@ class DicomLogic:
 
         exporter = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
 
-        for folder_name, folder in self.folder_structure.children.items():
-            for file_name, file in folder.children.items():
-                exportables = exporter.examineForExport(file.id)
+        bfs_array = Tree.bfs(self.folder_structure)
+
+        counter = {}
+
+        for node in bfs_array:
+            if not bool(node.children):  # only if it does not have any children
+
+                if node.parent.name in counter:
+                    counter[node.parent.name] += 1
+                else:
+                    counter[node.parent.name] = 1
+
+                exportables = exporter.examineForExport(node.id)
 
                 if not exportables:
                     raise ValueError("Nothing found to export.")
 
                 for exp in exportables:
-                    self.set_dicom_tags(exp, file)
+                    self.set_dicom_tags(exp, node, counter[node.parent.name])
 
-                # exporter.export(exportables)
+                exporter.export(exportables)
 
     def full_export(self):
         """
@@ -175,6 +194,6 @@ class DicomLogic:
         self.create_studies_in_slicer()
 
         # 3. Export volumes according to the studies
-        # self.export_volumes_to_dicom()
+        self.export_volumes_to_dicom()
 
         print(5)
