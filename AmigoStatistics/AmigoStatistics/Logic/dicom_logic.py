@@ -72,15 +72,16 @@ class DicomLogic:
         """
         hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
 
-        patient_item_id = self.folder_structure.id
+        # create studies
+        for _, child in self.folder_structure.children.items():
+            child.study_id = hierarchy_node.CreateStudyItem(self.folder_structure.id, child.name)
+            hierarchy_node.SetItemParent(child.study_id, self.folder_structure.id)
 
-        for child_name, child in self.folder_structure.children.items():
-            # create the studies
-            temp_study_id = hierarchy_node.CreateStudyItem(patient_item_id, child_name)
-
-            # change parents form folders to studies
-            for file_name, file in child.children.items():
-                hierarchy_node.SetItemParent(file.id, temp_study_id)
+        # loop through all nodes in BFS order
+        bfs_array_of_nodes = Tree.bfs(self.folder_structure)
+        for node in bfs_array_of_nodes:
+            if node.study_id is None:  # true if the node is not a study -> a series
+                hierarchy_node.SetItemParent(node.id, node.parent.study_id)
 
     def generate_id(self, hash_string):
         """
@@ -171,7 +172,7 @@ class DicomLogic:
         self.bfs_generate_folder_structure_as_tree()
 
         # 2. Create studies according to the folder structure
-        # self.create_studies_in_slicer()
+        self.create_studies_in_slicer()
 
         # 3. Export volumes according to the studies
         # self.export_volumes_to_dicom()
