@@ -28,7 +28,7 @@ class AmigoStatistics(ScriptedLoadableModule):
         self.parent.title = "AmigoStatistics"
         self.parent.categories = ["Informatics"]
         self.parent.dependencies = ["Markups"]
-        self.parent.contributors = ["Fryderyk Kögl (TUM, BWH), Harneet Cheema (BWH, UOttawa), Tina Kapur (BWH)"]
+        self.parent.contributors = ["Fryderyk Kögl (TUM, BWH)"]
         # TODO: update with short description of the module and a link to online module documentation
         self.parent.helpText = """
     Module that gather useful Slicer functionality for setting landmarks in MR and US images. To start choose the
