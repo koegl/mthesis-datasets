@@ -2,10 +2,8 @@
 import os
 
 import numpy as np
-import sys
 import logging
 import cv2
-import matplotlib.pyplot as plt
 
 
 def load_video_to_numpy(video_path="/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/nick/test/IM00001.mov"):
