@@ -136,8 +136,9 @@ class DicomLogic:
         exp.setTag('StudyID', study_instance_uid)
 
         # Modality
+        # setting to US makes the files load as slices that are not recognised as one volume
         if "intra" in file.parent.name.lower() and "us" in file.parent.name.lower() and "us" in file.name.lower():
-            exp.setTag('Modality', 'US')
+            exp.setTag('Modality', 'MR')
         elif "intra" in file.parent.name.lower() and "mr" in file.parent.name.lower() and "t" in file.name.lower():
             exp.setTag('Modality', 'MR')
         elif "pre" in file.parent.name.lower() and "imag" in file.parent.name.lower() and "t" in file.name.lower():
@@ -195,5 +196,3 @@ class DicomLogic:
 
         # 3. Export volumes according to the studies
         self.export_volumes_to_dicom()
-
-        print(5)
