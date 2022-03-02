@@ -196,7 +196,7 @@ def main():
                     os.makedirs(os.path.join(base_export_folder, case_id_folder))
 
                 save_path = os.path.join(base_export_folder, case_id_folder, clip)
-                save_path = save_path.replace(".mov", "_crop.mov")
+                save_path = save_path.replace(".mov", "_crop.mp4")
 
                 load_path = os.path.join(clips_folder[0], clip)
 
