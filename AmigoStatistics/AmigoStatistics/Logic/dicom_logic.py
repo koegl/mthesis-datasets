@@ -168,6 +168,11 @@ class DicomLogic:
         for node in bfs_array:
             if not bool(node.children) and "transform" not in node.name.lower():  # only if it does not have any children
 
+                # harden tr ansformation
+                buf_node = slicer.util.getFirstNodeByName(node.name)
+                buf_node.HardenTransform()
+
+                # increase/create counter for series number
                 if node.parent.name in counter:
                     counter[node.parent.name] += 1
                 else:
