@@ -8,6 +8,7 @@ from Logic.tree import Tree
 import os
 import hashlib
 import numpy as np
+import logging
 
 
 class DicomLogic:
@@ -30,7 +31,7 @@ class DicomLogic:
     # todo figure out how to export landmarks
     # todo figure out workflow for user interaction - probably user prepares the scene and then clicks a button
 
-    def __init__(self, output_folder=None):
+    def __init__(self, output_folder=None, log_path="/Users/fryderykkogl/Desktop/log.log"):
 
         if output_folder is None:
             self.output_folder = os.getcwd()
@@ -38,6 +39,10 @@ class DicomLogic:
             self.output_folder = output_folder
 
         self.folder_structure = None
+
+        logging.basicConfig(filename=log_path)
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)  # lowest level from ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
 
     def bfs_generate_folder_structure_as_tree(self):
         """
