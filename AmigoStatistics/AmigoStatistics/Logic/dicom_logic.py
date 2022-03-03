@@ -296,12 +296,19 @@ class DicomLogic:
                     segmentation_node_id_buf = self.convert_volume_to_segmentation(node.name)
                     exportables = exporter_segmentation.examineForExport(segmentation_node_id_buf)
 
+                    parent_buf = self.find_semantic_parent_of_a_segmentation(node.name)
+
+                    if not parent_buf:
+                        self.logger.log(logging.ERROR, f"Could not find parent of segmentation node {node.name}, thus "
+                                                       f"it could not be exported.")
+                        continue
+
                     for exp in exportables:
                         pass #self.set_dicom_tags(exp, node, counter[node.parent.name])
 
                     # exporter_segmentation.export(exportables)
             except Exception as e:
-                print(f"\n\nCould not export node: {node.name}.\n{str(e)}\n\n")
+                self.logger.log(logging.ERROR, f"Could not export node {node.name}. ({str(e)})")
 
     def full_export(self):
         """
