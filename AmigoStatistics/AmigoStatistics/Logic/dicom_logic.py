@@ -6,6 +6,7 @@ from Logic.tree import Tree
 
 import os
 import hashlib
+import numpy as np
 
 
 class DicomLogic:
@@ -170,7 +171,7 @@ class DicomLogic:
         for node in bfs_array:
             if not bool(node.children) and "transform" not in node.name.lower():  # only if it does not have any children
 
-                # harden tr ansformation
+                # harden transformation
                 buf_node = slicer.util.getFirstNodeByName(node.name)
                 buf_node.HardenTransform()
 
@@ -201,6 +202,9 @@ class DicomLogic:
 
         # 2. Create studies according to the folder structure
         self.create_studies_in_slicer()
+
+        # 3. Harden transforms
+        # todo
 
         # 3. Export volumes according to the studies
         self.export_volumes_to_dicom()
