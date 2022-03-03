@@ -86,6 +86,18 @@ class DicomLogic:
             if node.study_id is None:  # true if the node is not a study -> a series
                 hierarchy_node.SetItemParent(node.id, node.parent.study_id)
 
+    def harden_transformations(self):
+        """
+        Hardens all transformations
+        """
+
+        all_nodes = Tree.bfs(self.folder_structure)
+
+        for node in all_nodes:
+            # harden transformation
+            buf_node = slicer.util.getFirstNodeByName(node.name)
+            buf_node.HardenTransform()
+
     def generate_id(self, hash_string):
         """
         Generates a unique id by hashing hash_string. (unique up to 999999999)
@@ -171,10 +183,6 @@ class DicomLogic:
         for node in bfs_array:
             if not bool(node.children) and "transform" not in node.name.lower():  # only if it does not have any children
 
-                # harden transformation
-                buf_node = slicer.util.getFirstNodeByName(node.name)
-                buf_node.HardenTransform()
-
                 # increase/create counter for series number
                 if node.parent.name in counter:
                     counter[node.parent.name] += 1
@@ -204,7 +212,7 @@ class DicomLogic:
         self.create_studies_in_slicer()
 
         # 3. Harden transforms
-        # todo
+        self.harden_transformations()
 
         # 3. Export volumes according to the studies
         self.export_volumes_to_dicom()
