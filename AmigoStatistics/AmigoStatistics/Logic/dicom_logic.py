@@ -1,6 +1,7 @@
 import slicer
 import vtk
 import DICOMScalarVolumePlugin
+import DICOMSegmentationPlugin
 
 from Logic.tree import Tree
 
@@ -96,9 +97,12 @@ class DicomLogic:
         for node in all_nodes:
             # harden transformation
             buf_node = slicer.util.getFirstNodeByName(node.name)
-            buf_node.HardenTransform()
 
-    def generate_id(self, hash_string):
+            if buf_node:  # if it exists
+                buf_node.HardenTransform()
+
+    @staticmethod
+    def generate_id(hash_string):
         """
         Generates a unique id by hashing hash_string. (unique up to 999999999)
         @param hash_string: The path which will be hashed
@@ -122,7 +126,7 @@ class DicomLogic:
 
         return str(hashed_mod)
 
-    def set_dicom_tags(self, exp, file, series_counter):
+    def set_dicom_tags(self, exp, file, series_counter=None):
         """
         Sets dicom tags of one exportable exp
         @param exp: The exportable
@@ -157,22 +161,25 @@ class DicomLogic:
             exp.setTag('Modality', 'MR')
         elif "pre" in file.parent.name.lower() and "imag" in file.parent.name.lower() and "t" in file.name.lower():
             exp.setTag('Modality', 'MR')
-        elif "segment" in file.parent.name.lower():
-            exp.setTag('Modality', 'MR')  # we say that the segmentation is of the modality where it was created
+        # elif "segment" in file.parent.name.lower():
+            # exp.setTag('Modality', 'MR')  # we say that the segmentation is of the modality where it was created
 
         # SeriesDescription (name of the series in the hierarchy)
         exp.setTag('SeriesDescription', file.name)
 
         # SeriesNumber
-        exp.setTag('SeriesNumber', series_counter)
+        if series_counter:
+            exp.setTag('SeriesNumber', series_counter)
 
-    # todo burn in transformations before creating the segmentation
-    def convert_volume_to_segmentation(self, volume_name):
+    @staticmethod
+    # todo how to set the right parent of the segmentation
+    def convert_volume_to_segmentation(volume_name):
         """
-        Function to convert a volume to a segmentation. First create a labelmap and then convert it to a segmentation
+        Function to convert a volume to a segmentation. First create a labelmap and then convert it to a segmentation.
+        Also associates the segment node with the reference volume node
         @param volume_name: Name of the volume (node) in slicer which will be converted. Makes only sense for a binary
                             volume
-        @return: ID of the segmentation
+        @return: The segmentation node
         """
 
         # convert volume to label-map
@@ -183,7 +190,7 @@ class DicomLogic:
         label_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
 
         # place np array in label node
-        slicer.util.updateVolumeFromArray(label_node, volume_data.astype(int))
+        slicer.util.updateVolumeFromArray(label_node, volume_data)
 
         # fix orientation of label_node
         volume_matrix = vtk.vtkMatrix4x4()
@@ -198,8 +205,16 @@ class DicomLogic:
         # convert label-map to segmentation
         success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node, segmentation_node)
 
+        # associate segmentation node with a reference volume node (input node)
+        sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        volume_id_in_hierarchy = sh_node.GetItemByDataNode(volume_node)
+        study_item_id = sh_node.GetItemParent(volume_id_in_hierarchy)
+        segmentation_id_in_hierarchy = sh_node.GetItemByDataNode(segmentation_node)
+        # todo check if this is necessary
+        sh_node.SetItemParent(segmentation_id_in_hierarchy, study_item_id)
+
         if success:
-            return segmentation_node.GetID()
+            return sh_node.GetItemByDataNode(segmentation_node)
         else:
             return None
 
@@ -210,7 +225,8 @@ class DicomLogic:
         UID has to be unique- - that's how they get identified together
         """
 
-        exporter = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
+        exporter_volumes = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
+        exporter_segmentation = DICOMSegmentationPlugin.DICOMSegmentationPluginClass()
 
         bfs_array = Tree.bfs(self.folder_structure)
 
@@ -218,24 +234,46 @@ class DicomLogic:
 
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
-            if not bool(node.children) and "transform" not in node.name.lower():  # only if it does not have any children
+            try:
+                if not bool(node.children) and "transform" not in node.name.lower() and "segment" not in node.parent.name.lower():
+                    # only if it: does not have any children; is not a transformation; is not a segmentation
 
-                # increase/create counter for series number
-                if node.parent.name in counter:
-                    counter[node.parent.name] += 1
-                else:
-                    counter[node.parent.name] = 1
+                    # increase/create counter for series number
+                    if node.parent.name in counter:
+                        counter[node.parent.name] += 1
+                    else:
+                        counter[node.parent.name] = 1
 
-                exportables = exporter.examineForExport(node.id)
+                    exportables = exporter_volumes.examineForExport(node.id)
 
-                if not exportables:
-                    raise ValueError("Nothing found to export.")
+                    if not exportables:
+                        raise ValueError("Nothing found to export.")
 
-                # loop through exportables (should always be only one) and set dicom tags
-                for exp in exportables:
-                    self.set_dicom_tags(exp, node, counter[node.parent.name])
+                    # loop through exportables (should always be only one) and set dicom tags
+                    for exp in exportables:
+                        self.set_dicom_tags(exp, node, counter[node.parent.name])
 
-                exporter.export(exportables)
+                    exporter_volumes.export(exportables)
+
+                if not bool(node.children) and "transform" not in node.name.lower() and "segment" in node.parent.name.lower():
+                    # only if it: does not have any children; is not a transformation; is a segmentation
+
+                    # increase/create counter for series number
+                    if node.parent.name in counter:
+                        counter[node.parent.name] += 1
+                    else:
+                        counter[node.parent.name] = 1
+
+                    # convert volume to segmentation
+                    segmentation_node_id_buf = self.convert_volume_to_segmentation(node.name)
+                    exportables = exporter_segmentation.examineForExport(segmentation_node_id_buf)
+
+                    for exp in exportables:
+                        pass #self.set_dicom_tags(exp, node, counter[node.parent.name])
+
+                    # exporter_segmentation.export(exportables)
+            except Exception as e:
+                print(f"\n\nCould not export node: {node.name}.\n{str(e)}\n\n")
 
     def full_export(self):
         """
