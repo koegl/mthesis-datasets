@@ -15,7 +15,9 @@ class DicomLogic:
     └── Subject name/mrn
         ├── Pre-op imaging
         │   └── volumes
-        ├── Intra-op imaging
+        ├── Intra-op US
+        │   └── volumes
+        ├── Intra-op MR
         │   └── volumes
         ├── Segmentation
         │   └── lesion segmentation
