@@ -107,7 +107,6 @@ class DicomLogic:
 
         return str(hashed_mod)
 
-    # todo why does slicer fuse patients
     def set_dicom_tags(self, exp, file, series_counter):
         """
         Sets dicom tags of one exportable exp
@@ -165,9 +164,15 @@ class DicomLogic:
 
         counter = {}
 
+        # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
-            if not bool(node.children):  # only if it does not have any children
+            if not bool(node.children) and "transform" not in node.name.lower():  # only if it does not have any children
 
+                # harden tr ansformation
+                buf_node = slicer.util.getFirstNodeByName(node.name)
+                buf_node.HardenTransform()
+
+                # increase/create counter for series number
                 if node.parent.name in counter:
                     counter[node.parent.name] += 1
                 else:
@@ -178,6 +183,7 @@ class DicomLogic:
                 if not exportables:
                     raise ValueError("Nothing found to export.")
 
+                # loop through exportables (should always be only one) and set dicom tags
                 for exp in exportables:
                     self.set_dicom_tags(exp, node, counter[node.parent.name])
 
