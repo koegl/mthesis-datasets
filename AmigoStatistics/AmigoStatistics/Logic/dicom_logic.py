@@ -204,3 +204,11 @@ class DicomLogic:
 
         # 3. Export volumes according to the studies
         self.export_volumes_to_dicom()
+
+    # todo finish logger
+    def log(self, log_level, log_message):
+        """
+        Function to handle logging across methods
+        @param log_level: DEBUG, ERROR etc
+        @param log_message: Message to be logged
+        """
