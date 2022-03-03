@@ -211,21 +211,13 @@ class DicomLogic:
         """
 
         # convert volume to label-map
+        # create volume and label nodes
         volume_node = slicer.util.getFirstNodeByName(volume_name)
-        volume_data = slicer.util.arrayFromVolume(volume_node)
-        volume_data = volume_data.astype(np.uint8())
-
         label_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
 
-        # place np array in label node
-        slicer.util.updateVolumeFromArray(label_node, volume_data)
-
-        # fix orientation of label_node
-        volume_matrix = vtk.vtkMatrix4x4()
-        volume_node.GetIJKToRASMatrix(volume_matrix)
-        volume_origin = volume_node.GetOrigin()
-        label_node.SetIJKToRASMatrix(volume_matrix)
-        label_node.SetOrigin(volume_origin)
+        # create the label from the volume
+        volumes_logic = slicer.modules.volumes.logic()
+        volumes_logic.CreateLabelVolumeFromVolume(slicer.mrmlScene, label_node, volume_node)
 
         # create new empty segmentation
         segmentation_node = slicer.mrmlScene.AddNode(slicer.vtkMRMLSegmentationNode())
