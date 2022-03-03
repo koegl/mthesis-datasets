@@ -176,6 +176,29 @@ class DicomLogic:
         if series_counter:
             exp.setTag('SeriesNumber', series_counter)
 
+    def find_semantic_parent_of_a_segmentation(self, segmentation_name):
+        """
+        Function to find the semantic parent of a segmentation - semantic referring to the fact that we are not looking
+        at the hierarchy tree, as the segmentaion will be in a different folder. What we are doing instead is only look
+        at the pre-operative imaging (that's where the lesions were created) and find the volume which corresponds to
+        the segmentation
+        @param segmentation_name: The name of the segmentation
+        @return: The volume node of the parent
+        """
+
+        # split segmentation_name into sub-words that can be searched for in the potential parent
+        segmentation_name_split = segmentation_name.split(" ")
+
+        # loop through pre-op imaging nodes
+        for preop_name, preop_node in self.folder_structure.children['Pre-op Imaging'].children.items():
+
+            # check if any of the sub-words of the segmentation appear in the node name
+            if any(x in preop_name for x in segmentation_name_split):
+                return preop_node
+
+        # if nothing was found, return None
+        return None
+
     @staticmethod
     # todo how to set the right parent of the segmentation
     def convert_volume_to_segmentation(volume_name):
