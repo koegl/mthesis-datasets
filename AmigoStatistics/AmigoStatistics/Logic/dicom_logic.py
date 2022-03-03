@@ -101,7 +101,9 @@ class DicomLogic:
         for node in all_nodes:
             # harden transformation
             buf_node = slicer.util.getFirstNodeByName(node.name)
-            buf_node.HardenTransform()
+
+            if buf_node:  # if it exists
+                buf_node.HardenTransform()
 
     def generate_id(self, hash_string):
         """
