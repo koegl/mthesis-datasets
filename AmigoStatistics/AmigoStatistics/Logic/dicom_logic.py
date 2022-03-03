@@ -153,6 +153,43 @@ class DicomLogic:
         # SeriesNumber
         exp.setTag('SeriesNumber', series_counter)
 
+    # todo burn in transformations before creating the segmentation
+    def convert_volume_to_segmentation(self, volume_name):
+        """
+        Function to convert a volume to a segmentation. First create a labelmap and then convert it to a segmentation
+        @param volume_name: Name of the volume (node) in slicer which will be converted. Makes only sense for a binary
+                            volume
+        @return: ID of the segmentation
+        """
+
+        # convert volume to label-map
+        volume_node = slicer.util.getFirstNodeByName(volume_name)
+        volume_data = slicer.util.arrayFromVolume(volume_node)
+        volume_data = volume_data.astype(np.uint8())
+
+        label_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
+
+        # place np array in label node
+        slicer.util.updateVolumeFromArray(label_node, volume_data.astype(int))
+
+        # fix orientation of label_node
+        volume_matrix = vtk.vtkMatrix4x4()
+        volume_node.GetIJKToRASMatrix(volume_matrix)
+        volume_origin = volume_node.GetOrigin()
+        label_node.SetIJKToRASMatrix(volume_matrix)
+        label_node.SetOrigin(volume_origin)
+
+        # create new empty segmentation
+        segmentation_node = slicer.mrmlScene.AddNode(slicer.vtkMRMLSegmentationNode())
+
+        # convert label-map to segmentation
+        success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node, segmentation_node)
+
+        if success:
+            return segmentation_node.GetID()
+        else:
+            return None
+
     def export_volumes_to_dicom(self):
         """
         Export volumes according to the created structure to DICOM
