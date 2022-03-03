@@ -242,7 +242,7 @@ class DicomLogic:
         """
         Export volumes according to the created structure to DICOM
 
-        UID has to be unique- - that's how they get identified together
+        UID has to be unique - that's how they get identified together
         """
 
         exporter_volumes = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
@@ -255,6 +255,7 @@ class DicomLogic:
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
             try:
+                # volumes
                 if not bool(node.children) and "transform" not in node.name.lower() and "segment" not in node.parent.name.lower():
                     # only if it: does not have any children; is not a transformation; is not a segmentation
 
@@ -275,6 +276,7 @@ class DicomLogic:
 
                     exporter_volumes.export(exportables)
 
+                # segmentations
                 if not bool(node.children) and "transform" not in node.name.lower() and "segment" in node.parent.name.lower():
                     # only if it: does not have any children; is not a transformation; is a segmentation
 
