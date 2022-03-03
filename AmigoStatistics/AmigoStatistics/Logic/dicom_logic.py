@@ -166,7 +166,7 @@ class DicomLogic:
 
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
-            if not bool(node.children):  # only if it does not have any children
+            if not bool(node.children) and "transform" not in node.name.lower():  # only if it does not have any children
 
                 if node.parent.name in counter:
                     counter[node.parent.name] += 1
