@@ -51,7 +51,15 @@ class DicomLogic:
         child_ids = vtk.vtkIdList()
         subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids)
-        id = child_ids.GetId(0)
+
+        try:
+            id = child_ids.GetId(0)
+        except Exception as e:
+            self.logger.log(logging.DEBUG, f"Could not generate folder structure in "
+                                           f"\"bfs_generate_folder_structure_as_tree()\", as the scene is empty (there"
+                                           f"are no child ids). ({str(e)})")
+            raise ValueError(f"Could not generate folder structure in \"bfs_generate_folder_structure_as_tree()\", as "
+                             f"the scene is empty (there are no child ids). ({str(e)})")
 
         # FIFO queue of nodes and create root
         self.folder_structure = Tree(subject_hierarchy_node.GetItemName(id), id=id)
@@ -102,7 +110,7 @@ class DicomLogic:
             # harden transformation
             buf_node = slicer.util.getFirstNodeByName(node.name)
 
-            if buf_node:  # if it exists
+            if buf_node and "transform" not in node.name:  # if it exists
                 buf_node.HardenTransform()
 
     def generate_id(self, hash_string):
