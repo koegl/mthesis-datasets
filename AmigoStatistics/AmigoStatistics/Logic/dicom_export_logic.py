@@ -7,11 +7,10 @@ from Logic.tree import Tree
 
 import os
 import hashlib
-import numpy as np
 import logging
 
 
-class DicomLogic:
+class DicomExportLogic:
     """
     Class to encapsulate logic for exporting a scene to DICOM. Assumed structure:
     Scene
@@ -131,7 +130,7 @@ class DicomLogic:
 
         return str(hashed_mod)
 
-    def set_dicom_tags(self, exp, file, series_counter=None):
+    def set_dicom_tags(self, exp, file, series_counter=1):
         """
         Sets dicom tags of one exportable exp
         @param exp: The exportable
@@ -151,9 +150,13 @@ class DicomLogic:
         study_description = file.parent.name
         exp.setTag('StudyDescription', study_description)
 
+        # If any of UIDs (studyInstanceUID, seriesInstanceUID, and frameOfReferenceInstanceUID) are specified then all
+        # of them must be specified.
         # StudyInstanceUID (unique for each study, series are grouped by this ID)
         study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
         exp.setTag('StudyInstanceUID', study_instance_uid)
+        # exp.setTag('SeriesInstanceUID', study_instance_uid + str(series_counter))
+        # exp.setTag('FrameOfReferenceUID', study_instance_uid + str(series_counter) + str(series_counter))
 
         # StudyID
         exp.setTag('StudyID', study_instance_uid)
@@ -173,8 +176,7 @@ class DicomLogic:
         exp.setTag('SeriesDescription', file.name)
 
         # SeriesNumber
-        if series_counter:
-            exp.setTag('SeriesNumber', series_counter)
+        exp.setTag('SeriesNumber', series_counter)
 
     def find_semantic_parent_of_a_segmentation(self, segmentation_name):
         """
@@ -201,12 +203,13 @@ class DicomLogic:
 
     @staticmethod
     # todo how to set the right parent of the segmentation
-    def convert_volume_to_segmentation(volume_name):
+    def convert_volume_to_segmentation(volume_name, parent_node):
         """
         Function to convert a volume to a segmentation. First create a labelmap and then convert it to a segmentation.
-        Also associates the segment node with the reference volume node
+        Also associates the segment node with the reference volume node (parent node)
         @param volume_name: Name of the volume (node) in slicer which will be converted. Makes only sense for a binary
                             volume
+        @param parent_node: Node of the parent of the segmentation
         @return: The segmentation node
         """
 
@@ -227,11 +230,11 @@ class DicomLogic:
 
         # associate segmentation node with a reference volume node (input node)
         sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-        volume_id_in_hierarchy = sh_node.GetItemByDataNode(volume_node)
-        study_item_id = sh_node.GetItemParent(volume_id_in_hierarchy)
+        # volume_id_in_hierarchy = sh_node.GetItemByDataNode(volume_node)
+        # study_item_id = sh_node.GetItemParent(volume_id_in_hierarchy)
         segmentation_id_in_hierarchy = sh_node.GetItemByDataNode(segmentation_node)
         # todo check if this is necessary
-        sh_node.SetItemParent(segmentation_id_in_hierarchy, study_item_id)
+        sh_node.SetItemParent(segmentation_id_in_hierarchy, parent_node.id)
 
         if success:
             return sh_node.GetItemByDataNode(segmentation_node)
@@ -286,16 +289,17 @@ class DicomLogic:
                     else:
                         counter[node.parent.name] = 1
 
-                    # convert volume to segmentation
-                    segmentation_node_id_buf = self.convert_volume_to_segmentation(node.name)
-                    exportables = exporter_segmentation.examineForExport(segmentation_node_id_buf)
-
+                    # find parent of segmentation
                     parent_buf = self.find_semantic_parent_of_a_segmentation(node.name)
 
                     if not parent_buf:
                         self.logger.log(logging.ERROR, f"Could not find parent of segmentation node {node.name}, thus "
                                                        f"it could not be exported.")
                         continue
+
+                    # convert volume to segmentation
+                    segmentation_node_id_buf = self.convert_volume_to_segmentation(node.name, parent_buf)
+                    exportables = exporter_segmentation.examineForExport(segmentation_node_id_buf)
 
                     for exp in exportables:
                         pass #self.set_dicom_tags(exp, node, counter[node.parent.name])
