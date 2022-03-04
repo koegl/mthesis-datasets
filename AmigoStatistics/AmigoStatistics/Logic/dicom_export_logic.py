@@ -155,8 +155,8 @@ class DicomExportLogic:
         # StudyInstanceUID (unique for each study, series are grouped by this ID)
         study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
         exp.setTag('StudyInstanceUID', study_instance_uid)
-        # exp.setTag('SeriesInstanceUID', study_instance_uid + str(series_counter))
-        # exp.setTag('FrameOfReferenceUID', study_instance_uid + str(series_counter) + str(series_counter))
+        exp.setTag('SeriesInstanceUID', study_instance_uid + str(series_counter))
+        exp.setTag('FrameOfReferenceInstanceUID', study_instance_uid + str(series_counter) + str(series_counter))
 
         # StudyID
         exp.setTag('StudyID', study_instance_uid)
