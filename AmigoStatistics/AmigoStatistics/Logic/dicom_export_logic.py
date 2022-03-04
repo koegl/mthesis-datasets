@@ -130,12 +130,13 @@ class DicomExportLogic:
 
         return str(hashed_mod)
 
-    def set_dicom_tags(self, exp, file, series_counter=1):
+    def set_dicom_tags(self, exp, file, series_counter=1, segmentation=None):
         """
         Sets dicom tags of one exportable exp
         @param exp: The exportable
         @param file: The file in the hierarchy tree
         @param series_counter: Counts at which series we currently are
+        @param segmentation: A node with a parent - only available if we have a segmentation
         """
 
         # output folder
@@ -224,6 +225,10 @@ class DicomExportLogic:
 
         # create new empty segmentation
         segmentation_node = slicer.mrmlScene.AddNode(slicer.vtkMRMLSegmentationNode())
+        # https://github.com/lassoan/LabelmapToDICOMSeg/blob/main/convert.py
+        parent_volume_node = slicer.util.getFirstNodeByName(parent_node.name)
+        segmentation_node.SetNodeReferenceID(segmentation_node.GetReferenceImageGeometryReferenceRole(),
+                                             parent_volume_node.GetID())
 
         # convert label-map to segmentation
         success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node, segmentation_node)
@@ -302,9 +307,10 @@ class DicomExportLogic:
                     exportables = exporter_segmentation.examineForExport(segmentation_node_id_buf)
 
                     for exp in exportables:
-                        pass #self.set_dicom_tags(exp, node, counter[node.parent.name])
+                        self.set_dicom_tags(exp, node, counter[node.parent.name], parent_buf)
 
-                    # exporter_segmentation.export(exportables)
+                    exporter_segmentation.export(exportables)
+
             except Exception as e:
                 self.logger.log(logging.ERROR, f"Could not export node {node.name}. ({str(e)})")
 
