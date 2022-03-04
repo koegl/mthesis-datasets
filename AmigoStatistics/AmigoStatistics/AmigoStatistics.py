@@ -4,7 +4,7 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
 from Logic.tree import Tree
-from Logic.dicom_logic import DicomLogic
+from Logic.dicom_export_logic import DicomExportLogic
 
 
 import os
@@ -204,8 +204,8 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             print("\n\nExporting current scene to DICOM...\n")
 
-            # Create DicomLogic
-            dicom_logic = DicomLogic(output_folder="/Users/fryderykkogl/Documents/university/master/thesis/data"
+            # Create DicomExportLogic
+            dicom_logic = DicomExportLogic(output_folder="/Users/fryderykkogl/Documents/university/master/thesis/data"
                                                    ".nosync/DICOM_export/exported")
 
             # export to DICOM
