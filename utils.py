@@ -137,3 +137,31 @@ def tag2fcsv(tag_file_path):
 
     # write coordinate pairs into two .fcsv files
     write_fcsv_files(coordinate_pairs, tag_file_path)
+
+
+def convert_key_to_txt(path_to_key_file: str, path_to_txt_file=None):
+    """
+    Function to convert a .key file with keypoints into a .txt file
+    @param path_to_key_file: Path to the .key file
+    @param path_to_txt_file: optional path to the .txt file (if not provided, same save directory)
+    """
+
+    # assert and/or create paths
+    assert path_to_key_file.lower().endswith(".key"), "Load path not a .key file (wrong extension)"
+
+    if not path_to_txt_file:
+        path_to_txt_file = path_to_key_file.replace(".key", ".txt")
+    else:
+        assert path_to_txt_file.lower().endswith(".txt"), "Save path not a .txt file (wrong extension)"
+
+    with open(path_to_key_file, "r") as key_file_key:
+        keypoints = key_file_key.read()
+
+    if not keypoints:
+        raise ValueError("Could not read .key file (maybe it's empty)")
+
+    with open(path_to_txt_file, "w") as key_file_txt:
+        key_file_txt.write(keypoints)
+
+
+
