@@ -259,7 +259,7 @@ class DicomExportLogic:
         bfs_array = Tree.bfs(self.folder_structure)
 
         counter = {}
-
+        # todo why are there two transforms at the end of the process?
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
             try:
@@ -309,7 +309,7 @@ class DicomExportLogic:
                     for exp in exportables:
                         self.set_dicom_tags(exp, node, counter[node.parent.name], parent_buf)
 
-                    exporter_segmentation.export(exportables)
+                    # exporter_segmentation.export(exportables)
 
             except Exception as e:
                 self.logger.log(logging.ERROR, f"Could not export node {node.name}. ({str(e)})")
