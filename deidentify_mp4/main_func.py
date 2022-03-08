@@ -155,14 +155,8 @@ class GUIWindow:
         dpg.destroy_context()
 
 
+def main():
 
-#
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser()
-#
-#     parser.add_argument("-lp", "--load_path", type=str, required=True,
-#                         help="Path to the .dicom file to be de-identified")
-#
-#     arguments = parser.parse_args()
-#
-#     main(arguments)
+    window = GUIWindow()
+
+    window.main()
