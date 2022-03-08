@@ -9,3 +9,9 @@ AmigoStatistics/AmigoStatistics/Resources/Logic/__pycache__/
 .DS_Store
 
 AmigoStatistics/AmigoStatistics/Logic/__pycache__/
+
+build/deidentify_mp4/
+
+*.spec
+
+dist/
