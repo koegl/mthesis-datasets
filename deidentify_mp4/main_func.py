@@ -91,7 +91,7 @@ def one_video(video_path, save_path):
     export_array_to_video(us_numpy_cropped, save_path=save_path)
 
 
-def main(params):
+def run_export_main(params):
     # get paths
     assert params.load_path.lower().endswith(".mov") or params.load_path.lower().endswith(".mp4"), "File has to be .mov or .mp4"
     load_path = params.load_path
@@ -114,6 +114,14 @@ def main(params):
     except Exception as e:
         logger.error(f"could not process {load_path}.\n{str(e)}")
         raise f"could not process {load_path}.\n{str(e)}"
+
+
+def main(params):
+
+    # gui
+
+    run_export_main(params)
+
 
 #
 # if __name__ == "__main__":
