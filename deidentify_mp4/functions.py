@@ -1,0 +1,89 @@
+# Script to create de-identified mp4
+
+import numpy as np
+import cv2
+
+
+def load_video_to_numpy(video_path="/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/nick/test/IM00001.mov"):
+    """
+    Function to load a video and return the data as a numpy array
+    :param video_path: Path to the .mov
+    :return: The numpy array with the data from the video [frames x [dim1, dim2] x 3]
+    """
+
+    # read video
+    cap = cv2.VideoCapture(video_path)
+    ret = True
+    frames = []
+    while ret:
+        ret, img = cap.read()  # read one frame from the 'capture' object; img is (H, W, C)
+        if ret:
+            frames.append(img)
+
+    # convert to numpy
+    frames_np = np.array(frames)
+
+    return frames_np
+
+
+def crop_array(np_array, left=0.0, right=0.0, top=0.0, bottom=0.0):
+    """
+    Function to crop numpy arrays (4-dim array, crops middle two dimensions)
+    :param np_array: input array of dim: AxBx[no. of frames]
+    :param top: how many rows from the top will be cropped
+    :param bottom: how many rows from the bottom will be cropped
+    :param left: how many columns from the left will be cropped
+    :param right: how many columns from the right will be cropped
+    :return: the de-identified array
+    """
+
+    dims = np_array.shape
+
+    assert len(dims) == 4, "Array for cropping has wrong dimensions"
+
+    top = int(np.ceil(dims[1] * top))
+
+    # crop first <crop_from_top> rows
+    cropped = np_array[:, top:, :, :]
+
+    return cropped
+
+
+def export_array_to_video(np_array, save_path="/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/nick/test/IM00001_crop.mov", codec='H264', fps=30):
+    """
+    Exports numpy array to video
+    :param np_array: input array of dim: AxBx[no. of frames]
+    :param save_path: Path where the video will be saved (extension included in path)
+    :param codec: fourcc codec
+    :param fps: Frames per second
+    """
+    # get images shape
+    frame_size = np_array.shape[1:-1]
+
+    # create video writer
+    # dimensions have to be inverted for the VideoWriter
+    out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=True)
+
+    # loop through all frames and write them to the video writer
+    for i in range(np_array.shape[0]):
+        img = np_array[i, :, :, :]  # .astype('uint8')
+        out.write(img)
+
+    # release the writer
+    out.release()
+
+
+def one_video(video_path, save_path):
+    """
+    Takes in one video path and saves it cropped to the save path
+    :param video_path:
+    :param save_path:
+    """
+    # get data array as numpy array
+    us_numpy = load_video_to_numpy(video_path)
+
+    # deidentify by cropping
+    us_numpy_cropped = crop_array(us_numpy.copy(), top=0.09166)
+
+    # create video
+    export_array_to_video(us_numpy_cropped, save_path=save_path)
