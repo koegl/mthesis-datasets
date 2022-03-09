@@ -200,8 +200,8 @@ class DicomExportLogic:
         # loop through pre-op imaging nodes
         for preop_name, preop_node in self.folder_structure.children['Pre-op Imaging'].children.items():
 
-            # check if any of the sub-words of the segmentation appear in the node name
-            if any(x in preop_name for x in segmentation_name_split):
+            # check if any of the sub-words of the segmentation appear in the node name - only T1
+            if any(x in preop_name for x in segmentation_name_split) and "t1" in preop_name.lower():
                 return preop_node
 
         # if nothing was found, return None
