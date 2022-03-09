@@ -253,7 +253,6 @@ class DicomExportLogic:
         """
 
         exporter_volumes = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
-        exporter_segmentation = DICOMSegmentationPlugin.DICOMSegmentationPluginClass()
 
         bfs_array = Tree.bfs(self.folder_structure)
 
@@ -261,7 +260,6 @@ class DicomExportLogic:
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
             try:
-                # volumes
                 if not bool(node.children) and "transform" not in node.name.lower() and "segment" not in node.parent.name.lower():
                     # only if it: does not have any children; is not a transformation; is not a segmentation
 
