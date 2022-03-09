@@ -301,31 +301,65 @@ class DicomExportLogic:
         # switch back to previous module
         slicer.util.selectModule(previous_module)
 
+    def export_segmentations_to_dicom(self):
+        """
+        Exports segmentations
+        """
+        exporter_segmentation = DICOMSegmentationPlugin.DICOMSegmentationPluginClass()
+        sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        bfs_array = Tree.bfs(self.folder_structure)
+        counter = {}
+
+        # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
+        for node in bfs_array:
+            try:
+                if not bool(node.children) and\
+                        "transform" not in node.name.lower()\
+                        and "segment" in node.parent.name.lower():
+
+                    # 1. load the reference dicom file into the database
+                    # find parent of segmentation
+                    parent = self.find_semantic_parent_of_a_segmentation(node.name)
+
+                    if parent is None:
+                        self.logger.log(logging.ERROR, f"Could not export node {node.name}, couldn't find any parent.")
+                        continue
+
+                    parent_path = os.path.join(self.output_folder, "ScalarVolume_" + str(parent.id))
+
+                    self.import_reference_image(parent_path)
+
+                    loaded_volume_id = DICOMUtils.loadSeriesByUID([parent.series_instance_uid])
+                    loaded_volume_node = slicer.util.getNode(loaded_volume_id[0])
+
+                    # 2. convert volume to segmentation
+                    segmentation_node = self.convert_volume_to_segmentation(node, parent)
+
+                    # 3. Change the parent in the subject hierarchy of the segmentation to the new loaded dicom
+                    segmentation_id_in_hierarchy = sh_node.GetItemByDataNode(segmentation_node)
+                    loaded_volume_id_in_hierarchy = sh_node.GetItemByDataNode(loaded_volume_node)
+                    sh_node.SetItemParent(segmentation_id_in_hierarchy, loaded_volume_id_in_hierarchy)
+
+                    # 4. In the segment editor change the reference geometry to the loaded volume
+                    segmentation_node.SetReferenceImageGeometryParameterFromVolumeNode(loaded_volume_node)
+
+                    # 5. export the segmentation
                     # increase/create counter for series number
                     if node.parent.name in counter:
                         counter[node.parent.name] += 1
                     else:
                         counter[node.parent.name] = 1
 
-                    # find parent of segmentation
-                    parent_buf = self.find_semantic_parent_of_a_segmentation(node.name)
-
-                    if not parent_buf:
-                        self.logger.log(logging.ERROR, f"Could not find parent of segmentation node {node.name}, thus "
-                                                       f"it could not be exported.")
-                        continue
-
-                    # convert volume to segmentation
-                    segmentation_node_id_buf = self.convert_volume_to_segmentation(node, parent_buf)
-                    exportables = exporter_segmentation.examineForExport(segmentation_node_id_buf)
+                    exportables = exporter_segmentation.examineForExport(segmentation_id_in_hierarchy)
 
                     for exp in exportables:
-                        self.set_dicom_tags(exp, node, counter[node.parent.name], parent_buf)
+                        self.set_dicom_tags(exp, node, counter[node.parent.name])
 
                     exporter_segmentation.export(exportables)
 
             except Exception as e:
-                self.logger.log(logging.ERROR, f"Could not export node {node.name}. ({str(e)})")
+                self.logger.log(logging.ERROR, f"Could not export node {node.name}.\n({str(e)})\n"
+                                               f"export_segmentations_to_dicom")
 
     def full_export(self):
         """
