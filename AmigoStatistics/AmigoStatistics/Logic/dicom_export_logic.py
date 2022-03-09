@@ -283,6 +283,23 @@ class DicomExportLogic:
                 # segmentations
                 if not bool(node.children) and "transform" not in node.name.lower() and "segment" in node.parent.name.lower():
                     # only if it: does not have any children; is not a transformation; is a segmentation
+    def import_reference_image(self, reference_dir_path):
+        """
+        Imports the reference dicom volume into the database
+        :param reference_dir_path: Path to the folder with the reference volume
+        """
+        # save previous selected module
+        previous_module = slicer.util.selectedModule()
+
+        # check if dicom browser exists
+        if slicer.modules.DICOMInstance.browserWidget is None:
+            slicer.util.selectModule('DICOM')
+
+        slicer.modules.DICOMInstance.browserWidget.dicomBrowser.importDirectory(reference_dir_path)
+        slicer.modules.DICOMInstance.browserWidget.dicomBrowser.waitForImportFinished()
+
+        # switch back to previous module
+        slicer.util.selectModule(previous_module)
 
                     # increase/create counter for series number
                     if node.parent.name in counter:
