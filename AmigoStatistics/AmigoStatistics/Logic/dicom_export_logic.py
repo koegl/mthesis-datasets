@@ -332,6 +332,9 @@ class DicomExportLogic:
         Perform all the steps to export
         """
 
+        # 0. Clear DICOM database
+        DICOMLib.clearDatabase(slicer.dicomDatabase)
+
         # 1. Generate folder structure
         self.bfs_generate_folder_structure_as_tree()
 
@@ -343,3 +346,9 @@ class DicomExportLogic:
 
         # 3. Export volumes according to the studies
         self.export_volumes_to_dicom()
+
+        # 4. Export segmentations according to the studies
+        self.export_segmentations_to_dicom()
+
+        # 5. Clear DICOM database
+        DICOMLib.clearDatabase(slicer.dicomDatabase)
