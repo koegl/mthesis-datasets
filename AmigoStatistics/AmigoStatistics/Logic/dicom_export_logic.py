@@ -175,8 +175,8 @@ class DicomExportLogic:
             exp.setTag('Modality', 'MR')
         elif "pre" in file.parent.name.lower() and "imag" in file.parent.name.lower() and "t" in file.name.lower():
             exp.setTag('Modality', 'MR')
-        # elif "segment" in file.parent.name.lower():
-            # exp.setTag('Modality', 'MR')  # we say that the segmentation is of the modality where it was created
+        elif "segment" in file.parent.name.lower():
+            exp.setTag('Modality', 'SEG')  # we say that the segmentation is of the modality where it was created
 
         # SeriesDescription (name of the series in the hierarchy)
         exp.setTag('SeriesDescription', file.name)
