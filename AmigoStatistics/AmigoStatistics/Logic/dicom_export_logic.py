@@ -280,9 +280,9 @@ class DicomExportLogic:
 
                     exporter_volumes.export(exportables)
 
-                # segmentations
-                if not bool(node.children) and "transform" not in node.name.lower() and "segment" in node.parent.name.lower():
-                    # only if it: does not have any children; is not a transformation; is a segmentation
+            except Exception as e:
+                self.logger.log(logging.ERROR, f"Could not export node {node.name}. ({str(e)})")
+
     def import_reference_image(self, reference_dir_path):
         """
         Imports the reference dicom volume into the database
