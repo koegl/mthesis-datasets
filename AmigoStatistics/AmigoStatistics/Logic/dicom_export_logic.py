@@ -1,7 +1,10 @@
 import slicer
 import vtk
+import qt
 import DICOMScalarVolumePlugin
 import DICOMSegmentationPlugin
+from DICOMLib import DICOMUtils
+import DICOMLib
 
 from Logic.tree import Tree
 
