@@ -29,7 +29,6 @@ class DicomExportLogic:
         └── Annotations
             └── landmarks
     """
-    # todo figure out how to export segmentations
     # todo figure out how to export landmarks
     # todo figure out workflow for user interaction - probably user prepares the scene and then clicks a button
 
