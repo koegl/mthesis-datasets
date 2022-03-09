@@ -237,16 +237,11 @@ class DicomExportLogic:
         # convert label-map to segmentation
         success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node, segmentation_node)
 
-        # associate segmentation node with a study
-        sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-        segmentation_id_in_hierarchy = sh_node.GetItemByDataNode(segmentation_node)
-        sh_node.SetItemParent(segmentation_id_in_hierarchy, node.parent.study_id)
-
         # remove label map node
         slicer.mrmlScene.RemoveNode(label_node)
 
         if success:
-            return sh_node.GetItemByDataNode(segmentation_node)
+            return segmentation_node
         else:
             return None
 
