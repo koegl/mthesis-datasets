@@ -29,7 +29,6 @@ class AmigoStatistics(ScriptedLoadableModule):
         self.parent.categories = ["Informatics"]
         self.parent.dependencies = ["Markups"]
         self.parent.contributors = ["Fryderyk Kögl (TUM, BWH)"]
-        # TODO: update with short description of the module and a link to online module documentation
         self.parent.helpText = """
     Module that gather useful Slicer functionality for setting landmarks in MR and US images. To start choose the
     volumes that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an
@@ -205,8 +204,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             print("\n\nExporting current scene to DICOM...\n")
 
             # Create DicomExportLogic
-            dicom_logic = DicomExportLogic(output_folder="/Users/fryderykkogl/Documents/university/master/thesis/data"
-                                                   ".nosync/DICOM_export/exported")
+            dicom_logic = DicomExportLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
 
             # export to DICOM
             dicom_logic.full_export()
