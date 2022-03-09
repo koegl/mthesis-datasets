@@ -82,15 +82,13 @@ class DicomExportLogic:
 
         # create studies
         for _, child in self.folder_structure.children.items():
-            if 'transform' in child.name.lower():  # we don't want to create a study for the transform
-                continue
             child.study_id = hierarchy_node.CreateStudyItem(self.folder_structure.id, child.name)
             hierarchy_node.SetItemParent(child.study_id, self.folder_structure.id)
 
         # loop through all nodes in BFS order
         bfs_array_of_nodes = Tree.bfs(self.folder_structure)
         for node in bfs_array_of_nodes:
-            if node.study_id is None and 'transform' not in node.name.lower():  # true if the node is not a study -> a series
+            if node.study_id is None:  # true if the node is not a study -> a series
                 hierarchy_node.SetItemParent(node.id, node.parent.study_id)
 
     def harden_transformations(self):
@@ -205,7 +203,8 @@ class DicomExportLogic:
         return None
 
     @staticmethod
-    def convert_volume_to_segmentation(node, parent_node):
+    # todo how to set the right parent of the segmentation
+    def convert_volume_to_segmentation(volume_name, parent_node):
         """
         Function to convert a volume to a segmentation. First create a labelmap and then convert it to a segmentation.
         Also associates the segment node with the reference volume node (parent node)
@@ -217,14 +216,14 @@ class DicomExportLogic:
 
         # convert volume to label-map
         # create volume and label nodes
-        volume_node = slicer.util.getFirstNodeByName(node.name)
+        volume_node = slicer.util.getFirstNodeByName(volume_name)
         label_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
 
         # create the label from the volume
         volumes_logic = slicer.modules.volumes.logic()
         volumes_logic.CreateLabelVolumeFromVolume(slicer.mrmlScene, label_node, volume_node)
 
-        # create new empty segmentation and associate it with the right parent node
+        # create new empty segmentation
         segmentation_node = slicer.mrmlScene.AddNode(slicer.vtkMRMLSegmentationNode())
         # https://github.com/lassoan/LabelmapToDICOMSeg/blob/main/convert.py
         parent_volume_node = slicer.util.getFirstNodeByName(parent_node.name)
@@ -234,13 +233,13 @@ class DicomExportLogic:
         # convert label-map to segmentation
         success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node, segmentation_node)
 
-        # associate segmentation node with a study
+        # associate segmentation node with a reference volume node (input node)
         sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        # volume_id_in_hierarchy = sh_node.GetItemByDataNode(volume_node)
+        # study_item_id = sh_node.GetItemParent(volume_id_in_hierarchy)
         segmentation_id_in_hierarchy = sh_node.GetItemByDataNode(segmentation_node)
-        sh_node.SetItemParent(segmentation_id_in_hierarchy, node.parent.study_id)
-
-        # remove label map node
-        slicer.mrmlScene.RemoveNode(label_node)
+        # todo check if this is necessary
+        sh_node.SetItemParent(segmentation_id_in_hierarchy, parent_node.id)
 
         if success:
             return sh_node.GetItemByDataNode(segmentation_node)
@@ -260,6 +259,7 @@ class DicomExportLogic:
         bfs_array = Tree.bfs(self.folder_structure)
 
         counter = {}
+        # todo why are there two transforms at the end of the process?
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
             try:
@@ -303,13 +303,13 @@ class DicomExportLogic:
                         continue
 
                     # convert volume to segmentation
-                    segmentation_node_id_buf = self.convert_volume_to_segmentation(node, parent_buf)
+                    segmentation_node_id_buf = self.convert_volume_to_segmentation(node.name, parent_buf)
                     exportables = exporter_segmentation.examineForExport(segmentation_node_id_buf)
 
                     for exp in exportables:
                         self.set_dicom_tags(exp, node, counter[node.parent.name], parent_buf)
 
-                    exporter_segmentation.export(exportables)
+                    # exporter_segmentation.export(exportables)
 
             except Exception as e:
                 self.logger.log(logging.ERROR, f"Could not export node {node.name}. ({str(e)})")
