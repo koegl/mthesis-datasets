@@ -53,7 +53,7 @@ class ExportHandling:
         dims = np_array.shape
 
         if len(dims) != 4:
-            raise Exception("Array for cropping has wrong dimensions")
+            raise ValueError("Array for cropping has wrong dimensions. (crop_array)")
 
         # check if not too much would be cropped
         if 0.1 > top_percent >= 0.9 or\
@@ -62,7 +62,7 @@ class ExportHandling:
            0.1 > right_percent >= 0.9 or\
            top_percent + bottom_percent >= 0.9 or\
            left_percent + right_percent >= 0.9:
-            raise Exception("Too much cropping, lower the percentages")
+            raise ValueError("Too much cropping, lower the percentages")
 
         # convert percentages into pixels
         top = int(np.ceil(dims[1] * top_percent))
