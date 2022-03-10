@@ -104,7 +104,7 @@ class DicomExportLogic:
 
         for node in all_nodes:
             # harden transformation
-            buf_node = slicer.util.GetFirstNode(node.name)
+            buf_node = slicer.mrmlScene.GetFirstNode(node.name)
 
             if buf_node:  # if it exists
                 buf_node.HardenTransform()
@@ -212,7 +212,7 @@ class DicomExportLogic:
         """
         Function to convert a volume to a segmentation. First create a labelmap and then convert it to a segmentation.
         Also associates the segment node with the reference volume node (parent node)
-        @param volume_name: Name of the volume (node) in slicer which will be converted. Makes only sense for a binary
+        @param node: Name of the volume (node) in slicer which will be converted. Makes only sense for a binary
                             volume
         @param parent_node: Node of the parent of the segmentation
         @return: The segmentation node
@@ -220,7 +220,7 @@ class DicomExportLogic:
 
         # convert volume to label-map
         # create volume and label nodes
-        volume_node = slicer.util.GetFirstNode(node.name)
+        volume_node = slicer.mrmlScene.GetFirstNode(node.name)
         label_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
 
         # create the label from the volume
@@ -230,7 +230,7 @@ class DicomExportLogic:
         # create new empty segmentation and associate it with the right parent node
         segmentation_node = slicer.mrmlScene.AddNode(slicer.vtkMRMLSegmentationNode())
         # https://github.com/lassoan/LabelmapToDICOMSeg/blob/main/convert.py
-        parent_volume_node = slicer.util.GetFirstNode(parent_node.name)
+        parent_volume_node = slicer.mrmlScene.GetFirstNode(parent_node.name)
         segmentation_node.SetNodeReferenceID(segmentation_node.GetReferenceImageGeometryReferenceRole(),
                                              parent_volume_node.GetID())
 
@@ -350,6 +350,7 @@ class DicomExportLogic:
                     else:
                         counter[node.parent.name] = 1
 
+                    # todo how to change names
                     exportables = exporter_segmentation.examineForExport(segmentation_id_in_hierarchy)
 
                     for exp in exportables:
