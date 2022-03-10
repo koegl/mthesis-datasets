@@ -181,5 +181,9 @@ class ExportHandling:
                     self.logger.error(f"could not export {load_path}.")
 
             except Exception as e:
-                self.logger.error(f"could not process {load_path}.\n{str(e)}")
-                raise f"could not process {load_path}.\n{str(e)}"
+                self.logger.error(f"could not process {load_path}. {str(e)}")
+                continue
+
+        print("\n\n========================================================\n"
+              "========================================================\n"
+              "Finished exporting")
