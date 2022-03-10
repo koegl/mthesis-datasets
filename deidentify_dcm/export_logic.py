@@ -164,7 +164,10 @@ class ExportHandling:
         self.load_paths = load_paths
 
         # export loop
-        for load_path in load_paths:
+        for i, load_path in enumerate(load_paths):
+
+            print(f"Exporting {i+1}/{len(load_paths)}")
+
             # get paths
             assert load_path.lower().endswith(".dcm") or load_path.lower().endswith(""), "File has to be DICOM"
 
