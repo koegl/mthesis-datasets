@@ -158,14 +158,14 @@ class DicomExportLogic:
         # If any of UIDs (studyInstanceUID, seriesInstanceUID, and frameOfReferenceInstanceUID) are specified then all
         # of them must be specified.
         # StudyInstanceUID (unique for each study, series are grouped by this ID)
-        study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
-        exp.setTag('StudyInstanceUID', study_instance_uid)
-        exp.setTag('SeriesInstanceUID', study_instance_uid + str(series_counter))
-        file.series_instance_uid = study_instance_uid + str(series_counter)
-        exp.setTag('FrameOfReferenceInstanceUID', study_instance_uid + str(series_counter) + str(series_counter))
+        self.study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
+        exp.setTag('StudyInstanceUID', self.study_instance_uid)
+        exp.setTag('SeriesInstanceUID', self.study_instance_uid + str(series_counter))
+        file.series_instance_uid = self.study_instance_uid + str(series_counter)
+        exp.setTag('FrameOfReferenceInstanceUID', self.study_instance_uid + str(series_counter) + str(series_counter))
 
         # StudyID
-        exp.setTag('StudyID', study_instance_uid)
+        exp.setTag('StudyID', self.study_instance_uid)
 
         # Modality
         # setting to US makes the files load as slices that are not recognised as one volume
