@@ -13,6 +13,14 @@ class ExportHandling:
         self.logger = None
         self.crop_values = [0.0, 0.0, 0.0, 0.0]
 
+        self.current_path = None
+
+        # set up logging
+        # todo figure out a better way to save the logger
+        logging.basicConfig(filename="/Users/fryderykkogl/Desktop/deidentify.log")
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)
+
     def load_dicom_to_numpy(self, dicom_path='CT_small.dcm'):
         """
         Function to load DICOMs and return the data as a numpy array of shape AxBx[no. of frames]
@@ -128,12 +136,6 @@ class ExportHandling:
     def run_export_loop(self, load_paths, crop_values):
         self.crop_values = crop_values
         self.load_paths = load_paths
-
-        # set up logging
-        split_path_log = load_paths[0].split(".")
-        logging.basicConfig(filename=split_path_log[0].lower() + ".log")
-        self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)
 
         # export loop
         for load_path in load_paths:
