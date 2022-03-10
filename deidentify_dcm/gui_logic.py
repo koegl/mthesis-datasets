@@ -87,8 +87,8 @@ class GUIWindow:
             dpg.add_text("\nAdd paths to the DICOM files that you want to convert:\n"
                          "NOTES:\n"
                          "\t- each path has to be in a new line\n"
-                         "\t- each cropped file is saved in the same directory as the original file\n"
-                         "\t- the error log is saved in the directory where the first file is saved\n")
+                         "\t- each cropped files are saved in the directory above in a sub-directory 'deientified'\n"
+                         "\t- the error log is saved in the desktop as 'deidentify.log'\n")
             dpg.add_input_text(label="", callback=self.update_paths, multiline=True)
 
         dpg.setup_dearpygui()

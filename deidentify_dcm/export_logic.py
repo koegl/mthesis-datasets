@@ -17,7 +17,8 @@ class ExportHandling:
 
         # set up logging
         # todo figure out a better way to save the logger
-        logging.basicConfig(filename="/Users/fryderykkogl/Desktop/deidentify.log")
+        desktop_path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop')
+        logging.basicConfig(filename=os.path.join(desktop_path, "deidentify.log"))
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
 
