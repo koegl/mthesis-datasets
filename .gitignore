@@ -15,3 +15,5 @@ build/deidentify_mp4/
 *.spec
 
 dist/
+
+build/deidentify_dcm/
