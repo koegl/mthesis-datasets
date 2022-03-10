@@ -133,6 +133,32 @@ class ExportHandling:
         # create video
         self.export_array_to_video(us_numpy_cropped, save_path=save_path)
 
+    @staticmethod
+    def create_save_path(load_path):
+        """
+        Creates save path and save directory one above the original files
+        :param load_path: The load path of the files
+        :return: The save path
+        """
+        # get parent parent
+        parent_parent = Path(load_path).parent.parent.absolute()
+
+        # directory with de-identified clips
+        save_folder = os.path.join(parent_parent, "deidentified")
+
+        if not os.path.exists(save_folder):
+            os.makedirs(save_folder)
+
+        # remove potential dicom extension
+        file_name = os.path.basename(load_path)
+        file_name = file_name.split(".")[0]
+        file_name += "_crop.mp4"
+
+        # get full save path
+        save_path = os.path.join(save_folder, file_name)
+
+        return save_path
+
     def run_export_loop(self, load_paths, crop_values):
         self.crop_values = crop_values
         self.load_paths = load_paths
