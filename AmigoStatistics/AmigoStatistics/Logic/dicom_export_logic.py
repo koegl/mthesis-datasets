@@ -104,7 +104,7 @@ class DicomExportLogic:
 
         for node in all_nodes:
             # harden transformation
-            buf_node = slicer.util.getFirstNodeByName(node.name)
+            buf_node = slicer.util.GetFirstNode(node.name)
 
             if buf_node:  # if it exists
                 buf_node.HardenTransform()
@@ -170,7 +170,7 @@ class DicomExportLogic:
         # Modality
         # setting to US makes the files load as slices that are not recognised as one volume
         if "intra" in file.parent.name.lower() and "us" in file.parent.name.lower() and "us" in file.name.lower():
-            exp.setTag('Modality', 'MR')
+            exp.setTag('Modality', 'MR')  # todo this should be US, but for some reason loading US loads as slices
         elif "intra" in file.parent.name.lower() and "mr" in file.parent.name.lower() and "t" in file.name.lower():
             exp.setTag('Modality', 'MR')
         elif "pre" in file.parent.name.lower() and "imag" in file.parent.name.lower() and "t" in file.name.lower():
@@ -201,7 +201,7 @@ class DicomExportLogic:
         for preop_name, preop_node in self.folder_structure.children['Pre-op Imaging'].children.items():
 
             # check if any of the sub-words of the segmentation appear in the node name - only T1
-            if any(x in preop_name for x in segmentation_name_split) and "t1" in preop_name.lower():
+            if "t1" in preop_name.lower():
                 return preop_node
 
         # if nothing was found, return None
@@ -220,7 +220,7 @@ class DicomExportLogic:
 
         # convert volume to label-map
         # create volume and label nodes
-        volume_node = slicer.util.getFirstNodeByName(node.name)
+        volume_node = slicer.util.GetFirstNode(node.name)
         label_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
 
         # create the label from the volume
@@ -230,7 +230,7 @@ class DicomExportLogic:
         # create new empty segmentation and associate it with the right parent node
         segmentation_node = slicer.mrmlScene.AddNode(slicer.vtkMRMLSegmentationNode())
         # https://github.com/lassoan/LabelmapToDICOMSeg/blob/main/convert.py
-        parent_volume_node = slicer.util.getFirstNodeByName(parent_node.name)
+        parent_volume_node = slicer.util.GetFirstNode(parent_node.name)
         segmentation_node.SetNodeReferenceID(segmentation_node.GetReferenceImageGeometryReferenceRole(),
                                              parent_volume_node.GetID())
 
