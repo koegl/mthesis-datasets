@@ -4,7 +4,7 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
 from Logic.tree import Tree
-from Logic.dicom_logic import DicomLogic
+from Logic.dicom_export_logic import DicomExportLogic
 
 
 import os
@@ -29,7 +29,6 @@ class AmigoStatistics(ScriptedLoadableModule):
         self.parent.categories = ["Informatics"]
         self.parent.dependencies = ["Markups"]
         self.parent.contributors = ["Fryderyk Kögl (TUM, BWH)"]
-        # TODO: update with short description of the module and a link to online module documentation
         self.parent.helpText = """
     Module that gather useful Slicer functionality for setting landmarks in MR and US images. To start choose the
     volumes that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an
@@ -194,19 +193,13 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onExportCurrentSceneToDicomButton(self):
         """
         Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
-
-
-        1. Get folder structure
-        2. Create studies according to the structure
-        3. Export volumes accordingly
         """
-
+        # todo add text field for entering the export folder
         try:
             print("\n\nExporting current scene to DICOM...\n")
 
-            # Create DicomLogic
-            dicom_logic = DicomLogic(output_folder="/Users/fryderykkogl/Documents/university/master/thesis/data"
-                                                   ".nosync/DICOM_export/exported")
+            # Create DicomExportLogic
+            dicom_logic = DicomExportLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
 
             # export to DICOM
             dicom_logic.full_export()

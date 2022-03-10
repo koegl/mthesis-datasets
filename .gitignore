@@ -13,3 +13,11 @@ AmigoStatistics/AmigoStatistics/Resources/__pycache__/
 AmigoStatistics/AmigoStatistics/Resources/Logic/__pycache__/
 
 AmigoStatistics/AmigoStatistics/Logic/__pycache__/
+
+build/deidentify_dcm/
+
+build/deidentify_mp4/
+
+*.spec
+
+dist/
