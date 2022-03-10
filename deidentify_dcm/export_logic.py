@@ -171,8 +171,9 @@ class ExportHandling:
             # get paths
             assert load_path.lower().endswith(".dcm") or load_path.lower().endswith(""), "File has to be DICOM"
 
-            split_path = load_path.split(".")
-            save_path = split_path[0] + "_crop.mp4"
+            self.current_path = load_path
+
+            save_path = self.create_save_path(load_path)
 
             try:
                 self.deidentify_one_dicom(load_path, save_path)
