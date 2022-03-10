@@ -29,6 +29,7 @@ class DicomExportLogic:
         └── Annotations
             └── landmarks
     """
+
     # todo figure out how to export landmarks
     # todo figure out workflow for user interaction - probably user prepares the scene and then clicks a button
 
@@ -235,7 +236,8 @@ class DicomExportLogic:
                                              parent_volume_node.GetID())
 
         # convert label-map to segmentation
-        success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node, segmentation_node)
+        success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node,
+                                                                                            segmentation_node)
 
         # remove label map node
         slicer.mrmlScene.RemoveNode(label_node)
@@ -260,7 +262,10 @@ class DicomExportLogic:
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
             try:
-                if not bool(node.children) and "transform" not in node.name.lower() and "segment" not in node.parent.name.lower():
+                if not bool(node.children) \
+                        and "transform" not in node.name.lower() \
+                        and "segment" not in node.parent.name.lower() \
+                        and "landmark" not in node.parent.name.lower():
                     # only if it: does not have any children; is not a transformation; is not a segmentation
 
                     # increase/create counter for series number
@@ -313,9 +318,10 @@ class DicomExportLogic:
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
             try:
-                if not bool(node.children) and\
-                        "transform" not in node.name.lower()\
-                        and "segment" in node.parent.name.lower():
+                if not bool(node.children) \
+                        and "transform" not in node.name.lower() \
+                        and "segment" in node.parent.name.lower() \
+                        and "landmark" not in node.parent.name.lower():
 
                     # 1. load the reference dicom file into the database
                     # find parent of segmentation
@@ -415,6 +421,9 @@ class DicomExportLogic:
 
         # 4. Export segmentations according to the studies
         self.export_segmentations_to_dicom()
+
+        # 5. Export landmarks
+        self.export_landmarks_to_fcsv()
 
         # 5. Clear DICOM database
         DICOMLib.clearDatabase(slicer.dicomDatabase)
