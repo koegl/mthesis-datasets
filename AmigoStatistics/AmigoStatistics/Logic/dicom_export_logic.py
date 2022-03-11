@@ -162,7 +162,7 @@ class DicomExportLogic:
         self.study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
         exp.setTag('StudyInstanceUID', self.study_instance_uid)
         exp.setTag('SeriesInstanceUID', self.study_instance_uid + str(series_counter))
-        file.series_instance_uid = self.study_instance_uid + str(series_counter)
+        file.dcm_series_instance_uid = self.study_instance_uid + str(series_counter)
         exp.setTag('FrameOfReferenceInstanceUID', self.study_instance_uid + str(series_counter) + str(series_counter))
 
         # StudyID
@@ -335,7 +335,7 @@ class DicomExportLogic:
 
                     self.import_reference_image(parent_path)
 
-                    loaded_volume_id = DICOMUtils.loadSeriesByUID([parent.series_instance_uid])
+                    loaded_volume_id = DICOMUtils.loadSeriesByUID([parent.dcm_series_instance_uid])
                     loaded_volume_node = slicer.util.getNode(loaded_volume_id[0])
 
                     # 2. convert volume to segmentation

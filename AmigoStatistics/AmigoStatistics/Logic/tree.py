@@ -14,7 +14,7 @@ class Tree(object):
         self.parent = None
 
         self.sh_study_id = None  # not to which sh_study the node belongs, but which sh_study was created from it
-        self.series_instance_uid = None
+        self.dcm_series_instance_uid = None
 
     def __repr__(self):
         return self.name
