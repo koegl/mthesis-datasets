@@ -13,7 +13,7 @@ class Tree(object):
 
         self.parent = None
 
-        self.study_id = None
+        self.sh_study_id = None  # not to which sh_study the node belongs, but which sh_study was created from it
         self.series_instance_uid = None
 
     def __repr__(self):

@@ -87,14 +87,14 @@ class DicomExportLogic:
         for _, child in self.folder_structure.children.items():
             if 'transform' in child.name.lower():  # we don't want to create a study for the transform
                 continue
-            child.study_id = hierarchy_node.CreateStudyItem(self.folder_structure.sh_id, child.name)
-            hierarchy_node.SetItemParent(child.study_id, self.folder_structure.sh_id)
+            child.sh_study_id = hierarchy_node.CreateStudyItem(self.folder_structure.sh_id, child.name)
+            hierarchy_node.SetItemParent(child.sh_study_id, self.folder_structure.sh_id)
 
         # loop through all nodes in BFS order
         bfs_array_of_nodes = Tree.bfs(self.folder_structure)
         for node in bfs_array_of_nodes:
-            if node.study_id is None and 'transform' not in node.name.lower():  # true if the node is not a study -> a series
-                hierarchy_node.SetItemParent(node.sh_id, node.parent.study_id)
+            if node.sh_study_id is None and 'transform' not in node.name.lower():  # true if the node is not a study -> a series
+                hierarchy_node.SetItemParent(node.sh_id, node.parent.sh_study_id)
 
     def harden_transformations(self):
         """
