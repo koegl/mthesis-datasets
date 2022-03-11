@@ -29,6 +29,7 @@ class DicomExportLogic:
         └── Annotations
             └── landmarks
     """
+
     # todo figure out how to export landmarks
     # todo figure out workflow for user interaction - probably user prepares the scene and then clicks a button
 
@@ -158,14 +159,14 @@ class DicomExportLogic:
         # If any of UIDs (studyInstanceUID, seriesInstanceUID, and frameOfReferenceInstanceUID) are specified then all
         # of them must be specified.
         # StudyInstanceUID (unique for each study, series are grouped by this ID)
-        study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
-        exp.setTag('StudyInstanceUID', study_instance_uid)
-        exp.setTag('SeriesInstanceUID', study_instance_uid + str(series_counter))
-        file.series_instance_uid = study_instance_uid + str(series_counter)
-        exp.setTag('FrameOfReferenceInstanceUID', study_instance_uid + str(series_counter) + str(series_counter))
+        self.study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
+        exp.setTag('StudyInstanceUID', self.study_instance_uid)
+        exp.setTag('SeriesInstanceUID', self.study_instance_uid + str(series_counter))
+        file.series_instance_uid = self.study_instance_uid + str(series_counter)
+        exp.setTag('FrameOfReferenceInstanceUID', self.study_instance_uid + str(series_counter) + str(series_counter))
 
         # StudyID
-        exp.setTag('StudyID', study_instance_uid)
+        exp.setTag('StudyID', self.study_instance_uid)
 
         # Modality
         # setting to US makes the files load as slices that are not recognised as one volume
@@ -235,7 +236,8 @@ class DicomExportLogic:
                                              parent_volume_node.GetID())
 
         # convert label-map to segmentation
-        success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node, segmentation_node)
+        success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node,
+                                                                                            segmentation_node)
 
         # remove label map node
         slicer.mrmlScene.RemoveNode(label_node)
@@ -260,7 +262,10 @@ class DicomExportLogic:
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
             try:
-                if not bool(node.children) and "transform" not in node.name.lower() and "segment" not in node.parent.name.lower():
+                if not bool(node.children) \
+                        and "transform" not in node.name.lower() \
+                        and "segment" not in node.parent.name.lower() \
+                        and "landmark" not in node.parent.name.lower():
                     # only if it: does not have any children; is not a transformation; is not a segmentation
 
                     # increase/create counter for series number
@@ -313,9 +318,10 @@ class DicomExportLogic:
         # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
         for node in bfs_array:
             try:
-                if not bool(node.children) and\
-                        "transform" not in node.name.lower()\
-                        and "segment" in node.parent.name.lower():
+                if not bool(node.children) \
+                        and "transform" not in node.name.lower() \
+                        and "segment" in node.parent.name.lower() \
+                        and "landmark" not in node.parent.name.lower():
 
                     # 1. load the reference dicom file into the database
                     # find parent of segmentation
@@ -362,6 +368,39 @@ class DicomExportLogic:
                 self.logger.log(logging.ERROR, f"Could not export node {node.name}.\n({str(e)})\n"
                                                f"export_segmentations_to_dicom")
 
+    def export_landmarks_to_fcsv(self):
+        """
+        Export landmark to fcsv
+        """
+        # todo change getfirstnode to getnodebyid
+
+        bfs_array = Tree.bfs(self.folder_structure)
+
+        counter = {}
+        for node in bfs_array:
+            try:
+                if not bool(node.children) \
+                        and "transform" not in node.name.lower() \
+                        and "segment" not in node.parent.name.lower() \
+                        and "landmark" in node.parent.name.lower():
+
+                    # increase/create counter for series number
+                    if node.parent.name in counter:
+                        counter[node.parent.name] += 1
+                    else:
+                        counter[node.parent.name] = 1
+
+                    markups_node = slicer.mrmlScene.GetFirstNode(node.name)
+
+                    if markups_node is None:
+                        raise ValueError(f"Could not find and export landmarks node {node.name}")
+
+                    slicer.util.saveNode(markups_node,
+                                         os.path.join(self.output_folder, "landmarks_" + self.study_instance_uid))
+            except Exception as e:
+                self.logger.log(logging.ERROR, f"Could not export node {node.name}.\n({str(e)})\n"
+                                               f"export_landmarks_to_fcsv")
+
     def full_export(self):
         """
         Perform all the steps to export
@@ -384,6 +423,9 @@ class DicomExportLogic:
 
         # 4. Export segmentations according to the studies
         self.export_segmentations_to_dicom()
+
+        # 5. Export landmarks
+        self.export_landmarks_to_fcsv()
 
         # 5. Clear DICOM database
         DICOMLib.clearDatabase(slicer.dicomDatabase)
