@@ -54,11 +54,11 @@ class DicomExportLogic:
         child_ids = vtk.vtkIdList()
         subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids)
-        id = child_ids.GetId(0)
+        sh_id = child_ids.GetId(0)
 
         # FIFO queue of nodes and create root
-        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(id), id=id)
-        visited = [id]  # array to store visited IDs
+        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id), sh_id=sh_id)
+        visited = [sh_id]  # array to store visited IDs
         nodes_queue = [self.folder_structure]
 
         while nodes_queue:
@@ -66,13 +66,13 @@ class DicomExportLogic:
             s = nodes_queue.pop(0)
 
             # get all children of the dequeued node s and add to queue if not visited
-            subject_hierarchy_node.GetItemChildren(s.id, child_ids)
+            subject_hierarchy_node.GetItemChildren(s.sh_id, child_ids)
 
             for i in range(child_ids.GetNumberOfIds()):
                 sub_id = child_ids.GetId(i)
                 if sub_id not in visited:
                     sub_name = subject_hierarchy_node.GetItemName(sub_id)
-                    sub_child = s.add_child(Tree(sub_name, id=sub_id))  # this returns the node which is like a C++
+                    sub_child = s.add_child(Tree(sub_name, sh_id=sub_id))  # this returns the node which is like a C++
                     # reference, so we can use this in the next iteration to append nodes
                     nodes_queue.append(sub_child)
                     visited.append(sub_id)
@@ -87,14 +87,14 @@ class DicomExportLogic:
         for _, child in self.folder_structure.children.items():
             if 'transform' in child.name.lower():  # we don't want to create a study for the transform
                 continue
-            child.study_id = hierarchy_node.CreateStudyItem(self.folder_structure.id, child.name)
-            hierarchy_node.SetItemParent(child.study_id, self.folder_structure.id)
+            child.study_id = hierarchy_node.CreateStudyItem(self.folder_structure.sh_id, child.name)
+            hierarchy_node.SetItemParent(child.study_id, self.folder_structure.sh_id)
 
         # loop through all nodes in BFS order
         bfs_array_of_nodes = Tree.bfs(self.folder_structure)
         for node in bfs_array_of_nodes:
             if node.study_id is None and 'transform' not in node.name.lower():  # true if the node is not a study -> a series
-                hierarchy_node.SetItemParent(node.id, node.parent.study_id)
+                hierarchy_node.SetItemParent(node.sh_id, node.parent.study_id)
 
     def harden_transformations(self):
         """
@@ -274,7 +274,7 @@ class DicomExportLogic:
                     else:
                         counter[node.parent.name] = 1
 
-                    exportables = exporter_volumes.examineForExport(node.id)
+                    exportables = exporter_volumes.examineForExport(node.sh_id)
 
                     if not exportables:
                         raise ValueError("Nothing found to export.")
@@ -331,7 +331,7 @@ class DicomExportLogic:
                         self.logger.log(logging.ERROR, f"Could not export node {node.name}, couldn't find any parent.")
                         continue
 
-                    parent_path = os.path.join(self.output_folder, "ScalarVolume_" + str(parent.id))
+                    parent_path = os.path.join(self.output_folder, "ScalarVolume_" + str(parent.sh_id))
 
                     self.import_reference_image(parent_path)
 
