@@ -54,11 +54,11 @@ class DicomExportLogic:
         child_ids = vtk.vtkIdList()
         subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids)
-        sh_id = child_ids.GetId(0)
+        sh_id_patient = child_ids.GetId(0)
 
         # FIFO queue of nodes and create root
-        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id), sh_id=sh_id)
-        visited = [sh_id]  # array to store visited IDs
+        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id_patient), sh_id=sh_id_patient)
+        visited = [sh_id_patient]  # array to store visited IDs
         nodes_queue = [self.folder_structure]
 
         while nodes_queue:
