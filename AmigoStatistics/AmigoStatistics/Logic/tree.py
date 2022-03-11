@@ -1,6 +1,6 @@
 class Tree(object):
     """Generic tree node."""
-    def __init__(self, name="root", children=None, sh_id=None, vtk_id=None):
+    def __init__(self, name="root", children=None, sh_id=None, vtk_id=""):
 
         self.name = name
 
