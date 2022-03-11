@@ -197,7 +197,7 @@ class DicomExportLogic:
         @param segmentation_name: The name of the segmentation
         @return: The volume node of the parent
         """
-
+        # todo - default should be T1, unless in the segmentation name there is t2
         # split segmentation_name into sub-words that can be searched for in the potential parent
         segmentation_name_split = segmentation_name.split(" ")
 
