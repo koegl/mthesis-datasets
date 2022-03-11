@@ -372,6 +372,8 @@ class DicomExportLogic:
         """
         Export landmark to fcsv
         """
+        # todo change getfirstnode to getnodebyid
+
         bfs_array = Tree.bfs(self.folder_structure)
 
         counter = {}
