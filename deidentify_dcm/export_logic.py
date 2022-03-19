@@ -136,6 +136,11 @@ class ExportHandling:
 
     @staticmethod
     def create_save_path(load_path):
+        # todo update with new hierarchy:
+        # Case-3digitFromCaseFolderName_<triple digit>.mp4 -> no patient id in there
+        # example: case-230-001.mp4
+        # Th de-identified should be in the folder parallel to the dicom image folder and in a completely
+        # new folder structure of the same structure to the original data
         """
         Creates save path and save directory one above the original files
         :param load_path: The load path of the files
