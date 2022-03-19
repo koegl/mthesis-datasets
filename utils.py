@@ -137,3 +137,24 @@ def tag2fcsv(tag_file_path):
 
     # write coordinate pairs into two .fcsv files
     write_fcsv_files(coordinate_pairs, tag_file_path)
+
+
+def extract_pixel_to_world_matrix(node_vtk_id):
+    """
+    Function to extract the ijktoras matrix of a node
+    :param node_vtk_id: The vtk id of the node
+    :return: numpy matrix containing the ijk to ras matrix
+    """
+
+    # get the node
+    x = slicer.util.getNode(node_vtk_id)
+
+    # create empty vtk matrix and store the ijktoras there
+    ijktoras_vtk = vtk.vtkMatrix4x4()  # can be inverted with ".Invert()"
+    x.GetIJKToRASMatrix(ijktoras_vtk)  # same for RAStoIJK
+    ijktoras = np.eye(4)
+    ijktoras_vtk.DeepCopy(ijktoras.ravel(), ijktoras_vtk)
+
+    # Matrix vector product: point_pix @ ijktoras
+
+    return ijktoras
