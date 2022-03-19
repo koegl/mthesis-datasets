@@ -7,22 +7,9 @@ import logging.config
 import cv2
 
 
-class ExportHandling:
-    def __init__(self):
-        self.load_paths = None
-        self.logger = None
-        self.crop_values = [0.0, 0.0, 0.0, 0.0]
-
-        self.current_path = None
-
-        # set up logging
-        # todo figure out a better way to save the logger
-        desktop_path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop')
-        logging.basicConfig(filename=os.path.join(desktop_path, "deidentify.log"))
-        self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)
-
-    def load_dicom_to_numpy(self, dicom_path='CT_small.dcm'):
+class DicomToMp4Crop:
+    @staticmethod
+    def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
         """
         Function to load DICOMs and return the data as a numpy array of shape AxBx[no. of frames]
         :param dicom_path: Path to the DICOM
@@ -40,7 +27,8 @@ class ExportHandling:
 
         return pixels
 
-    def crop_array(self, np_array, top_percent=0.0, bottom_percent=0.0, left_percent=0.0, right_percent=0.0):
+    @staticmethod
+    def crop_array(np_array, top_percent=0.0, bottom_percent=0.0, left_percent=0.0, right_percent=0.0):
         """
         Function to de-identify (crop top x rows) US images
         :param np_array: input array of dim: AxBx[no. of frames]
@@ -83,7 +71,8 @@ class ExportHandling:
 
         return cropped
 
-    def export_array_to_video(self, np_array, save_path='/Users/fryderykkogl/Desktop/output_video.mp4', codec='H264', fps=26.09):
+    @staticmethod
+    def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/output_video.mp4', codec='H264', fps=26.09):
         """
         Exports numpy array to video
         :param np_array: input array of dim: AxBx[no. of frames]
@@ -110,15 +99,23 @@ class ExportHandling:
         # release the writer
         out.release()
 
-    def export_array_to_dicom(self):
+    @staticmethod
+    def export_array_to_dicom(np_array, save_path):
+        """
+        Export numpy array to dicom
+        :param np_array: input array
+        :param save_path: Path where the dicom will be saved (extension included in path)
+        :return:
+        """
         # todo
-        pass
+        raise NotImplementedError
 
-    def deidentify_one_dicom(self, dicom_path, save_path):
+    def deidentify_one_dicom(self, dicom_path, save_path, crop_values):
         """
         Takes in one dicom path and saves it as an mp4 to the save path
-        :param dicom_path:
-        :param save_path:
+        :param dicom_path: Path from where the dicom will be loaded
+        :param save_path: Path where the video will be stored
+        :param crop_values: the amount to be cropped from each side
         """
 
         # get data array as numpy array
@@ -126,13 +123,30 @@ class ExportHandling:
 
         # deidentify by cropping
         us_numpy_cropped = self.crop_array(us_numpy.copy(),
-                                           top_percent= self.crop_values[0],
-                                           bottom_percent=self.crop_values[1],
-                                           left_percent=self.crop_values[2],
-                                           right_percent=self.crop_values[3])
+                                           top_percent=crop_values[0],
+                                           bottom_percent=crop_values[1],
+                                           left_percent=crop_values[2],
+                                           right_percent=crop_values[3])
 
         # create video
         self.export_array_to_video(us_numpy_cropped, save_path=save_path)
+
+
+class ExportHandling:
+    def __init__(self):
+        self.dicom_exporter = DicomToMp4Crop()
+
+        self.load_paths = None
+        self.logger = None
+
+        self.current_path = None
+
+        # set up logging
+        # todo figure out a better way to save the logger
+        desktop_path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop')
+        logging.basicConfig(filename=os.path.join(desktop_path, "deidentify.log"))
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)
 
     @staticmethod
     def create_save_path(load_path):
@@ -166,7 +180,6 @@ class ExportHandling:
         return save_path
 
     def run_export_loop(self, load_paths, crop_values):
-        self.crop_values = crop_values
         self.load_paths = load_paths
 
         # export loop
@@ -182,7 +195,7 @@ class ExportHandling:
             save_path = self.create_save_path(load_path)
 
             try:
-                self.deidentify_one_dicom(load_path, save_path)
+                self.dicom_exporter.deidentify_one_dicom(load_path, save_path, crop_values)
 
                 if not os.path.exists(save_path):
                     self.logger.error(f"could not export {load_path}.")
@@ -193,4 +206,4 @@ class ExportHandling:
 
         print("\n\n========================================================\n"
               "========================================================\n"
-              "Finished exporting")
+              "Finished exporting\n\n")
