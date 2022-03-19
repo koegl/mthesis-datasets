@@ -5,6 +5,7 @@ from pydicom.pixel_data_handlers.util import _convert_YBR_FULL_to_RGB
 from pydicom import read_file
 import logging.config
 import cv2
+from tqdm import tqdm
 
 
 class DicomToMp4Crop:
@@ -142,7 +143,6 @@ class ExportHandling:
         self.current_path = None
 
         # set up logging
-        # todo figure out a better way to save the logger
         desktop_path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop')
         logging.basicConfig(filename=os.path.join(desktop_path, "deidentify.log"))
         self.logger = logging.getLogger()
@@ -150,13 +150,9 @@ class ExportHandling:
 
     @staticmethod
     def create_save_path(load_path):
-        # todo update with new hierarchy:
-        # Case-3digitFromCaseFolderName_<triple digit>.mp4 -> no patient id in there
-        # example: case-230-001.mp4
-        # Th de-identified should be in the folder parallel to the dicom image folder and in a completely
-        # new folder structure of the same structure to the original data
         """
-        Creates save path and save directory one above the original files
+        Creates save path and save directory one above the original files. example file name: case-230-001.mp4.
+        Th de-identified will be in the folder parallel to the dicom image folder
         :param load_path: The load path of the files
         :return: The save path
         """
@@ -170,9 +166,10 @@ class ExportHandling:
             os.makedirs(save_folder)
 
         # remove potential dicom extension
-        file_name = os.path.basename(load_path)
-        file_name = file_name.split(".")[0]
-        file_name += "_crop.mp4"
+        buf_file_name = os.path.basename(load_path)
+        buf_file_name = buf_file_name.split(".")[0]
+
+        file_name = str(parent_parent).split("/")[-1][0:8].lower() + "-" + buf_file_name[-3:] + ".mp4"
 
         # get full save path
         save_path = os.path.join(save_folder, file_name)
@@ -183,9 +180,12 @@ class ExportHandling:
         self.load_paths = load_paths
 
         # export loop
-        for i, load_path in enumerate(load_paths):
+        for i in tqdm(range(len(load_paths)), "Exporting DICOMs to mp4"):
+            print("\n")
+            load_path = load_paths[i]
+        # for i, load_path in enumerate(load_paths):
 
-            print(f"Exporting {i+1}/{len(load_paths)}")
+            # print(f"Exporting {i+1}/{len(load_paths)}")
 
             # get paths
             assert load_path.lower().endswith(".dcm") or load_path.lower().endswith(""), "File has to be DICOM"
