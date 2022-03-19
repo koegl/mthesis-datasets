@@ -42,6 +42,8 @@ class GUIWindow:
         # error when both fields with paths are empty
         if self.load_paths == "" and self.load_folder == "":
             self.error_message_crop(error_message="Empty paths")
+        elif self.load_paths != "" and self.load_folder != "":
+            self.error_message_crop(error_message="Specify only file paths or folder path")
 
         # get all crop values
         crop_values = [self.top, self.bottom, self.left, self.right]
@@ -83,6 +85,10 @@ class GUIWindow:
 
     def main(self):
         with dpg.window(label="Crop DICOM files"):
+
+            dpg.set_viewport_width(650)
+            dpg.set_viewport_height(430)
+
             dpg.add_button(label="Crop", callback=self.crop_callback)
 
             dpg.add_text("Enter the amount of crop for top, bottom, left, right (e.g. 0.3 corresponds to 30%)\n"
@@ -95,15 +101,15 @@ class GUIWindow:
             dpg.add_same_line()
             dpg.add_input_text(label="Right\t", callback=self.update_right, width=60, default_value="0.0")
 
+            dpg.add_text("\n\n\nAdd paths to the separate files (first entry box) or a path to a folder (second entry "
+                         "box)")
             dpg.add_text("\nAdd paths to the DICOM files that you want to convert:\n"
                          "NOTES:\n"
                          "\t- each path has to be in a new line\n"
                          "\t- each cropped files are saved in the directory above in a sub-directory 'deientified'\n"
                          "\t- the error log is saved in the desktop as 'deidentify.log'\n")
-            dpg.add_same_line()
-            dpg.add_text("\nAdd path to the main folder (dicoms will be extracted automatically")
             dpg.add_input_text(label="", callback=self.update_paths, multiline=True)
-            dpg.add_same_line()
+            dpg.add_text("\nAdd path to the main folder (dicoms will be extracted automatically")
             dpg.add_input_text(label="", callback=self.update_folder, multiline=False)
 
         dpg.setup_dearpygui()
