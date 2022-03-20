@@ -139,15 +139,15 @@ def tag2fcsv(tag_file_path):
     write_fcsv_files(coordinate_pairs, tag_file_path)
 
 
-def extract_pixel_to_world_matrix(node_vtk_id):
+def extract_pixel_to_world_matrix(node_mrml_id):
     """
     Function to extract the ijktoras matrix of a node
-    :param node_vtk_id: The vtk id of the node
+    :param node_mrml_id: The mrml id of the node (e.g. )
     :return: numpy matrix containing the ijk to ras matrix
     """
 
     # get the node
-    x = slicer.util.getNode(node_vtk_id)
+    x = slicer.mrmlScene.GetNodeByID(node_mrml_id)
 
     # create empty vtk matrix and store the ijktoras there
     ijktoras_vtk = vtk.vtkMatrix4x4()  # can be inverted with ".Invert()"
