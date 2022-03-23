@@ -17,3 +17,7 @@ build/deidentify_mp4/
 dist/
 
 build/deidentify_dcm/
+
+*.toc
+
+build/deidentify_dcm_m1/
