@@ -97,13 +97,11 @@ class GUIWindow:
 
             dpg.add_text("Enter the amount of crop for top, bottom, left, right (e.g. 0.3 corresponds to 30%)\n"
                          "(\'0.09166\' works well for top)")
-            dpg.add_input_text(label="Top\t", callback=self.update_top, width=60,  default_value="0.0")
-            dpg.add_same_line()
-            dpg.add_input_text(label="Bottom\t", callback=self.update_bottom, width=60, default_value="0.0")
-            dpg.add_same_line()
-            dpg.add_input_text(label="Left\t", callback=self.update_left, width=60, default_value="0.0")
-            dpg.add_same_line()
-            dpg.add_input_text(label="Right\t", callback=self.update_right, width=60, default_value="0.0")
+            with dpg.group(horizontal=True):
+                dpg.add_input_text(label="Top\t", callback=self.update_top, width=60,  default_value="0.0")
+                dpg.add_input_text(label="Bottom\t", callback=self.update_bottom, width=60, default_value="0.0")
+                dpg.add_input_text(label="Left\t", callback=self.update_left, width=60, default_value="0.0")
+                dpg.add_input_text(label="Right\t", callback=self.update_right, width=60, default_value="0.0")
 
             dpg.add_text("\n\n\nAdd paths to the separate files (first entry box) or a path to a folder (second entry "
                          "box)")
