@@ -61,8 +61,11 @@ class GUIWindow:
         if self.load_folder == "":  # if the user passed paths
             for path in self.load_paths.splitlines():
                 path_list.append(path)
+
         elif self.load_paths == "":  # if the user passed folder
             path_list = extract_file_paths(self.load_folder, extension="")
+
+        path_list.sort()
 
         self.export_handler.run_export_loop(path_list, crop_values)
 
