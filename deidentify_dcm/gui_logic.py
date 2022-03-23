@@ -1,6 +1,7 @@
 from deidentify_dcm.export_logic import ExportHandling
-from utils_deidentify import extract_file_paths
+from deidentify_dcm.utils_deidentify import extract_file_paths
 import dearpygui.dearpygui as dpg
+import pydicom.encoders.pylibjpeg
 
 
 class GUIWindow:
