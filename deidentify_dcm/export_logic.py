@@ -16,7 +16,6 @@ class DicomToMp4Crop:
         :param dicom_path: Path to the DICOM
         :return: The numpy array with the data from DICOM
         """
-
         # read dicom
         ds = read_file(dicom_path)
 
@@ -24,7 +23,8 @@ class DicomToMp4Crop:
         pixels = ds.pixel_array
 
         # convert color space
-        pixels = _convert_YBR_FULL_to_RGB(pixels)
+        if len(pixels.shape) == 4:
+            pixels = _convert_YBR_FULL_to_RGB(pixels)
 
         return pixels
 
@@ -42,7 +42,7 @@ class DicomToMp4Crop:
 
         dims = np_array.shape
 
-        if len(dims) != 4:
+        if len(dims) != 4 and len(dims) != 3:
             raise ValueError("Array for cropping has wrong dimensions. (crop_array)")
 
         # check if not too much would be cropped
@@ -60,20 +60,30 @@ class DicomToMp4Crop:
         left = int(np.ceil(dims[1] * left_percent))
         right = int(np.ceil(dims[1] * right_percent))
 
-        # crop - we need separate cases because one cannot crop to :-0
-        if bottom == 0 and right == 0:
-            cropped = np_array[:, top:, left:, :]
-        elif bottom == 0 and right != 0:
-            cropped = np_array[:, top:, left:-right, :]
-        elif bottom != 0 and right == 0:
-            cropped = np_array[:, top:-bottom, left:, :]
-        else:
-            cropped = np_array[:, top:-bottom, left:-right, :]
+        # crop - we need separate cases because one cannot crop to :
+        if len(dims) == 4:
+            if bottom == 0 and right == 0:
+                cropped = np_array[:, top:, left:, :]
+            elif bottom == 0 and right != 0:
+                cropped = np_array[:, top:, left:-right, :]
+            elif bottom != 0 and right == 0:
+                cropped = np_array[:, top:-bottom, left:, :]
+            else:
+                cropped = np_array[:, top:-bottom, left:-right, :]
+        else:  # the 4th dimension is usually the rgb value
+            if bottom == 0 and right == 0:
+                cropped = np_array[:, top:, left:]
+            elif bottom == 0 and right != 0:
+                cropped = np_array[:, top:, left:-right]
+            elif bottom != 0 and right == 0:
+                cropped = np_array[:, top:-bottom, left:]
+            else:
+                cropped = np_array[:, top:-bottom, left:-right]
 
         return cropped
 
     @staticmethod
-    def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/output_video.mp4', codec='H264', fps=26.09):
+    def export_array_to_video(np_array, save_path='/Users/fryderykkogl/Desktop/output_video.mp4', codec='avc1', fps=26.09):
         """
         Exports numpy array to video
         :param np_array: input array of dim: AxBx[no. of frames]
@@ -82,19 +92,26 @@ class DicomToMp4Crop:
         :param fps: Frames per second
         """
         # get images shape
-        frame_size = np_array.shape[1:-1]
+        if len(np_array.shape) == 4:
+            frame_size = np_array.shape[1:-1]
 
-        # # todo check if this is needed: rgb to bgr
-        buf = np_array.copy()
-        np_array[:, :, :, 0] = buf[:, :, :, 2]
-        np_array[:, :, :, 2] = buf[:, :, :, 0]
-
+            buf = np_array.copy()
+            np_array[:, :, :, 0] = buf[:, :, :, 2]
+            np_array[:, :, :, 2] = buf[:, :, :, 0]
+        else:
+            frame_size = np_array.shape[1:]
+# VideoWriter_fourcc(*'avc1')
         # create video writer; dimensions have to be inverted for the VideoWriter
-        out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=True)
-
+        if len(np_array.shape) == 4:
+            out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=True)
+        else:
+            out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=False)
         # loop through all frames and write them to the video writer
         for i in range(np_array.shape[0]):
-            img = np_array[i, :, :, :].astype('uint8')
+            if len(np_array.shape) == 4:
+                img = np_array[i, :, :, :].astype('uint8')
+            else:
+                img = np_array[i, :, :].astype('uint8')
             out.write(img)
 
         # release the writer
@@ -143,8 +160,12 @@ class ExportHandling:
         self.current_path = None
 
         # set up logging
-        desktop_path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop')
-        logging.basicConfig(filename=os.path.join(desktop_path, "deidentify.log"))
+        try:
+            desktop_path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop')
+            logging.basicConfig(filename=os.path.join(desktop_path, "deidentify.log"))
+        except:
+            logging.basicConfig(filename="deidentify.log")
+
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
 
@@ -152,7 +173,7 @@ class ExportHandling:
     def create_save_path(load_path):
         """
         Creates save path and save directory one above the original files. example file name: case-230-001.mp4.
-        Th de-identified will be in the folder parallel to the dicom image folder
+        The de-identified will be in the folder parallel to the dicom image folder
         :param load_path: The load path of the files
         :return: The save path
         """
@@ -160,7 +181,7 @@ class ExportHandling:
         parent_parent = Path(load_path).parent.parent.absolute()
 
         # directory with de-identified clips
-        save_folder = os.path.join(parent_parent, "deidentified")
+        save_folder = os.path.join(parent_parent, "DEIDENTIFIED CLIPS")
 
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
@@ -179,13 +200,11 @@ class ExportHandling:
     def run_export_loop(self, load_paths, crop_values):
         self.load_paths = load_paths
 
+        print("\n\n")
+
         # export loop
         for i in tqdm(range(len(load_paths)), "Exporting DICOMs to mp4"):
-            print("\n")
             load_path = load_paths[i]
-        # for i, load_path in enumerate(load_paths):
-
-            # print(f"Exporting {i+1}/{len(load_paths)}")
 
             # get paths
             assert load_path.lower().endswith(".dcm") or load_path.lower().endswith(""), "File has to be DICOM"
