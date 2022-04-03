@@ -10,11 +10,11 @@ from tqdm import tqdm
 
 class DicomToMp4Crop:
     @staticmethod
-    def load_dicom_to_numpy(dicom_path='CT_small.dcm'):
+    def load_dicom_to_numpy_and_fps(dicom_path='CT_small.dcm'):
         """
         Function to load DICOMs and return the data as a numpy array of shape AxBx[no. of frames]
         :param dicom_path: Path to the DICOM
-        :return: The numpy array with the data from DICOM
+        :return: The numpy array with the data from DICOM and the frame rate
         """
         # read dicom
         ds = read_file(dicom_path)
@@ -26,7 +26,11 @@ class DicomToMp4Crop:
         if len(pixels.shape) == 4:
             pixels = _convert_YBR_FULL_to_RGB(pixels)
 
-        return pixels
+        # get frame rate
+        frame_time = ds.FrameTime
+        fps = 1000 / frame_time
+
+        return pixels, fps
 
     @staticmethod
     def crop_array(np_array, top_percent=0.0, bottom_percent=0.0, left_percent=0.0, right_percent=0.0):
@@ -142,7 +146,7 @@ class DicomToMp4Crop:
         """
 
         # get data array as numpy array
-        us_numpy = self.load_dicom_to_numpy(dicom_path)
+        us_numpy, fps = self.load_dicom_to_numpy_and_fps(dicom_path)
 
         # deidentify by cropping
         us_numpy_cropped = self.crop_array(us_numpy.copy(),
@@ -152,7 +156,7 @@ class DicomToMp4Crop:
                                            right_percent=crop_values[3])
 
         # create video
-        self.export_array_to_video(us_numpy_cropped, save_path=save_path)
+        self.export_array_to_video(us_numpy_cropped, fps=fps, save_path=save_path)
 
 
 class ExportHandling:
