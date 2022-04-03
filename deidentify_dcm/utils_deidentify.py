@@ -25,7 +25,7 @@ def extract_file_paths(parent_folder_path, extension=""):
                 current_extension = file_name_split[1]
 
             if "ds_store" not in buf_path.lower() and "dicomdir" not in buf_path.lower() and \
-                    (current_extension == "" or current_extension == "mp4" or current_extension == "movie" or
+                    (current_extension == "" or current_extension == "mp4" or current_extension == "mov" or
                      current_extension == "avi"):
                 all_files_buf.append(buf_path)
 
