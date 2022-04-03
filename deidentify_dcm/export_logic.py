@@ -100,7 +100,7 @@ class DicomToMp4Crop:
             np_array[:, :, :, 2] = buf[:, :, :, 0]
         else:
             frame_size = np_array.shape[1:]
-# VideoWriter_fourcc(*'avc1')
+
         # create video writer; dimensions have to be inverted for the VideoWriter
         if len(np_array.shape) == 4:
             out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=True)
