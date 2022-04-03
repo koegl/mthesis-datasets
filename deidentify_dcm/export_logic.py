@@ -60,7 +60,7 @@ class DicomToMp4Crop:
         left = int(np.ceil(dims[1] * left_percent))
         right = int(np.ceil(dims[1] * right_percent))
 
-        # crop - we need separate cases because one cannot crop to :
+        # crop - we need separate cases for rgb and grayscale
         if len(dims) == 4:
             if bottom == 0 and right == 0:
                 cropped = np_array[:, top:, left:, :]
@@ -91,28 +91,33 @@ class DicomToMp4Crop:
         :param codec: fourcc codec
         :param fps: Frames per second
         """
-        # get images shape
+        # rgb
         if len(np_array.shape) == 4:
             frame_size = np_array.shape[1:-1]
 
             buf = np_array.copy()
             np_array[:, :, :, 0] = buf[:, :, :, 2]
             np_array[:, :, :, 2] = buf[:, :, :, 0]
+
+            # create video writer; dimensions have to be inverted for the VideoWriter
+            out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=True)
+
+            # loop through all frames and write them to the video writer
+            for i in range(np_array.shape[0]):
+                img = np_array[i, :, :, :].astype('uint8')
+                out.write(img)
+
+        # grayscale
         else:
             frame_size = np_array.shape[1:]
 
-        # create video writer; dimensions have to be inverted for the VideoWriter
-        if len(np_array.shape) == 4:
-            out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=True)
-        else:
+            # create video writer; dimensions have to be inverted for the VideoWriter
             out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*codec), fps, frame_size[::-1], isColor=False)
-        # loop through all frames and write them to the video writer
-        for i in range(np_array.shape[0]):
-            if len(np_array.shape) == 4:
-                img = np_array[i, :, :, :].astype('uint8')
-            else:
+
+            # loop through all frames and write them to the video writer
+            for i in range(np_array.shape[0]):
                 img = np_array[i, :, :].astype('uint8')
-            out.write(img)
+                out.write(img)
 
         # release the writer
         out.release()
