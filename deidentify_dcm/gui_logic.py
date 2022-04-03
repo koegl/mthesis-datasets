@@ -87,7 +87,7 @@ class GUIWindow:
         self.right = app_data
 
     def main(self):
-        with dpg.window(label="Crop DICOM files"):
+        with dpg.window(label="Crop DICOM/mp4/mpv/avi files"):
 
             dpg.set_viewport_width(650)
             dpg.set_viewport_height(430)
@@ -104,13 +104,13 @@ class GUIWindow:
 
             dpg.add_text("\n\n\nAdd paths to the separate files (first entry box) or a path to a folder (second entry "
                          "box)")
-            dpg.add_text("\nAdd paths to the DICOM files that you want to convert:\n"
+            dpg.add_text("\nAdd paths to the DICOM/mp4/mpv/avi files that you want to convert:\n"
                          "NOTES:\n"
                          "\t- each path has to be in a new line\n"
                          "\t- each cropped files are saved in the directory above in a sub-directory 'deientified'\n"
                          "\t- the error log is saved in the desktop as 'deidentify.log'\n")
             dpg.add_input_text(label="", callback=self.update_paths, multiline=True)
-            dpg.add_text("\nAdd path to the main folder (dicoms will be extracted automatically")
+            dpg.add_text("\nAdd path to the main folder (all dicoms, mp4, mpv andavi will be extracted automatically")
             dpg.add_input_text(label="", callback=self.update_folder, multiline=False)
 
         dpg.setup_dearpygui()
