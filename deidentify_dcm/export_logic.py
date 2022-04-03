@@ -33,6 +33,32 @@ class DicomToMp4Crop:
         return pixels, fps
 
     @staticmethod
+    def load_video_to_numpy_and_fps(video_path="/Users/fryderykkogl/Documents/university/master/thesis/data.nosync/nick/test/IM00001.mov"):
+        """
+        Function to load a video and return the data as a numpy array
+        :param video_path: Path to the .mov
+        :return: The numpy array with the data from the video [frames x [dim1, dim2] x 3]
+        """
+        # todo get frame rate from video
+        # extract frames per second from video
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+
+        # read video
+        cap = cv2.VideoCapture(video_path)
+        ret = True
+        frames = []
+        while ret:
+            ret, img = cap.read()  # read one frame from the 'capture' object; img is (H, W, C)
+            if ret:
+                frames.append(img)
+
+        # convert to numpy
+        frames_np = np.array(frames)
+
+        return frames_np, fps
+
+    @staticmethod
     def crop_array(np_array, top_percent=0.0, bottom_percent=0.0, left_percent=0.0, right_percent=0.0):
         """
         Function to de-identify (crop top x rows) US images
@@ -137,16 +163,22 @@ class DicomToMp4Crop:
         # todo
         raise NotImplementedError
 
-    def deidentify_one_dicom(self, dicom_path, save_path, crop_values):
+    def deidentify_one_dicom(self, file_path, save_path, crop_values):
         """
         Takes in one dicom path and saves it as an mp4 to the save path
-        :param dicom_path: Path from where the dicom will be loaded
+        :param file_path: Path from where the dicom/mp4 will be loaded
         :param save_path: Path where the video will be stored
         :param crop_values: the amount to be cropped from each side
         """
 
         # get data array as numpy array
-        us_numpy, fps = self.load_dicom_to_numpy_and_fps(dicom_path)
+        if file_path.lower().endswith('.mp4') or \
+           file_path.lower().endswith('.avi') or \
+           file_path.lower().endswith('.mov'):
+
+            us_numpy, fps = self.load_video_to_numpy_and_fps(file_path)
+        else:
+            us_numpy, fps = self.load_dicom_to_numpy_and_fps(file_path)
 
         # deidentify by cropping
         us_numpy_cropped = self.crop_array(us_numpy.copy(),
