@@ -210,7 +210,22 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.util.errorDisplay("Couldn't export current scene to DICOM.\n{}".format(e),
                                      windowTitle="Export error")
 
-    
+    @staticmethod
+    def return_a_list_of_all_mrbs_in_a_folder(folder_path):
+        """
+        Returns a list of all mrbs in a folder.
+        :@param folder_path: Path to the folder in which to search for mrbs.
+        :@return: A list of all mrbs in the folder.
+        """
+        mrbs = []
+
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                if file.endswith(".mrb"):
+                    mrbs.append(os.path.join(root, file))
+
+        return mrbs
+
 
     def onexportAllMrbsFoundInFolderToDicomButton(self):
         """
