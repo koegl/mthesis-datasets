@@ -50,7 +50,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QPlainTextEdit" name="plainTextEdit">
+    <widget class="QPlainTextEdit" name="mrbFolderPathTextWindow">
      <property name="plainText">
       <string>&lt;path to folder where mrb's are contained (can be in subfolders etc, they will be extracted automatically)&gt;</string>
      </property>
