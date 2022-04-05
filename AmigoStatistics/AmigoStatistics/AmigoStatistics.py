@@ -217,6 +217,11 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         :@param folder_path: Path to the folder in which to search for mrbs.
         :@return: A list of all mrbs in the folder.
         """
+
+        # check if the path is valid
+        if not os.path.isdir(folder_path):
+            raise Exception("The path is not valid.")
+
         mrbs = []
 
         for root, dirs, files in os.walk(folder_path):
