@@ -1,20 +1,21 @@
 class Tree(object):
     """Generic tree node."""
-    def __init__(self, name="root", children=None, id=None):
+    def __init__(self, name="root", children=None, sh_id=None, vtk_id=""):
 
         self.name = name
 
         self.children = {}
-        if children is not None:
+        if children is not None:  # todo what does this do?
             for child in children:
                 self.add_child(child)
 
-        self.id = id
+        self.sh_id = sh_id
+        self.vtk_id = vtk_id
 
         self.parent = None
 
-        self.study_id = None
-        self.series_instance_uid = None
+        self.sh_study_id = None  # not to which sh_study the node belongs, but which sh_study was created from it
+        self.dcm_series_instance_uid = None
 
     def __repr__(self):
         return self.name
@@ -54,7 +55,7 @@ class Tree(object):
         assert isinstance(node, Tree), "Node is not a Tree"
 
         # array with visited and FIFO queue with nodes
-        visited = [node.id]
+        visited = [node.sh_id]
         return_array = []
         q = [node]
 
@@ -62,9 +63,9 @@ class Tree(object):
             s = q.pop(0)
 
             for child_name, child in s.children.items():
-                if child.id not in visited:
+                if child.sh_id not in visited:
                     q.append(child)
-                    visited.append(child.id)
+                    visited.append(child.sh_id)
                     return_array.append(child)
 
         return return_array

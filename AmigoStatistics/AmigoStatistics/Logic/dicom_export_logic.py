@@ -54,11 +54,12 @@ class DicomExportLogic:
         child_ids = vtk.vtkIdList()
         subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids)
-        id = child_ids.GetId(0)
+        sh_id_patient = child_ids.GetId(0)
 
         # FIFO queue of nodes and create root
-        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(id), id=id)
-        visited = [id]  # array to store visited IDs
+        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id_patient), sh_id=sh_id_patient, vtk_id="")
+        # vtk_id is None because only volumes have it
+        visited = [sh_id_patient]  # array to store visited IDs
         nodes_queue = [self.folder_structure]
 
         while nodes_queue:
@@ -66,14 +67,20 @@ class DicomExportLogic:
             s = nodes_queue.pop(0)
 
             # get all children of the dequeued node s and add to queue if not visited
-            subject_hierarchy_node.GetItemChildren(s.id, child_ids)
+            subject_hierarchy_node.GetItemChildren(s.sh_id, child_ids)
 
             for i in range(child_ids.GetNumberOfIds()):
                 sub_id = child_ids.GetId(i)
                 if sub_id not in visited:
                     sub_name = subject_hierarchy_node.GetItemName(sub_id)
-                    sub_child = s.add_child(Tree(sub_name, id=sub_id))  # this returns the node which is like a C++
-                    # reference, so we can use this in the next iteration to append nodes
+                    sub_vtk_node = subject_hierarchy_node.GetItemDataNode(sub_id)
+                    if sub_vtk_node:
+                        sub_vtk_id = sub_vtk_node.GetID()
+                    else:
+                        sub_vtk_id = ""
+
+                    sub_child = s.add_child(Tree(sub_name, sh_id=sub_id, vtk_id=sub_vtk_id))  # this returns the node
+                    # which is like a C++ reference, so we can use this in the next iteration to append nodes
                     nodes_queue.append(sub_child)
                     visited.append(sub_id)
 
@@ -87,14 +94,14 @@ class DicomExportLogic:
         for _, child in self.folder_structure.children.items():
             if 'transform' in child.name.lower():  # we don't want to create a study for the transform
                 continue
-            child.study_id = hierarchy_node.CreateStudyItem(self.folder_structure.id, child.name)
-            hierarchy_node.SetItemParent(child.study_id, self.folder_structure.id)
+            child.sh_study_id = hierarchy_node.CreateStudyItem(self.folder_structure.sh_id, child.name)
+            hierarchy_node.SetItemParent(child.sh_study_id, self.folder_structure.sh_id)
 
         # loop through all nodes in BFS order
         bfs_array_of_nodes = Tree.bfs(self.folder_structure)
         for node in bfs_array_of_nodes:
-            if node.study_id is None and 'transform' not in node.name.lower():  # true if the node is not a study -> a series
-                hierarchy_node.SetItemParent(node.id, node.parent.study_id)
+            if node.sh_study_id is None and 'transform' not in node.name.lower():  # true if the node is not a study -> a series
+                hierarchy_node.SetItemParent(node.sh_id, node.parent.sh_study_id)
 
     def harden_transformations(self):
         """
@@ -105,7 +112,7 @@ class DicomExportLogic:
 
         for node in all_nodes:
             # harden transformation
-            buf_node = slicer.mrmlScene.GetFirstNode(node.name)
+            buf_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
 
             if buf_node:  # if it exists
                 buf_node.HardenTransform()
@@ -162,7 +169,7 @@ class DicomExportLogic:
         self.study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
         exp.setTag('StudyInstanceUID', self.study_instance_uid)
         exp.setTag('SeriesInstanceUID', self.study_instance_uid + str(series_counter))
-        file.series_instance_uid = self.study_instance_uid + str(series_counter)
+        file.dcm_series_instance_uid = self.study_instance_uid + str(series_counter)
         exp.setTag('FrameOfReferenceInstanceUID', self.study_instance_uid + str(series_counter) + str(series_counter))
 
         # StudyID
@@ -194,7 +201,7 @@ class DicomExportLogic:
         @param segmentation_name: The name of the segmentation
         @return: The volume node of the parent
         """
-
+        # todo - default should be T1, unless in the segmentation name there is t2
         # split segmentation_name into sub-words that can be searched for in the potential parent
         segmentation_name_split = segmentation_name.split(" ")
 
@@ -221,7 +228,7 @@ class DicomExportLogic:
 
         # convert volume to label-map
         # create volume and label nodes
-        volume_node = slicer.mrmlScene.GetFirstNode(node.name)
+        volume_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
         label_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
 
         # create the label from the volume
@@ -231,7 +238,7 @@ class DicomExportLogic:
         # create new empty segmentation and associate it with the right parent node
         segmentation_node = slicer.mrmlScene.AddNode(slicer.vtkMRMLSegmentationNode())
         # https://github.com/lassoan/LabelmapToDICOMSeg/blob/main/convert.py
-        parent_volume_node = slicer.mrmlScene.GetFirstNode(parent_node.name)
+        parent_volume_node = slicer.mrmlScene.GetNodeByID(parent_node.vtk_id)
         segmentation_node.SetNodeReferenceID(segmentation_node.GetReferenceImageGeometryReferenceRole(),
                                              parent_volume_node.GetID())
 
@@ -274,7 +281,7 @@ class DicomExportLogic:
                     else:
                         counter[node.parent.name] = 1
 
-                    exportables = exporter_volumes.examineForExport(node.id)
+                    exportables = exporter_volumes.examineForExport(node.sh_id)
 
                     if not exportables:
                         raise ValueError("Nothing found to export.")
@@ -331,12 +338,12 @@ class DicomExportLogic:
                         self.logger.log(logging.ERROR, f"Could not export node {node.name}, couldn't find any parent.")
                         continue
 
-                    parent_path = os.path.join(self.output_folder, "ScalarVolume_" + str(parent.id))
+                    parent_path = os.path.join(self.output_folder, "ScalarVolume_" + str(parent.sh_id))
 
                     self.import_reference_image(parent_path)
 
-                    loaded_volume_id = DICOMUtils.loadSeriesByUID([parent.series_instance_uid])
-                    loaded_volume_node = slicer.util.getNode(loaded_volume_id[0])
+                    loaded_volume_id = DICOMUtils.loadSeriesByUID([parent.dcm_series_instance_uid])
+                    loaded_volume_node = slicer.mrmlScene.GetNodeByID(loaded_volume_id[0])
 
                     # 2. convert volume to segmentation
                     segmentation_node = self.convert_volume_to_segmentation(node, parent)
@@ -390,7 +397,7 @@ class DicomExportLogic:
                     else:
                         counter[node.parent.name] = 1
 
-                    markups_node = slicer.mrmlScene.GetFirstNode(node.name)
+                    markups_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
 
                     if markups_node is None:
                         raise ValueError(f"Could not find and export landmarks node {node.name}")
