@@ -94,8 +94,9 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # (in the selected parameter node).
 
         # Buttons
-        # set foreground threshold to 1 for all chosen volumes
         self.ui.exportCurrentSceneToDicomButton.connect('clicked(bool)', self.onExportCurrentSceneToDicomButton)
+        self.ui.exportAllMrbsFoundInFolderToDicomButton.connect('clicked(bool)',
+                                                                self.onexportAllMrbsFoundInFolderToDicomButton)
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -194,7 +195,6 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         """
         Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
         """
-        # todo add text field for entering the export folder
         try:
             print("\n\nExporting current scene to DICOM...\n")
 
@@ -209,6 +209,18 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         except Exception as e:
             slicer.util.errorDisplay("Couldn't export current scene to DICOM.\n{}".format(e),
                                      windowTitle="Export error")
+
+    
+
+    def onexportAllMrbsFoundInFolderToDicomButton(self):
+        """
+        Export all mrb's found in the folder to dicom
+        """
+        try:
+            pass
+        except Exception as e:
+            slicer.util.errorDisplay("Couldn't export mrbs to DICOM.\n{}".format(e), windowTitle="Export error")
+
 
 
 #
