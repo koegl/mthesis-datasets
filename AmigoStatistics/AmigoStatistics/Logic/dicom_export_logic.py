@@ -46,6 +46,8 @@ class DicomExportLogic:
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # lowest level from ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
 
+        self.pre_op_name = ""
+
     def bfs_generate_folder_structure_as_tree(self):
         """
         Generate the folder structure as a tree
@@ -57,7 +59,7 @@ class DicomExportLogic:
         sh_id_patient = child_ids.GetId(0)
 
         # FIFO queue of nodes and create root
-        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id_patient), sh_id=sh_id_patient, vtk_id="")
+        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id_patient).lower(), sh_id=sh_id_patient, vtk_id="")
         # vtk_id is None because only volumes have it
         visited = [sh_id_patient]  # array to store visited IDs
         nodes_queue = [self.folder_structure]
@@ -79,7 +81,10 @@ class DicomExportLogic:
                     else:
                         sub_vtk_id = ""
 
-                    sub_child = s.add_child(Tree(sub_name, sh_id=sub_id, vtk_id=sub_vtk_id))  # this returns the node
+                    if "pre" in sub_name.lower() and "op" in sub_name.lower() and "imaging" in sub_name.lower():
+                        self.pre_op_name = sub_name.lower()
+
+                    sub_child = s.add_child(Tree(sub_name.lower(), sh_id=sub_id, vtk_id=sub_vtk_id))  # this returns the node
                     # which is like a C++ reference, so we can use this in the next iteration to append nodes
                     nodes_queue.append(sub_child)
                     visited.append(sub_id)
@@ -115,7 +120,10 @@ class DicomExportLogic:
             buf_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
 
             if buf_node:  # if it exists
-                buf_node.HardenTransform()
+                try:
+                    buf_node.HardenTransform()
+                except:  # broad clause, but some nodes cannot be transformed and we don't want to crash
+                    pass
 
     @staticmethod
     def generate_id(hash_string):
@@ -206,7 +214,7 @@ class DicomExportLogic:
         segmentation_name_split = segmentation_name.split(" ")
 
         # loop through pre-op imaging nodes
-        for preop_name, preop_node in self.folder_structure.children['Pre-op Imaging'].children.items():
+        for preop_name, preop_node in self.folder_structure.children[self.pre_op_name].children.items():
 
             # check if any of the sub-words of the segmentation appear in the node name - only T1
             if "t1" in preop_name.lower():
