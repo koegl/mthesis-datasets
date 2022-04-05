@@ -220,7 +220,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # check if the path is valid
         if not os.path.isdir(folder_path):
-            raise Exception("The path is not valid.")
+            raise Exception("The mrb folder path is not valid.")
 
         mrbs = []
 
@@ -231,13 +231,55 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         return mrbs
 
-
     def onexportAllMrbsFoundInFolderToDicomButton(self):
         """
         Export all mrb's found in the folder to dicom
         """
+        # todo add check to see which mrbs could and which could not be exported
+
         try:
-            pass
+            print("\n\nExporting all mrbs found in the folder to DICOM...\n")
+
+            # Get the folder path from the GUI
+            folder_path = self.ui.mrbFolderPathTextWindow.toPlainText()
+
+            # extract all mrbs from the folder
+            mrb_paths_list = self.return_a_list_of_all_mrbs_in_a_folder(folder_path)
+
+            # get the DICOM output folder path
+            dicom_output_folder_path = self.ui.dicomOutputPathTextWindow.toPlainText()
+
+            # check if the path is valid
+            if not os.path.isdir(dicom_output_folder_path):
+                raise Exception("The dicom output path is not valid.")
+
+            # export all to dicom
+            # Create DicomExportLogic
+            dicom_logic = DicomExportLogic(output_folder=dicom_output_folder_path)
+
+            for mrb_path in mrb_paths_list:
+
+                # clear scene at the beginning of each mrb in case older data is still present
+                slicer.mrmlScene.Clear()
+
+                try:
+                    # open mrb to slicer scene
+                    try:
+                        slicer.util.loadScene(mrb_path)
+                    except Exception as e:  # needs to be this broad because slicer.util.loadScene can throw an exception
+                        # that does not impact the process except for interrupting and requiring user input
+                        pass
+
+                    # export current scene to DICOM
+                    dicom_logic.full_export()
+
+                    # clear scene
+                    slicer.mrmlScene.Clear()
+                except Exception as e:
+                    print(f"Could not export {mrb_path} to DICOM.\n{e}")
+
+            print("\nFinished exporting all mrbs found in the folder to DICOM.")
+
         except Exception as e:
             slicer.util.errorDisplay("Couldn't export mrbs to DICOM.\n{}".format(e), windowTitle="Export error")
 
