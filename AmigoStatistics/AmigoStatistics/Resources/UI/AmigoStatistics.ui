@@ -79,7 +79,7 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QPlainTextEdit" name="dicomOutputTextWindow">
+      <widget class="QPlainTextEdit" name="dicomOutputPathTextWindow">
        <property name="maximumSize">
         <size>
          <width>20000</width>
