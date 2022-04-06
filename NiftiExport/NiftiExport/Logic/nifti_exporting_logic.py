@@ -13,7 +13,7 @@ import hashlib
 import logging
 
 
-class DicomExportingLogic:
+class NiftiExportingLogic:
     """
     Class to encapsulate logic for exporting a scene to DICOM. Assumed structure:
     Scene

@@ -3,23 +3,23 @@ import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
-from Logic.dicom_export_logic import DicomExportingLogic
+from Logic.nifti_exporting_logic import NiftiExportingLogic
 
 import os
 
 
 #
-# DicomExport
+# NiftiExport
 #
 
-class DicomExport(ScriptedLoadableModule):
+class NiftiExport(ScriptedLoadableModule):
     """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "DicomExport"
+        self.parent.title = "NiftiExport"
         self.parent.categories = ["Informatics"]
         self.parent.dependencies = ["Markups"]
         self.parent.contributors = ["Fryderyk Kögl (TUM, BWH)"]
@@ -28,7 +28,7 @@ class DicomExport(ScriptedLoadableModule):
     volumes that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an
     overlapping area and the customise your view. Use the shortcuts listed at the bottom to increase the efficiency of
     the workflow.
-    https://github.com/koegl/DicomExport
+    https://github.com/koegl/NiftiExport
     """
         self.parent.acknowledgementText = """
     This extension was developed at the Brigham and Women's Hospital by Fryderyk Kögl, Harneet Cheema and Tina Kapur.
@@ -39,9 +39,9 @@ class DicomExport(ScriptedLoadableModule):
 
 
 #
-# DicomExportWidget
+# NiftiExportWidget
 #
-class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
@@ -64,7 +64,7 @@ class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Load widget from .ui file (created by Qt Designer).
         # Additional widgets can be instantiated manually and added to self.layout.
-        uiWidget = slicer.util.loadUI(self.resourcePath('UI/DicomExport.ui'))
+        uiWidget = slicer.util.loadUI(self.resourcePath('UI/NiftiExport.ui'))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -75,7 +75,7 @@ class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
-        self.logic = DicomExportLogic()
+        self.logic = NiftiExportLogic()
 
         # Connections
 
@@ -191,8 +191,8 @@ class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             print("\n\nExporting current scene to DICOM...\n")
 
-            # Create DicomExportLogic
-            dicom_logic = DicomExportingLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
+            # Create NiftiExportLogic
+            dicom_logic = NiftiExportingLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
 
             # export to DICOM
             dicom_logic.full_export()
@@ -247,8 +247,8 @@ class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 raise Exception("The dicom output path is not valid.")
 
             # export all to dicom
-            # Create DicomExportLogic
-            dicom_logic = DicomExportingLogic(output_folder=dicom_output_folder_path)
+            # Create NiftiExportLogic
+            dicom_logic = NiftiExportingLogic(output_folder=dicom_output_folder_path)
 
             for mrb_path in mrb_paths_list:
 
@@ -279,10 +279,10 @@ class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 #
-# DicomExportLogic
+# NiftiExportLogic
 #
 
-class DicomExportLogic(ScriptedLoadableModuleLogic):
+class NiftiExportLogic(ScriptedLoadableModuleLogic):
     """This class should implement all the actual
   computation done by your module.  The interface
   should be such that other python code can import
@@ -300,10 +300,10 @@ class DicomExportLogic(ScriptedLoadableModuleLogic):
 
 
 #
-# DicomExportTest
+# NiftiExportTest
 #
 #
-class DicomExportTest(ScriptedLoadableModuleTest):
+class NiftiExportTest(ScriptedLoadableModuleTest):
     """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -319,9 +319,9 @@ class DicomExportTest(ScriptedLoadableModuleTest):
         """Run as few or as many tests as needed here.
     """
         self.setUp()
-        self.test_DicomExport1()
+        self.test_NiftiExport1()
 
-    def test_DicomExport1(self):
+    def test_NiftiExport1(self):
         """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the
@@ -335,7 +335,7 @@ class DicomExportTest(ScriptedLoadableModuleTest):
 
         self.delayDisplay("Starting the test")
 
-        logic = DicomExportLogic()
+        logic = NiftiExportLogic()
 
         pass
 
