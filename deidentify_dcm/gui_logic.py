@@ -75,6 +75,9 @@ class GUIWindow:
     def update_folder(self, sender, app_data, user_data):
         self.load_folder = app_data
 
+    def update_multiple_folder(self, sender, app_data, user_data):
+        self.load_multiple_folders = app_data
+
     def update_top(self, sender, app_data, user_data):
         self.top = app_data
 
