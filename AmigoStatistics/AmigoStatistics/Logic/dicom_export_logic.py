@@ -228,18 +228,35 @@ class DicomExportLogic:
         @return: The volume node of the parent
         """
         # todo - default should be T1, unless in the segmentation name there is t2
-        # split segmentation_name into sub-words that can be searched for in the potential parent
-        segmentation_name_split = segmentation_name.split(" ")
+        first_node = None
 
-        # loop through pre-op imaging nodes
-        for preop_name, preop_node in self.folder_structure.children[self.pre_op_name].children.items():
+        if "t2" in segmentation_name.lower():
+            # loop through pre-op imaging nodes
+            for preop_name, preop_node in self.folder_structure.children[self.pre_op_name].children.items():
+                if "t2" in preop_name.lower():
+                    return preop_node
 
-            # check if any of the sub-words of the segmentation appear in the node name - only T1
-            if "t1" in preop_name.lower():
-                return preop_node
+        else:
+            # loop through pre-op imaging nodes
+            for preop_name, preop_node in self.folder_structure.children[self.pre_op_name].children.items():
 
-        # if nothing was found, return None
-        return None
+                if not first_node:
+                    first_node = preop_node
+
+                if "t1" in preop_name.lower():
+                    return preop_node
+
+        # this case can happen when t2 is in the segmentation name but in none of the pre-op names
+        if not first_node:
+            for preop_name, preop_node in self.folder_structure.children[self.pre_op_name].children.items():
+                if not first_node:
+                    first_node = preop_node
+
+                if "t1" in preop_name.lower():
+                    return preop_node
+
+        # if no t1 or t2 is found, return the first pre-op node
+        return first_node
 
     @staticmethod
     def convert_volume_to_segmentation(node, parent_node):
