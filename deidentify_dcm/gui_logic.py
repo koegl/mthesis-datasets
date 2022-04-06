@@ -10,6 +10,7 @@ class GUIWindow:
 
         self.load_paths = ""
         self.load_folder = ""
+        self.load_multiple_folders = ""
 
         self.export_handler = ExportHandling()
 
