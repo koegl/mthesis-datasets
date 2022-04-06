@@ -129,6 +129,17 @@ class DicomExportLogic:
                 except:  # broad clause, but some nodes cannot be transformed and we don't want to crash
                     pass
 
+    def create_subject_folder(self):
+        """
+        :@param subject_id: the subject id
+        :return: the subject folder§
+        Function that create a new folder named with the id of the subject in the output folder
+        """
+        self.subject_folder = os.path.join(self.output_folder, self.patient_id)
+
+        if not os.path.exists(self.subject_folder):
+            os.makedirs(self.subject_folder)
+
     @staticmethod
     def generate_id(hash_string):
         """
