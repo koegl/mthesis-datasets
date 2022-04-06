@@ -113,6 +113,8 @@ class GUIWindow:
             dpg.add_input_text(label="", callback=self.update_paths, multiline=True)
             dpg.add_text("\nAdd path to the main folder (all dicoms, mp4, mpv andavi will be extracted automatically")
             dpg.add_input_text(label="", callback=self.update_folder, multiline=False)
+            dpg.add_text("\nAdd multiple folder paths (all dicoms, mp4, mpv andavi will be extracted automatically")
+            dpg.add_input_text(label="", callback=self.update_multiple_folder, multiline=True)
 
         dpg.setup_dearpygui()
         dpg.show_viewport()
