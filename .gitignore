@@ -21,3 +21,7 @@ build/deidentify_mp4/
 *.spec
 
 dist/
+
+DicomExport/DicomExport/__pycache__/
+
+DicomExport/DicomExport/Logic/__pycache__/
