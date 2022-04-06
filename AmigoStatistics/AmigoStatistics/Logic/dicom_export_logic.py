@@ -40,6 +40,10 @@ class DicomExportLogic:
         else:
             self.output_folder = output_folder
 
+        self.subject_folder = self.output_folder
+
+        self.patient_id = None
+
         self.folder_structure = None
 
         logging.basicConfig(filename=log_path)
@@ -125,6 +129,17 @@ class DicomExportLogic:
                 except:  # broad clause, but some nodes cannot be transformed and we don't want to crash
                     pass
 
+    def create_subject_folder(self):
+        """
+        :@param subject_id: the subject id
+        :return: the subject folder§
+        Function that create a new folder named with the id of the subject in the output folder
+        """
+        self.subject_folder = os.path.join(self.output_folder, self.patient_id)
+
+        if not os.path.exists(self.subject_folder):
+            os.makedirs(self.subject_folder)
+
     @staticmethod
     def generate_id(hash_string):
         """
@@ -159,13 +174,16 @@ class DicomExportLogic:
         @param segmentation: A node with a parent - only available if we have a segmentation
         """
 
-        # output folder
-        exp.directory = self.output_folder
-
         # PatientID - get last element of subject name (MRN) and hash it - root name
-        patient_id = self.generate_id(self.folder_structure.name)
-        exp.setTag('PatientID', patient_id)
-        exp.setTag('PatientName', patient_id)
+        self.patient_id = self.generate_id(self.folder_structure.name)
+        exp.setTag('PatientID', self.patient_id)
+        exp.setTag('PatientName', self.patient_id)
+
+        # create a directory to save the patient dicoms
+        self.create_subject_folder()
+
+        # output folder
+        exp.directory = self.subject_folder
 
         # StudyDescription (name of the study in the hierarchy)
         study_description = file.parent.name
@@ -346,7 +364,7 @@ class DicomExportLogic:
                         self.logger.log(logging.ERROR, f"Could not export node {node.name}, couldn't find any parent.")
                         continue
 
-                    parent_path = os.path.join(self.output_folder, "ScalarVolume_" + str(parent.sh_id))
+                    parent_path = os.path.join(self.subject_folder, "ScalarVolume_" + str(parent.sh_id))
 
                     self.import_reference_image(parent_path)
 
@@ -411,7 +429,7 @@ class DicomExportLogic:
                         raise ValueError(f"Could not find and export landmarks node {node.name}")
 
                     slicer.util.saveNode(markups_node,
-                                         os.path.join(self.output_folder, "landmarks_" + self.study_instance_uid))
+                                         os.path.join(self.subject_folder, "landmarks_" + self.study_instance_uid))
             except Exception as e:
                 self.logger.log(logging.ERROR, f"Could not export node {node.name}.\n({str(e)})\n"
                                                f"export_landmarks_to_fcsv")
