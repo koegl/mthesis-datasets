@@ -40,12 +40,6 @@ class GUIWindow:
 
     def crop_callback(self):
 
-        # error when both fields with paths are empty
-        if self.load_paths == "" and self.load_folder == "":
-            self.error_message_crop(error_message="Empty paths")
-        elif self.load_paths != "" and self.load_folder != "":
-            self.error_message_crop(error_message="Specify only file paths or folder path")
-
         # get all crop values
         crop_values = [self.top, self.bottom, self.left, self.right]
 
@@ -58,12 +52,30 @@ class GUIWindow:
 
         # get paths as a list
         path_list = []
-        if self.load_folder == "":  # if the user passed paths
+        folder_path_list = []
+
+        # check all three text fields for input, if none or more than one are populated show an error
+        if self.load_folder == "" and self.load_multiple_folders == "" and\
+                self.load_paths != "":  # if the user passed paths
             for path in self.load_paths.splitlines():
                 path_list.append(path)
 
-        elif self.load_paths == "":  # if the user passed folder
+        elif self.load_paths == "" and self.load_multiple_folders == "" and\
+                self.load_folder != "":  # if the user passed one folder
             path_list = extract_file_paths(self.load_folder, extension="")
+
+        elif self.load_paths == "" and self.load_folder == "" and\
+                self.load_multiple_folders != "":  # if the user passed multiple folders
+
+            # extract folder paths into a list
+            for folder_path in self.load_multiple_folders.splitlines():
+                folder_path_list.append(folder_path)
+
+            # loop through the extracted folder paths and append the files
+            for folder_path in folder_path_list:
+                path_list += extract_file_paths(folder_path, extension="")
+        else:
+            self.error_message_crop(error_message="Specify paths in exactly one entry window")
 
         path_list.sort()
 
