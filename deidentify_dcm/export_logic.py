@@ -27,8 +27,11 @@ class DicomToMp4Crop:
             pixels = _convert_YBR_FULL_to_RGB(pixels)
 
         # get frame rate
-        frame_time = ds.FrameTime
-        fps = 1000 / frame_time
+        try:
+            frame_time = ds.FrameTime
+            fps = 1000 / frame_time
+        except Exception as e:
+            fps = 26.09
 
         return pixels, fps
 
