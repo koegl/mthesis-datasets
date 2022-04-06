@@ -3,29 +3,23 @@ import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
-from Logic.tree import Tree
-from Logic.dicom_export_logic import DicomExportLogic
-
+from Logic.dicom_export_logic import DicomExportingLogic
 
 import os
-from os.path import exists
-import json
-from os import listdir
-from os.path import isfile, join
 
 
 #
-# AmigoStatistics
+# DicomExport
 #
 
-class AmigoStatistics(ScriptedLoadableModule):
+class DicomExport(ScriptedLoadableModule):
     """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "AmigoStatistics"
+        self.parent.title = "DicomExport"
         self.parent.categories = ["Informatics"]
         self.parent.dependencies = ["Markups"]
         self.parent.contributors = ["Fryderyk Kögl (TUM, BWH)"]
@@ -34,7 +28,7 @@ class AmigoStatistics(ScriptedLoadableModule):
     volumes that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an
     overlapping area and the customise your view. Use the shortcuts listed at the bottom to increase the efficiency of
     the workflow.
-    https://github.com/koegl/AmigoStatistics
+    https://github.com/koegl/DicomExport
     """
         self.parent.acknowledgementText = """
     This extension was developed at the Brigham and Women's Hospital by Fryderyk Kögl, Harneet Cheema and Tina Kapur.
@@ -45,10 +39,9 @@ class AmigoStatistics(ScriptedLoadableModule):
 
 
 #
-# AmigoStatisticsWidget
+# DicomExportWidget
 #
-#
-class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
@@ -71,7 +64,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Load widget from .ui file (created by Qt Designer).
         # Additional widgets can be instantiated manually and added to self.layout.
-        uiWidget = slicer.util.loadUI(self.resourcePath('UI/AmigoStatistics.ui'))
+        uiWidget = slicer.util.loadUI(self.resourcePath('UI/DicomExport.ui'))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -82,7 +75,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
-        self.logic = AmigoStatisticsLogic()
+        self.logic = DicomExportLogic()
 
         # Connections
 
@@ -199,7 +192,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             print("\n\nExporting current scene to DICOM...\n")
 
             # Create DicomExportLogic
-            dicom_logic = DicomExportLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
+            dicom_logic = DicomExportingLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
 
             # export to DICOM
             dicom_logic.full_export()
@@ -255,7 +248,7 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             # export all to dicom
             # Create DicomExportLogic
-            dicom_logic = DicomExportLogic(output_folder=dicom_output_folder_path)
+            dicom_logic = DicomExportingLogic(output_folder=dicom_output_folder_path)
 
             for mrb_path in mrb_paths_list:
 
@@ -286,10 +279,10 @@ class AmigoStatisticsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 #
-# AmigoStatisticsLogic
+# DicomExportLogic
 #
 
-class AmigoStatisticsLogic(ScriptedLoadableModuleLogic):
+class DicomExportLogic(ScriptedLoadableModuleLogic):
     """This class should implement all the actual
   computation done by your module.  The interface
   should be such that other python code can import
@@ -307,10 +300,10 @@ class AmigoStatisticsLogic(ScriptedLoadableModuleLogic):
 
 
 #
-# AmigoStatisticsTest
+# DicomExportTest
 #
 #
-class AmigoStatisticsTest(ScriptedLoadableModuleTest):
+class DicomExportTest(ScriptedLoadableModuleTest):
     """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -326,9 +319,9 @@ class AmigoStatisticsTest(ScriptedLoadableModuleTest):
         """Run as few or as many tests as needed here.
     """
         self.setUp()
-        self.test_AmigoStatistics1()
+        self.test_DicomExport1()
 
-    def test_AmigoStatistics1(self):
+    def test_DicomExport1(self):
         """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the
@@ -342,7 +335,7 @@ class AmigoStatisticsTest(ScriptedLoadableModuleTest):
 
         self.delayDisplay("Starting the test")
 
-        logic = AmigoStatisticsLogic()
+        logic = DicomExportLogic()
 
         pass
 
