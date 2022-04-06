@@ -27,7 +27,7 @@ class GUIWindow:
             viewport_height = dpg.get_viewport_client_height()
 
             with dpg.window(label=error_message, modal=True, no_close=True) as modal_id:
-                dpg.add_button(label="Ok", width=75, user_data=(modal_id, True), callback=self.close_error_message_crop)
+                dpg.add_button(label="Ok", width=300, user_data=(modal_id, True), callback=self.close_error_message_crop)
 
         # guarantee these commands happen in another frame
         dpg.split_frame()
