@@ -189,7 +189,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
         """
         try:
-            print("\n\nExporting current scene to DICOM...\n")
+            print("\n\nExporting current scene to Nifti...\n")
 
             # Create NiftiExportLogic
             dicom_logic = NiftiExportingLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
@@ -197,7 +197,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # export to DICOM
             dicom_logic.full_export()
 
-            print("\nFinished exporting to DICOM.")
+            print("\nFinished exporting to Nifti.")
 
         except Exception as e:
             slicer.util.errorDisplay("Couldn't export current scene to DICOM.\n{}".format(e),
