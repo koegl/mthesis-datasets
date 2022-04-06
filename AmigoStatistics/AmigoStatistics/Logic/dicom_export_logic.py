@@ -59,7 +59,7 @@ class DicomExportLogic:
         sh_id_patient = child_ids.GetId(0)
 
         # FIFO queue of nodes and create root
-        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id_patient).lower(), sh_id=sh_id_patient, vtk_id="")
+        self.folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id_patient), sh_id=sh_id_patient, vtk_id="")
         # vtk_id is None because only volumes have it
         visited = [sh_id_patient]  # array to store visited IDs
         nodes_queue = [self.folder_structure]
@@ -82,9 +82,9 @@ class DicomExportLogic:
                         sub_vtk_id = ""
 
                     if "pre" in sub_name.lower() and "op" in sub_name.lower() and "imaging" in sub_name.lower():
-                        self.pre_op_name = sub_name.lower()
+                        self.pre_op_name = sub_name
 
-                    sub_child = s.add_child(Tree(sub_name.lower(), sh_id=sub_id, vtk_id=sub_vtk_id))  # this returns the node
+                    sub_child = s.add_child(Tree(sub_name, sh_id=sub_id, vtk_id=sub_vtk_id))  # this returns the node
                     # which is like a C++ reference, so we can use this in the next iteration to append nodes
                     nodes_queue.append(sub_child)
                     visited.append(sub_id)
