@@ -2,19 +2,13 @@
 /__pycache__
 *.npy
 
-hierarchy.txt
-
 AmigoStatistics/AmigoStatistics/__pycache__/
-
-.DS_Store
-
-AmigoStatistics/AmigoStatistics/Resources/__pycache__/
 
 AmigoStatistics/AmigoStatistics/Resources/Logic/__pycache__/
 
-AmigoStatistics/AmigoStatistics/Logic/__pycache__/
+.DS_Store
 
-build/deidentify_dcm/
+AmigoStatistics/AmigoStatistics/Logic/__pycache__/
 
 build/deidentify_mp4/
 
@@ -22,6 +16,10 @@ build/deidentify_mp4/
 
 dist/
 
-DicomExport/DicomExport/__pycache__/
+build/deidentify_dcm/
 
-DicomExport/DicomExport/Logic/__pycache__/
+*.toc
+
+build/deidentify_dcm_m1/
+
+*.pyc
