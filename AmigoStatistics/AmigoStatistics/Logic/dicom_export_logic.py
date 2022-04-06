@@ -40,6 +40,10 @@ class DicomExportLogic:
         else:
             self.output_folder = output_folder
 
+        self.subject_folder = self.output_folder
+
+        self.patient_id = None
+
         self.folder_structure = None
 
         logging.basicConfig(filename=log_path)
