@@ -91,7 +91,7 @@ class GUIWindow:
         with dpg.window(label="Crop DICOM/mp4/mpv/avi files"):
 
             dpg.set_viewport_width(650)
-            dpg.set_viewport_height(430)
+            dpg.set_viewport_height(580)
 
             dpg.add_button(label="Crop", callback=self.crop_callback)
 
