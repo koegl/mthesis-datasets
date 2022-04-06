@@ -12,12 +12,12 @@
   </property>
   <layout class="QVBoxLayout" name="buttonLayout">
    <item>
-    <widget class="QPushButton" name="exportCurrentSceneToDicomButton">
+    <widget class="QPushButton" name="exportCurrentSceneToNiftiButton">
      <property name="enabled">
       <bool>true</bool>
      </property>
      <property name="text">
-      <string>Export current scene to DICOM</string>
+      <string>Export current scene to Nifti</string>
      </property>
     </widget>
    </item>
@@ -43,9 +43,9 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="exportAllMrbsFoundInFolderToDicomButton">
+    <widget class="QPushButton" name="exportAllMrbsFoundInFolderToNiftiButton">
      <property name="text">
-      <string>Export all .mrb's to DICOM (found in the path below)</string>
+      <string>Export all .mrb's to Nifti (found in the path below)</string>
      </property>
     </widget>
    </item>
@@ -74,12 +74,12 @@
      <item row="1" column="0">
       <widget class="QLabel" name="outputPathLabel">
        <property name="text">
-        <string>Path to the output DICOM folder: </string>
+        <string>Path to the output Nifti folder: </string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QPlainTextEdit" name="dicomOutputPathTextWindow">
+      <widget class="QPlainTextEdit" name="niftiOutputPathTextWindow">
        <property name="maximumSize">
         <size>
          <width>20000</width>

@@ -6,6 +6,7 @@ from slicer.util import VTKObservationMixin
 from Logic.nifti_exporting_logic import NiftiExportingLogic
 
 import os
+from tqdm import tqdm
 
 
 #
@@ -87,9 +88,9 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # (in the selected parameter node).
 
         # Buttons
-        self.ui.exportCurrentSceneToDicomButton.connect('clicked(bool)', self.onExportCurrentSceneToDicomButton)
-        self.ui.exportAllMrbsFoundInFolderToDicomButton.connect('clicked(bool)',
-                                                                self.onexportAllMrbsFoundInFolderToDicomButton)
+        self.ui.exportCurrentSceneToNiftiButton.connect('clicked(bool)', self.onExportCurrentSceneToNiftiButton)
+        self.ui.exportAllMrbsFoundInFolderToNiftiButton.connect('clicked(bool)',
+                                                                self.onExportAllMrbsFoundInFolderToNiftiButton)
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -184,23 +185,23 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self._parameterNode.EndModify(wasModified)
 
-    def onExportCurrentSceneToDicomButton(self):
+    def onExportCurrentSceneToNiftiButton(self):
         """
-        Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
+        Exports the current scene (according to the hierarchy) to nifti. Assumed structure:
         """
         try:
             print("\n\nExporting current scene to Nifti...\n")
 
             # Create NiftiExportLogic
-            dicom_logic = NiftiExportingLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
+            nifti_logic = NiftiExportingLogic(output_folder="/Users/fryderykkogl/Data/nifti_test/exported")
 
-            # export to DICOM
-            dicom_logic.full_export()
+            # export to nifti
+            nifti_logic.full_export()
 
             print("\nFinished exporting to Nifti.")
 
         except Exception as e:
-            slicer.util.errorDisplay("Couldn't export current scene to DICOM.\n{}".format(e),
+            slicer.util.errorDisplay("Couldn't export current scene to Nifti.\n{}".format(e),
                                      windowTitle="Export error")
 
     @staticmethod
@@ -224,14 +225,14 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         return mrbs
 
-    def onexportAllMrbsFoundInFolderToDicomButton(self):
+    def onexportAllMrbsFoundInFolderToNiftiButton(self):
         """
-        Export all mrb's found in the folder to dicom
+        Export all mrb's found in the folder to nifti
         """
         # todo add check to see which mrbs could and which could not be exported
 
         try:
-            print("\n\nExporting all mrbs found in the folder to DICOM...\n")
+            print("\n\nExporting all mrbs found in the folder to Nifti...\n")
 
             # Get the folder path from the GUI
             folder_path = self.ui.mrbFolderPathTextWindow.toPlainText()
@@ -239,16 +240,16 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # extract all mrbs from the folder
             mrb_paths_list = self.return_a_list_of_all_mrbs_in_a_folder(folder_path)
 
-            # get the DICOM output folder path
-            dicom_output_folder_path = self.ui.dicomOutputPathTextWindow.toPlainText()
+            # get the nifti output folder path
+            nifti_output_folder_path = self.ui.niftiOutputPathTextWindow.toPlainText()
 
             # check if the path is valid
-            if not os.path.isdir(dicom_output_folder_path):
-                raise Exception("The dicom output path is not valid.")
+            if not os.path.isdir(nifti_output_folder_path):
+                raise Exception("The nifti output path is not valid.")
 
-            # export all to dicom
+            # export all to nifti
             # Create NiftiExportLogic
-            dicom_logic = NiftiExportingLogic(output_folder=dicom_output_folder_path)
+            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path)
 
             for mrb_path in mrb_paths_list:
 
@@ -263,18 +264,18 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                         # that does not impact the process except for interrupting and requiring user input
                         pass
 
-                    # export current scene to DICOM
-                    dicom_logic.full_export()
+                    # export current scene to nifti
+                    nifti_logic.full_export()
 
                     # clear scene
                     slicer.mrmlScene.Clear()
                 except Exception as e:
-                    print(f"Could not export {mrb_path} to DICOM.\n{e}")
+                    print(f"Could not export {mrb_path} to Nifti.\n{e}")
 
-            print("\nFinished exporting all mrbs found in the folder to DICOM.")
+            print("\nFinished exporting all mrbs found in the folder to Nifti.")
 
         except Exception as e:
-            slicer.util.errorDisplay("Couldn't export mrbs to DICOM.\n{}".format(e), windowTitle="Export error")
+            slicer.util.errorDisplay("Couldn't export mrbs to Nifti.\n{}".format(e), windowTitle="Export error")
 
 
 
