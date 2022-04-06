@@ -21,3 +21,5 @@ build/deidentify_dcm/
 *.toc
 
 build/deidentify_dcm_m1/
+
+*.pyc
