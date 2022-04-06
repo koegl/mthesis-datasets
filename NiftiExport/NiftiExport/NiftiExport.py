@@ -251,7 +251,8 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # Create NiftiExportLogic
             nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path)
 
-            for mrb_path in mrb_paths_list:
+            for i in tqdm(range(len(mrb_paths_list)), "Exporting current scene to Nifti"):
+                mrb_path = mrb_paths_list[i]
 
                 # clear scene at the beginning of each mrb in case older data is still present
                 slicer.mrmlScene.Clear()
