@@ -91,6 +91,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.exportCurrentSceneToNiftiButton.connect('clicked(bool)', self.onExportCurrentSceneToNiftiButton)
         self.ui.exportAllMrbsFoundInFolderToNiftiButton.connect('clicked(bool)',
                                                                 self.onExportAllMrbsFoundInFolderToNiftiButton)
+        self.ui.loadFolderStructureButton.connect('clicked(bool)', self.onLoadFolderStructureButton)
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -225,7 +226,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         return mrbs
 
-    def onexportAllMrbsFoundInFolderToNiftiButton(self):
+    def onExportAllMrbsFoundInFolderToNiftiButton(self):
         """
         Export all mrb's found in the folder to nifti
         """
@@ -278,7 +279,24 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         except Exception as e:
             slicer.util.errorDisplay("Couldn't export mrbs to Nifti.\n{}".format(e), windowTitle="Export error")
 
+    def onLoadFolderStructureButton(self):
 
+        folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
+
+        # create folders as in the structure
+        folders = []
+        folders_ids = []
+        buf = os.listdir(folder_structure_path)
+        for folder in buf:
+            if "store" not in folder.lower():
+                folders.append(folder)
+
+        hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
+
+        for data_folder in folders:
+             folders_ids.append(hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder))
+
+        # load each file and assign it to the correct folder
 
 #
 # NiftiExportLogic
