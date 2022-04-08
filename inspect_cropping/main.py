@@ -1,10 +1,16 @@
 import argparse
 
 from logic import FileInspector
-from paths import paths
+import json
 
 
 def main(params):
+
+    # read json file from paths_path
+    paths_path = "/Users/fryderykkogl/Data/deidentify/paths.json"
+    with open(paths_path) as json_file:
+        paths = json.load(json_file)
+        paths = paths["paths"]
 
     inspector = FileInspector(paths, extension="mp4")
 
