@@ -62,7 +62,7 @@ class GUIWindow:
 
         elif self.load_paths == "" and self.load_multiple_folders == "" and\
                 self.load_folder != "":  # if the user passed one folder
-            path_list = extract_file_paths(self.load_folder, extension="")
+            path_list = extract_dicom_and_movie_file_paths(self.load_folder)
 
         elif self.load_paths == "" and self.load_folder == "" and\
                 self.load_multiple_folders != "":  # if the user passed multiple folders
@@ -73,7 +73,7 @@ class GUIWindow:
 
             # loop through the extracted folder paths and append the files
             for folder_path in folder_path_list:
-                path_list += extract_file_paths(folder_path, extension="")
+                path_list += extract_dicom_and_movie_file_paths(folder_path)
         else:
             self.error_message_crop(error_message="Specify paths in exactly one entry window")
 
