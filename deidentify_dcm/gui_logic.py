@@ -10,6 +10,7 @@ class GUIWindow:
 
         self.load_paths = ""
         self.load_folder = ""
+        self.load_multiple_folders = ""
 
         self.export_handler = ExportHandling()
 
@@ -26,7 +27,7 @@ class GUIWindow:
             viewport_height = dpg.get_viewport_client_height()
 
             with dpg.window(label=error_message, modal=True, no_close=True) as modal_id:
-                dpg.add_button(label="Ok", width=75, user_data=(modal_id, True), callback=self.close_error_message_crop)
+                dpg.add_button(label="Ok", width=300, user_data=(modal_id, True), callback=self.close_error_message_crop)
 
         # guarantee these commands happen in another frame
         dpg.split_frame()
@@ -38,12 +39,6 @@ class GUIWindow:
         dpg.delete_item(user_data[0])
 
     def crop_callback(self):
-
-        # error when both fields with paths are empty
-        if self.load_paths == "" and self.load_folder == "":
-            self.error_message_crop(error_message="Empty paths")
-        elif self.load_paths != "" and self.load_folder != "":
-            self.error_message_crop(error_message="Specify only file paths or folder path")
 
         # get all crop values
         crop_values = [self.top, self.bottom, self.left, self.right]
@@ -57,12 +52,30 @@ class GUIWindow:
 
         # get paths as a list
         path_list = []
-        if self.load_folder == "":  # if the user passed paths
+        folder_path_list = []
+
+        # check all three text fields for input, if none or more than one are populated show an error
+        if self.load_folder == "" and self.load_multiple_folders == "" and\
+                self.load_paths != "":  # if the user passed paths
             for path in self.load_paths.splitlines():
                 path_list.append(path)
 
-        elif self.load_paths == "":  # if the user passed folder
-            path_list = extract_dicom_and_movie_file_paths(self.load_folder)
+        elif self.load_paths == "" and self.load_multiple_folders == "" and\
+                self.load_folder != "":  # if the user passed one folder
+            path_list = extract_file_paths(self.load_folder, extension="")
+
+        elif self.load_paths == "" and self.load_folder == "" and\
+                self.load_multiple_folders != "":  # if the user passed multiple folders
+
+            # extract folder paths into a list
+            for folder_path in self.load_multiple_folders.splitlines():
+                folder_path_list.append(folder_path)
+
+            # loop through the extracted folder paths and append the files
+            for folder_path in folder_path_list:
+                path_list += extract_file_paths(folder_path, extension="")
+        else:
+            self.error_message_crop(error_message="Specify paths in exactly one entry window")
 
         path_list.sort()
 
@@ -73,6 +86,9 @@ class GUIWindow:
 
     def update_folder(self, sender, app_data, user_data):
         self.load_folder = app_data
+
+    def update_multiple_folder(self, sender, app_data, user_data):
+        self.load_multiple_folders = app_data
 
     def update_top(self, sender, app_data, user_data):
         self.top = app_data
@@ -90,7 +106,7 @@ class GUIWindow:
         with dpg.window(label="Crop DICOM/mp4/mpv/avi files"):
 
             dpg.set_viewport_width(650)
-            dpg.set_viewport_height(430)
+            dpg.set_viewport_height(580)
 
             dpg.add_button(label="Crop", callback=self.crop_callback)
 
@@ -112,6 +128,8 @@ class GUIWindow:
             dpg.add_input_text(label="", callback=self.update_paths, multiline=True)
             dpg.add_text("\nAdd path to the main folder (all dicoms, mp4, mpv andavi will be extracted automatically")
             dpg.add_input_text(label="", callback=self.update_folder, multiline=False)
+            dpg.add_text("\nAdd multiple folder paths (all dicoms, mp4, mpv andavi will be extracted automatically")
+            dpg.add_input_text(label="", callback=self.update_multiple_folder, multiline=True)
 
         dpg.setup_dearpygui()
         dpg.show_viewport()

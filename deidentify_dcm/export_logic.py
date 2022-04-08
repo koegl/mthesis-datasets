@@ -27,8 +27,11 @@ class DicomToMp4Crop:
             pixels = _convert_YBR_FULL_to_RGB(pixels)
 
         # get frame rate
-        frame_time = ds.FrameTime
-        fps = 1000 / frame_time
+        try:
+            frame_time = ds.FrameTime
+            fps = 1000 / frame_time
+        except Exception as e:
+            fps = 26.09
 
         return pixels, fps
 
@@ -248,7 +251,10 @@ class ExportHandling:
             load_path = load_paths[i]
 
             # get paths
-            assert load_path.lower().endswith(".dcm") or load_path.lower().endswith(""), "File has to be DICOM"
+
+            extension = os.path.splitext(load_path.lower())[1]
+            assert extension == ".dcm" or extension == ".mp4" or extension == ".avi" or extension == ".mov" or \
+                   extension == "", "File has to be DICOM, mp4, avi or mov"
 
             self.current_path = load_path
 
