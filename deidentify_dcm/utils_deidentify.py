@@ -1,11 +1,11 @@
 import os
 
 
-def extract_file_paths(parent_folder_path, extension=""):
+def extract_dicom_and_movie_file_paths(parent_folder_path):
     """
-    Extract all file paths from the folder, subfolders etc. of the given extension. Empty extension ("") means .dcm
+    Extract all dicom and movie (.mp4, .avi, .mov) file paths from the folder, sub-folders etc. Empty extension ("")
+    means .dcm
     :param parent_folder_path: Path to the parent folder
-    :param extension: Extension of the files to be extracted
     :return: list of all file paths
     """
     # todo add gui option to specify the extension
