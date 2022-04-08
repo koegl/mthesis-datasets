@@ -42,7 +42,6 @@ class DicomToMp4Crop:
         :param video_path: Path to the .mov
         :return: The numpy array with the data from the video [frames x [dim1, dim2] x 3]
         """
-        # todo get frame rate from video
         # extract frames per second from video
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
