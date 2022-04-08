@@ -1,5 +1,5 @@
 from deidentify_dcm.export_logic import ExportHandling
-from deidentify_dcm.utils_deidentify import extract_file_paths
+from deidentify_dcm.utils_deidentify import extract_dicom_and_movie_file_paths
 import dearpygui.dearpygui as dpg
 
 
@@ -62,7 +62,7 @@ class GUIWindow:
                 path_list.append(path)
 
         elif self.load_paths == "":  # if the user passed folder
-            path_list = extract_file_paths(self.load_folder, extension="")
+            path_list = extract_dicom_and_movie_file_paths(self.load_folder)
 
         path_list.sort()
 
