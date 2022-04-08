@@ -55,6 +55,7 @@ class FileInspector:
             plt.title(f"Frame: {idx+1}/{len(self.mp4_paths)}")
             plt.show()
 
+            os.system("clear")
             b = f"Accept (Enter);\t\treject (q);\tstop (s): "
             user_input = input(b)
             os.system("clear")
