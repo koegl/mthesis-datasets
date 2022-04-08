@@ -23,3 +23,5 @@ build/deidentify_dcm/
 build/deidentify_dcm_m1/
 
 *.pyc
+
+inspect_cropping/paths.py
