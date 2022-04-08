@@ -66,7 +66,7 @@ class FileInspector:
             elif user_input == "q":
                 self.rejected.append(path)
             elif user_input == "s":
-                self.rejected.append("\n\nLast path which has to be checked again\n" + path)
+                self.rejected.append("\n\n\n\nLast path which has to be checked again\n" + path + "\n\n\n\n")
                 break
 
         self.write_list_to_file(self.save_path, self.rejected)
