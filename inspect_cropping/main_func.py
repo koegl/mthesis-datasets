@@ -1,5 +1,7 @@
-
+from inspect_cropping.gui_logic import GUIWindow
 
 
 def main():
-    pass
+    window = GUIWindow()
+
+    window.main()
