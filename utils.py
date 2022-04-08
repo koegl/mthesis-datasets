@@ -1,4 +1,5 @@
 import os
+import matplotlib.pyplot as plt
 
 
 def extract_file_paths_with_extension(parent_folder_path, extension=""):
@@ -29,3 +30,19 @@ def extract_file_paths_with_extension(parent_folder_path, extension=""):
                 all_files_buf.append(buf_path)
 
     return all_files_buf
+
+
+def plot(array, title=None, cmap=None):
+    """
+    Plot the given array
+    :param array: Array to plot
+    :param title: Title of the plot
+    :param cmap: Colormap to use
+    """
+
+    plt.imshow(array, cmap=cmap)
+
+    if title is not None:
+        plt.title(title)
+
+    plt.show()
