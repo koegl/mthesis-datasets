@@ -17,6 +17,7 @@ class FileInspector:
 
         self.extract_mp4s()
 
+        self.subsample = subsample
     def extract_mp4s(self):
         if isinstance(self.directory, str):
             self.mp4_paths = extract_file_paths_with_extension(self.directory, self.extension, exclude="horos")
@@ -49,7 +50,7 @@ class FileInspector:
             path = self.mp4_paths[idx]
 
             # load first frame of a video
-            video = load_mp4(path)
+            video = load_mp4(path, subsample=self.subsample)
 
             plt.axis([0, 10, 0, 1])
 
