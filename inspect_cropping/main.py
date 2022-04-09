@@ -12,7 +12,7 @@ def main(params):
         paths = json.load(json_file)
         paths = paths["paths"]
 
-    inspector = FileInspector(paths, extension="mp4")
+    inspector = FileInspector(paths, extension="mp4", step_size=8, frame_rate=1/30, subsample=4)
 
     inspector.inspect()
 

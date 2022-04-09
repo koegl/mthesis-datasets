@@ -4,10 +4,11 @@ import numpy as np
 
 
 # function to load a mp4 file and return the frames
-def load_mp4(path):
+def load_mp4(path, subsample=False):
     """
     Function to load an mp4 file and return the frames as a numpy array
-    @param path:
+    @param path: path to the mp4 file
+    @param subsample: if True, subsample the frames to 1/4th of the original size
     @return:
     """
     cap = cv2.VideoCapture(path)
@@ -25,6 +26,12 @@ def load_mp4(path):
 
     # convert to numpy
     frames_np = np.array(frames)
+
+    if subsample:
+        if len(frames_np.shape) == 4:
+            frames_np = frames_np[:, ::subsample, ::subsample, :]
+        elif len(frames_np.shape) == 3:
+            frames_np = frames_np[:, ::subsample, ::subsample]
 
     return frames_np
 
