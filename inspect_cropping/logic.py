@@ -46,13 +46,21 @@ class FileInspector:
         for idx, path in enumerate(self.mp4_paths):
 
             # load first frame of a video
-            frame = load_mp4(path)[0]
+            video = load_mp4(path)
 
-            # plot the frame
+            plt.axis([0, 10, 0, 1])
+
             plt.ion()
             plt.figure()
-            plt.imshow(frame)
-            plt.title(f"Frame: {idx+1}/{len(self.mp4_paths)}")
+
+            image = plt.imshow(video[0])
+
+            for i in range(1, video.shape[0]):
+                # plot the frame
+                plt.pause(0.000000000005)
+                image.set_data(video[i])
+
+            plt.title(f"Frame: {idx + 1}/{len(self.mp4_paths)}")
             plt.show()
 
             os.system("clear")
