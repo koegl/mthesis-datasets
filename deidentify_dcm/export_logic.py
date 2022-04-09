@@ -5,10 +5,10 @@ from pydicom.pixel_data_handlers.util import _convert_YBR_FULL_to_RGB
 from pydicom import read_file
 import logging.config
 import cv2
-from tqdm import tqdm
 from joblib import Parallel, delayed
 import multiprocessing
 from time import perf_counter
+import sys
 
 
 class DicomToMp4Crop:
@@ -244,6 +244,9 @@ class ExportHandling:
         return save_path
 
     def export_loop_outer(self, i, load_paths, crop_values):
+        b = "\033[1;31;31mProgress: " + str(i + 1) + " / " + str(len(load_paths)) + "\033[0m"
+        sys.stdout.write('\r' + b)
+
         load_path = load_paths[i]
 
         # get paths
