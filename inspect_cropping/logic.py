@@ -5,7 +5,7 @@ from utils_inspect import load_mp4, extract_file_paths_with_extension
 
 
 class FileInspector:
-    def __init__(self, directory, extension="mp4"):
+    def __init__(self, directory, extension="mp4", step_size=8, frame_rate=1/30, subsample=None):
         self.directory = directory
         self.extension = extension
 
@@ -17,7 +17,11 @@ class FileInspector:
 
         self.extract_mp4s()
 
+        # display speed parameters
+        self.step_size = step_size
+        self.frame_rate = frame_rate
         self.subsample = subsample
+
     def extract_mp4s(self):
         if isinstance(self.directory, str):
             self.mp4_paths = extract_file_paths_with_extension(self.directory, self.extension, exclude="horos")
@@ -60,10 +64,10 @@ class FileInspector:
 
             image = plt.imshow(video[0])
 
-            for i in range(1, int(video.shape[0]/4)):
+            for i in range(1, int(video.shape[0] / self.step_size)):
                 # plot the frame
-                plt.pause(0.000000000001)
-                image.set_data(video[4*i])
+                plt.pause(self.frame_rate)
+                image.set_data(video[self.step_size * i])
 
             plt.show()
 
@@ -76,13 +80,15 @@ class FileInspector:
 
             if user_input == "":
                 self.accepted.append(path)
-            elif user_input == "q":
+            elif user_input.lower() == "q":
                 self.rejected.append(path)
-            elif user_input == "r":
+            elif user_input.lower() == "r":
                 continue
-            elif user_input == "s":
+            elif user_input.lower() == "s":
                 self.rejected.append("\n\n\n\nLast path which has to be checked again\n" + path + "\n\n\n\n")
                 break
+            else:
+                continue
 
             idx += 1
 
