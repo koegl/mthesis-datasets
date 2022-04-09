@@ -6,6 +6,7 @@ from pydicom import read_file
 import logging.config
 import cv2
 from tqdm import tqdm
+from time import perf_counter
 
 
 class DicomToMp4Crop:
@@ -244,7 +245,7 @@ class ExportHandling:
         self.load_paths = load_paths
 
         print("\n\n")
-
+        start_time = perf_counter()
         # export loop
         for i in tqdm(range(len(load_paths)), "Exporting DICOMs to mp4"):
             load_path = load_paths[i]
@@ -268,7 +269,8 @@ class ExportHandling:
             except Exception as e:
                 self.logger.error(f"could not process {load_path}. {str(e)}")
                 continue
-
+        end_time = perf_counter()
         print("\n\n========================================================\n"
               "========================================================\n"
               "Finished exporting\n\n")
+        print(f"Time elapsed: {end_time - start_time}")
