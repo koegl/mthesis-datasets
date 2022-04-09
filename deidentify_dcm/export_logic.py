@@ -5,8 +5,10 @@ from pydicom.pixel_data_handlers.util import _convert_YBR_FULL_to_RGB
 from pydicom import read_file
 import logging.config
 import cv2
-from tqdm import tqdm
+from joblib import Parallel, delayed
+import multiprocessing
 from time import perf_counter
+import sys
 
 
 class DicomToMp4Crop:
@@ -241,35 +243,43 @@ class ExportHandling:
 
         return save_path
 
+    def export_loop_outer(self, i, load_paths, crop_values):
+        b = "\033[1;31;31mProgress: " + str(i + 1) + " / " + str(len(load_paths)) + "\033[0m"
+        sys.stdout.write('\r' + b)
+
+        load_path = load_paths[i]
+
+        # get paths
+
+        extension = os.path.splitext(load_path.lower())[1]
+        assert extension == ".dcm" or extension == ".mp4" or extension == ".avi" or extension == ".mov" or \
+               extension == "", "File has to be DICOM, mp4, avi or mov"
+
+        self.current_path = load_path
+
+        save_path = self.create_save_path(load_path)
+
+        try:
+            self.dicom_exporter.deidentify_one_dicom(load_path, save_path, crop_values)
+
+            if not os.path.exists(save_path):
+                self.logger.error(f"could not export {load_path}.")
+
+        except Exception as e:
+            self.logger.error(f"could not process {load_path}. {str(e)}")
+
     def run_export_loop(self, load_paths, crop_values):
         self.load_paths = load_paths
 
         print("\n\n")
-        start_time = perf_counter()
         # export loop
-        for i in tqdm(range(len(load_paths)), "Exporting DICOMs to mp4"):
-            load_path = load_paths[i]
+        num_cores = multiprocessing.cpu_count()
 
-            # get paths
-
-            extension = os.path.splitext(load_path.lower())[1]
-            assert extension == ".dcm" or extension == ".mp4" or extension == ".avi" or extension == ".mov" or \
-                   extension == "", "File has to be DICOM, mp4, avi or mov"
-
-            self.current_path = load_path
-
-            save_path = self.create_save_path(load_path)
-
-            try:
-                self.dicom_exporter.deidentify_one_dicom(load_path, save_path, crop_values)
-
-                if not os.path.exists(save_path):
-                    self.logger.error(f"could not export {load_path}.")
-
-            except Exception as e:
-                self.logger.error(f"could not process {load_path}. {str(e)}")
-                continue
+        start_time = perf_counter()
+        Parallel(n_jobs=num_cores)(delayed(self.export_loop_outer)(i, load_paths, crop_values)
+                                   for i in range(len(load_paths)))
         end_time = perf_counter()
+
         print("\n\n========================================================\n"
               "========================================================\n"
               "Finished exporting\n\n")
