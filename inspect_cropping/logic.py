@@ -43,7 +43,10 @@ class FileInspector:
                     f.write("%s\n" % item)
 
     def inspect(self):
-        for idx, path in enumerate(self.mp4_paths):
+        idx = 0
+
+        while idx < len(self.mp4_paths):
+            path = self.mp4_paths[idx]
 
             # load first frame of a video
             video = load_mp4(path)
@@ -52,19 +55,19 @@ class FileInspector:
 
             plt.ion()
             plt.figure()
+            plt.title(f"Frame: {idx + 1}/{len(self.mp4_paths)}")
 
             image = plt.imshow(video[0])
 
-            for i in range(1, video.shape[0]):
+            for i in range(1, int(video.shape[0]/4)):
                 # plot the frame
-                plt.pause(0.000000000005)
-                image.set_data(video[i])
+                plt.pause(0.000000000001)
+                image.set_data(video[4*i])
 
-            plt.title(f"Frame: {idx + 1}/{len(self.mp4_paths)}")
             plt.show()
 
             os.system("clear")
-            b = f"Accept (Enter);\t\treject (q);\tstop (s): "
+            b = f"Accept (Enter);\t\treject (q);\trepeat (r);\tstop (s): "
             user_input = input(b)
             os.system("clear")
 
@@ -74,9 +77,13 @@ class FileInspector:
                 self.accepted.append(path)
             elif user_input == "q":
                 self.rejected.append(path)
+            elif user_input == "r":
+                continue
             elif user_input == "s":
                 self.rejected.append("\n\n\n\nLast path which has to be checked again\n" + path + "\n\n\n\n")
                 break
+
+            idx += 1
 
         self.write_list_to_file(self.save_path, self.rejected)
 
