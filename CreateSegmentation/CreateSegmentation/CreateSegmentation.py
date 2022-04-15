@@ -3,23 +3,23 @@ import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
-from Logic.dicom_export_logic import DicomExportingLogic
+from Logic.segmentation_logic import SegmentationLogic
 
 import os
 
 
 #
-# DicomExport
+# CreateSegmentation
 #
 
-class DicomExport(ScriptedLoadableModule):
+class CreateSegmentation(ScriptedLoadableModule):
     """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "DicomExport"
+        self.parent.title = "CreateSegmentation"
         self.parent.categories = ["Informatics"]
         self.parent.dependencies = ["Markups"]
         self.parent.contributors = ["Fryderyk Kögl (TUM, BWH)"]
@@ -28,7 +28,7 @@ class DicomExport(ScriptedLoadableModule):
     volumes that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an
     overlapping area and the customise your view. Use the shortcuts listed at the bottom to increase the efficiency of
     the workflow.
-    https://github.com/koegl/DicomExport
+    https://github.com/koegl/CreateSegmentation
     """
         self.parent.acknowledgementText = """
     This extension was developed at the Brigham and Women's Hospital by Fryderyk Kögl, Harneet Cheema and Tina Kapur.
@@ -39,9 +39,9 @@ class DicomExport(ScriptedLoadableModule):
 
 
 #
-# DicomExportWidget
+# CreateSegmentationWidget
 #
-class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class CreateSegmentationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
@@ -64,7 +64,7 @@ class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Load widget from .ui file (created by Qt Designer).
         # Additional widgets can be instantiated manually and added to self.layout.
-        uiWidget = slicer.util.loadUI(self.resourcePath('UI/DicomExport.ui'))
+        uiWidget = slicer.util.loadUI(self.resourcePath('UI/CreateSegmentation.ui'))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -75,7 +75,7 @@ class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
-        self.logic = DicomExportLogic()
+        self.logic = CreateSegmentationLogic()
 
         # Connections
 
@@ -184,105 +184,12 @@ class DicomExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self._parameterNode.EndModify(wasModified)
 
-    def onExportCurrentSceneToDicomButton(self):
-        """
-        Exports the current scene (according to the hierarchy) to DICOM. Assumed structure:
-        """
-        try:
-            print("\n\nExporting current scene to DICOM...\n")
-
-            # Create DicomExportLogic
-            dicom_logic = DicomExportingLogic(output_folder="/Users/fryderykkogl/Data/dicom_test/exported")
-
-            # export to DICOM
-            dicom_logic.full_export()
-
-            print("\nFinished exporting to DICOM.")
-
-        except Exception as e:
-            slicer.util.errorDisplay("Couldn't export current scene to DICOM.\n{}".format(e),
-                                     windowTitle="Export error")
-
-    @staticmethod
-    def return_a_list_of_all_mrbs_in_a_folder(folder_path):
-        """
-        Returns a list of all mrbs in a folder.
-        :@param folder_path: Path to the folder in which to search for mrbs.
-        :@return: A list of all mrbs in the folder.
-        """
-
-        # check if the path is valid
-        if not os.path.isdir(folder_path):
-            raise Exception("The mrb folder path is not valid.")
-
-        mrbs = []
-
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                if file.endswith(".mrb"):
-                    mrbs.append(os.path.join(root, file))
-
-        return mrbs
-
-    def onexportAllMrbsFoundInFolderToDicomButton(self):
-        """
-        Export all mrb's found in the folder to dicom
-        """
-        # todo add check to see which mrbs could and which could not be exported
-
-        try:
-            print("\n\nExporting all mrbs found in the folder to DICOM...\n")
-
-            # Get the folder path from the GUI
-            folder_path = self.ui.mrbFolderPathTextWindow.toPlainText()
-
-            # extract all mrbs from the folder
-            mrb_paths_list = self.return_a_list_of_all_mrbs_in_a_folder(folder_path)
-
-            # get the DICOM output folder path
-            dicom_output_folder_path = self.ui.dicomOutputPathTextWindow.toPlainText()
-
-            # check if the path is valid
-            if not os.path.isdir(dicom_output_folder_path):
-                raise Exception("The dicom output path is not valid.")
-
-            # export all to dicom
-            # Create DicomExportLogic
-            dicom_logic = DicomExportingLogic(output_folder=dicom_output_folder_path)
-
-            for mrb_path in mrb_paths_list:
-
-                # clear scene at the beginning of each mrb in case older data is still present
-                slicer.mrmlScene.Clear()
-
-                try:
-                    # open mrb to slicer scene
-                    try:
-                        slicer.util.loadScene(mrb_path)
-                    except Exception as e:  # needs to be this broad because slicer.util.loadScene can throw an exception
-                        # that does not impact the process except for interrupting and requiring user input
-                        pass
-
-                    # export current scene to DICOM
-                    dicom_logic.full_export()
-
-                    # clear scene
-                    slicer.mrmlScene.Clear()
-                except Exception as e:
-                    print(f"Could not export {mrb_path} to DICOM.\n{e}")
-
-            print("\nFinished exporting all mrbs found in the folder to DICOM.")
-
-        except Exception as e:
-            slicer.util.errorDisplay("Couldn't export mrbs to DICOM.\n{}".format(e), windowTitle="Export error")
-
-
 
 #
-# DicomExportLogic
+# CreateSegmentationLogic
 #
 
-class DicomExportLogic(ScriptedLoadableModuleLogic):
+class CreateSegmentationLogic(ScriptedLoadableModuleLogic):
     """This class should implement all the actual
   computation done by your module.  The interface
   should be such that other python code can import
@@ -300,10 +207,10 @@ class DicomExportLogic(ScriptedLoadableModuleLogic):
 
 
 #
-# DicomExportTest
+# CreateSegmentationTest
 #
 #
-class DicomExportTest(ScriptedLoadableModuleTest):
+class CreateSegmentationTest(ScriptedLoadableModuleTest):
     """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -319,9 +226,9 @@ class DicomExportTest(ScriptedLoadableModuleTest):
         """Run as few or as many tests as needed here.
     """
         self.setUp()
-        self.test_DicomExport1()
+        self.test_CreateSegmentation1()
 
-    def test_DicomExport1(self):
+    def test_CreateSegmentation1(self):
         """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the
@@ -335,7 +242,7 @@ class DicomExportTest(ScriptedLoadableModuleTest):
 
         self.delayDisplay("Starting the test")
 
-        logic = DicomExportLogic()
+        logic = CreateSegmentationLogic()
 
         pass
 
