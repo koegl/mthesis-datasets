@@ -87,9 +87,7 @@ class CreateSegmentationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin
         # (in the selected parameter node).
 
         # Buttons
-        self.ui.exportCurrentSceneToDicomButton.connect('clicked(bool)', self.onExportCurrentSceneToDicomButton)
-        self.ui.exportAllMrbsFoundInFolderToDicomButton.connect('clicked(bool)',
-                                                                self.onexportAllMrbsFoundInFolderToDicomButton)
+        self.ui.createSegmentationButton.connect('clicked(bool)', self.onCreateSegmentationButton)
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -183,6 +181,25 @@ class CreateSegmentationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin
         wasModified = self._parameterNode.StartModify()  # Modify all properties in a single batch
 
         self._parameterNode.EndModify(wasModified)
+
+    def onCreateSegmentationButton(self):
+
+        # get segmentation name
+        segmentation_name = self.ui.segmentationNameTextWindow.toPlainText()
+
+        # get segmentation parent name
+        parent_name = self.ui.parentNameTextWindow.toPlainText()
+
+        if segmentation_name == "" or parent_name == "":
+            slicer.util.errorDisplay("Please enter a segmentation name and a parent name")
+            return
+
+        segmenter = SegmentationLogic(segmentation_name, parent_name)
+
+        segmenter.create_segmentation()
+
+
+
 
 
 #
