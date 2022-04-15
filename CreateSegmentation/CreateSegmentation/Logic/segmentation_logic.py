@@ -18,8 +18,15 @@ class SegmentationLogic:
         self.segmentation_volume_name = segmentation_name
         self.parent_name = parent_name
 
-        self.segmentation_volume_node = slicer.util.getFirstNodeByName(self.segmentation_volume_name)
-        self.parent_node = slicer.util.getFirstNodeByName(self.parent_name)
+        if not slicer.util.getFirstNodeByName(self.segmentation_volume_name):
+            slicer.util.errorDisplay("No segmentation volume found with this name")
+        else:
+            self.segmentation_volume_node = slicer.util.getFirstNodeByName(self.segmentation_volume_name)
+
+        if not slicer.util.getFirstNodeByName(self.parent_name):
+            slicer.util.errorDisplay("No parent volume found with this name")
+        else:
+            self.parent_node = slicer.util.getFirstNodeByName(self.parent_name)
 
         self.segmentation_vtk_id = self.segmentation_volume_node.GetID()
         self.parent_vtk_id = self.parent_node.GetID()
