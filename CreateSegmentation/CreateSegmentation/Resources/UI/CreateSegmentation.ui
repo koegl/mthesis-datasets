@@ -12,54 +12,23 @@
   </property>
   <layout class="QVBoxLayout" name="buttonLayout">
    <item>
-    <widget class="QPushButton" name="exportCurrentSceneToDicomButton">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
+    <widget class="QPushButton" name="createSegmentationButton">
      <property name="text">
-      <string>Export current scene to DICOM</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="Line" name="line_3">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="Line" name="line_2">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="exportAllMrbsFoundInFolderToDicomButton">
-     <property name="text">
-      <string>Export all .mrb's to DICOM (found in the path below)</string>
+      <string>Create segmentation node from segmentaiton volume (and delete volume)</string>
      </property>
     </widget>
    </item>
    <item>
     <layout class="QGridLayout" name="textLayout">
      <item row="0" column="0">
-      <widget class="QLabel" name="inputPathLabel">
+      <widget class="QLabel" name="segmentationNameLabel">
        <property name="text">
-        <string>Path to the folder with .mrb's: </string>
+        <string>Name of the segmentation volume: </string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QPlainTextEdit" name="mrbFolderPathTextWindow">
+      <widget class="QPlainTextEdit" name="segmentationNameTextWindow">
        <property name="maximumSize">
         <size>
          <width>20000</width>
@@ -67,19 +36,19 @@
         </size>
        </property>
        <property name="plainText">
-        <string></string>
+        <string/>
        </property>
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QLabel" name="outputPathLabel">
+      <widget class="QLabel" name="parentNameLabel">
        <property name="text">
-        <string>Path to the output DICOM folder: </string>
+        <string>Name of the parent of the segmentation: </string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QPlainTextEdit" name="dicomOutputPathTextWindow">
+      <widget class="QPlainTextEdit" name="parentNameTextWindow">
        <property name="maximumSize">
         <size>
          <width>20000</width>
@@ -87,7 +56,7 @@
         </size>
        </property>
        <property name="plainText">
-        <string></string>
+        <string/>
        </property>
       </widget>
      </item>
