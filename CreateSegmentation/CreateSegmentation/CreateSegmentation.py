@@ -89,6 +89,9 @@ class CreateSegmentationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin
         # Buttons
         self.ui.createSegmentationButton.connect('clicked(bool)', self.onCreateSegmentationButton)
 
+        # set mrlmlscene
+        self.ui.SubjectHierarchyTreeView.setMRMLScene(slicer.mrmlScene)
+
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
 
