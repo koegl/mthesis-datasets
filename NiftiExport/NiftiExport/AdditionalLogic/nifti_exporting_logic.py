@@ -70,6 +70,11 @@ class NiftiExportingLogic:
             # get all children of the dequeued node s and add to queue if not visited
             subject_hierarchy_node.GetItemChildren(s.sh_id, child_ids)
 
+            # check if it is not a segment (we continue when we are at a segmentation, because we don't want to add its
+            # segments to the tree
+            if "segmentationnode" in s.vtk_id.lower():
+                continue
+
             for i in range(child_ids.GetNumberOfIds()):
                 sub_id = child_ids.GetId(i)
                 if sub_id not in visited:
