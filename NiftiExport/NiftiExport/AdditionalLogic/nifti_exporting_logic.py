@@ -152,9 +152,26 @@ class NiftiExportingLogic:
         @return: True if success, false otherwise
         """
 
-        volume_node = slicer.mrmlScene.GetNodeByID(volume_vtk_id)
+        node = slicer.mrmlScene.GetNodeByID(volume_vtk_id)
 
-        slicer.util.saveNode(volume_node, export_path)
+        # if its a volume node save it directly
+        if "volumenode" in node.GetID().lower():
+            slicer.util.saveNode(node, export_path)
+            return
+
+        # if its a segmentation node convert it to a labelmap first and then save it
+        elif "segmentationnode" in node.GetID().lower():
+            reference_volume_node = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
+            labelmap_volume_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLLabelMapVolumeNode")
+            slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(node,
+                                                                                     labelmap_volume_node,
+                                                                                     reference_volume_node)
+            slicer.util.saveNode(labelmap_volume_node, export_path)
+            slicer.mrmlScene.RemoveNode(labelmap_volume_node.GetDisplayNode().GetColorNode())
+            slicer.mrmlScene.RemoveNode(labelmap_volume_node)
+            return
+        else:
+            return
 
     def export_volumes_and_segmentations_to_nifti(self):
         """
