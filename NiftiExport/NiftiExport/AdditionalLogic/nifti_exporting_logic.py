@@ -26,12 +26,14 @@ class NiftiExportingLogic:
             └── landmarks
     """
 
-    def __init__(self, output_folder=None, log_path="/Users/fryderykkogl/Desktop/log.log"):
+    def __init__(self, output_folder=None, log_path="/Users/fryderykkogl/Desktop/log.log", deidentify=False):
 
         if output_folder is None:
             self.output_folder = os.getcwd()
         else:
             self.output_folder = output_folder
+
+        self.deidentify = deidentify
 
         self.subject_folder = None
 
@@ -103,13 +105,21 @@ class NiftiExportingLogic:
                 except:  # broad clause, but some nodes cannot be transformed and we don't want to crash
                     pass
 
-    @staticmethod
-    def generate_id(hash_string):
+    def generate_id(self, hash_string):
         """
         Generates a unique id by hashing hash_string. (unique up to 999999999)
         @param hash_string: The path which will be hashed
         @return: the id
         """
+
+        if self.deidentify is False:
+            # get filename from mrb_path without extension
+            mrb_path = slicer.mrmlScene.GetURL()
+            mrb_path = mrb_path.split("/")
+            mrb_name = mrb_path[-1]
+            mrb_name = mrb_name.split(".")[0]
+
+            return mrb_name
 
         # create hasher
         hasher = hashlib.sha1()
@@ -227,6 +237,3 @@ class NiftiExportingLogic:
 
         # 5. Export landmarks
         self.export_landmarks_to_fcsv()
-
-        # 5. Clear DICOM database
-        DICOMLib.clearDatabase(slicer.dicomDatabase)

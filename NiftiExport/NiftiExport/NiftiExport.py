@@ -3,10 +3,14 @@ import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
-from Logic.nifti_exporting_logic import NiftiExportingLogic
+from AdditionalLogic.nifti_exporting_logic import NiftiExportingLogic
 
 import os
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ImportError:
+    slicer.util.pip_install('tqdm')
+    from tqdm import tqdm
 
 
 #
@@ -57,6 +61,8 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode = None
         self._updatingGUIFromParameterNode = False
 
+        self.deidentify = False
+
     def setup(self):
         """
     Called when the user opens the module the first time and the widget is initialized.
@@ -74,11 +80,12 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # "setMRMLScene(vtkMRMLScene*)" slot.
         uiWidget.setMRMLScene(slicer.mrmlScene)
 
-        # Create logic class. Logic implements all computations that should be possible to run
+        # Create logic class. AdditionalLogic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = NiftiExportLogic()
 
         # Connections
+        self.ui.deidentifyCheckBox.connect('clicked(bool)', self.onDeidentifyCheckBox)
 
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
@@ -186,6 +193,10 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self._parameterNode.EndModify(wasModified)
 
+    def onDeidentifyCheckBox(self, activate=False):
+        self.deidentify = activate
+        print(self.deidentify)
+
     def onExportCurrentSceneToNiftiButton(self):
         """
         Exports the current scene (according to the hierarchy) to nifti. Assumed structure:
@@ -194,7 +205,8 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             print("\n\nExporting current scene to Nifti...\n")
 
             # Create NiftiExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder="/Users/fryderykkogl/Data/nifti_test/exported")
+            nifti_logic = NiftiExportingLogic(output_folder="/Users/fryderykkogl/Data/nifti_test/exported",
+                                              deidentify=self.deidentify)
 
             # export to nifti
             nifti_logic.full_export()
@@ -250,7 +262,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             # export all to nifti
             # Create NiftiExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path)
+            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path, deidentify=self.deidentify)
 
             for i in tqdm(range(len(mrb_paths_list)), "Exporting current scene to Nifti"):
                 mrb_path = mrb_paths_list[i]
