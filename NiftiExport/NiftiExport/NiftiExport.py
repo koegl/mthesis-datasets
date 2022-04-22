@@ -308,13 +308,11 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onLoadFolderStructureButton(self):
 
-
         try:
             folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
 
             # load folder structure
             folders = []
-            folders_ids = []
             buf = os.listdir(folder_structure_path)
             for folder in buf:
                 if "store" not in folder.lower():
