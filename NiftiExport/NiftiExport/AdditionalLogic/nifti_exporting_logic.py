@@ -260,17 +260,14 @@ class NiftiExportingLogic:
         main_node.GetIJKToRASMatrix(main_original_transform)
         main_original_transform = vtk_to_np(main_original_transform)
         inverse_main_original_transform = np.linalg.inv(main_original_transform)
-        inverse_main_original_transform[1, 1] *= -1
-        inverse_main_original_transform[2, 2] *= -1
 
         # create identity with y and z negative
-        identity_transform = np.eye(4)
-        identity_transform[1, 1] = -1
-        identity_transform[2, 2] = -1
+        identity_transform_reflection_yz = np.eye(4)
+        identity_transform_reflection_yz[1, 1] = -1
+        identity_transform_reflection_yz[2, 2] = -1
 
         # transform the main node to identity (replace matrices)
-        # todo make it a real identity transform
-        main_node.SetIJKToRASMatrix(np_to_vtk(np.dot(inverse_main_original_transform, main_original_transform)))
+        main_node.SetIJKToRASMatrix(np_to_vtk(identity_transform_reflection_yz))
 
         # transform all other nodes with the inverse of the main node
         for node in all_nodes:
@@ -282,6 +279,8 @@ class NiftiExportingLogic:
                 slicer_node.GetIJKToRASMatrix(current_transform)
                 current_transform = vtk_to_np(current_transform)
                 new_transform = np.dot(inverse_main_original_transform, current_transform)
+
+                new_transform = np.dot(identity_transform_reflection_yz, new_transform)
 
                 # set the combined transformation
                 slicer_node.SetIJKToRASMatrix(np_to_vtk(new_transform))
