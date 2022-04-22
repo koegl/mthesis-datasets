@@ -12,6 +12,29 @@
   </property>
   <layout class="QVBoxLayout" name="buttonLayout">
    <item>
+    <widget class="QCheckBox" name="identityCheckBox">
+     <property name="text">
+      <string>Transform all to identity (add name of the main volume below)</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPlainTextEdit" name="mainIdentityText">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>25</height>
+      </size>
+     </property>
+     <property name="plainText">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QCheckBox" name="deidentifyCheckBox">
      <property name="text">
       <string>De-identify</string>

@@ -62,6 +62,8 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._updatingGUIFromParameterNode = False
 
         self.deidentify = False
+        self.identity = False
+        self.parent_identity = ""
 
     def setup(self):
         """
@@ -86,6 +88,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Connections
         self.ui.deidentifyCheckBox.connect('clicked(bool)', self.onDeidentifyCheckBox)
+        self.ui.identityCheckBox.connect('clicked(bool)', self.onIdentityCheckBox)
 
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
@@ -193,9 +196,17 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self._parameterNode.EndModify(wasModified)
 
+    def onIdentityCheckBox(self, activate=False):
+        self.identity = activate
+
+        # enable mainIdentityText if identity is activated
+        if self.identity:
+            self.ui.mainIdentityText.enabled = True
+        else:
+            self.ui.mainIdentityText.enabled = False
+
     def onDeidentifyCheckBox(self, activate=False):
         self.deidentify = activate
-        print(self.deidentify)
 
     def onExportCurrentSceneToNiftiButton(self):
         """
@@ -209,7 +220,11 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                               deidentify=self.deidentify)
 
             # export to nifti
-            nifti_logic.full_export()
+            if self.identity is True:
+                self.parent_identity = self.ui.mainIdentityText.toPlainText()
+                nifti_logic.full_export(self.parent_identity)
+            else:
+                nifti_logic.full_export()
 
             print("\nFinished exporting to Nifti.")
 
@@ -293,32 +308,40 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onLoadFolderStructureButton(self):
 
-        folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
+        try:
+            folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
 
-        # load folder structure
-        folders = []
-        folders_ids = []
-        buf = os.listdir(folder_structure_path)
-        for folder in buf:
-            if "store" not in folder.lower():
-                folders.append(folder)
+            # load folder structure
+            folders = []
+            buf = os.listdir(folder_structure_path)
+            for folder in buf:
+                if "store" not in folder.lower():
+                    folders.append(folder)
 
-        hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
+            hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
 
-        # create folder structure and load files into it
-        for data_folder in folders:
-            data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
-            data_folder_path = os.path.join(folder_structure_path, data_folder)
+            # create patient
+            # get last folder name from folder_structure_path
+            subject_folder_id = os.path.basename(os.path.normpath(folder_structure_path))
+            patient_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), subject_folder_id)
 
-            # for all nifti files in the folder
-            for root, dirs, files in os.walk(data_folder_path):
-                for file in files:
-                    if file.endswith(".nii"):
-                        temp_path = os.path.join(root, file)
-                        temp_volume_node = slicer.util.loadVolume(temp_path)
-                        temp_volume_hierarchy_id = hierarchy_node.GetItemByDataNode(temp_volume_node)
-                        hierarchy_node.SetItemParent(temp_volume_hierarchy_id, data_folder_id)
+            # create folder structure and load files into it
+            for data_folder in folders:
+                data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
+                hierarchy_node.SetItemParent(data_folder_id, patient_id)
+                data_folder_path = os.path.join(folder_structure_path, data_folder)
 
+                # for all nifti files in the folder
+                for root, dirs, files in os.walk(data_folder_path):
+                    for file in files:
+                        if file.endswith(".nii"):
+                            temp_path = os.path.join(root, file)
+                            temp_volume_node = slicer.util.loadVolume(temp_path)
+                            temp_volume_hierarchy_id = hierarchy_node.GetItemByDataNode(temp_volume_node)
+                            hierarchy_node.SetItemParent(temp_volume_hierarchy_id, data_folder_id)
+
+        except Exception as e:
+            slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
 
 #
 # NiftiExportLogic

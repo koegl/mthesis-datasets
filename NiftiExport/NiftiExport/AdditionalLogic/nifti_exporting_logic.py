@@ -3,10 +3,12 @@ import vtk
 import DICOMLib
 
 from AdditionalLogic.tree import Tree
+from AdditionalLogic.utils import np_to_vtk, vtk_to_np
 
 import os
 import hashlib
 import logging
+import numpy as np
 
 
 class NiftiExportingLogic:
@@ -243,7 +245,49 @@ class NiftiExportingLogic:
                 self.logger.log(logging.ERROR, f"Could not export node {node.name}.\n({str(e)})\n"
                                                f"export_landmarks_to_fcsv")
 
-    def full_export(self):
+    def transform_all_nodes_to_identity(self, identity_main_name):
+
+        # get all nodes from the scene tree
+        all_nodes = Tree.bfs(self.folder_structure)
+
+        # get the main node to which everything will be transformed
+        main_node = slicer.util.getFirstNodeByName(identity_main_name)
+        if main_node is None:
+            return "Could not find identity node - wrong name"
+
+        # get its transform and create the inverse (with negative y and z)
+        main_original_transform = vtk.vtkMatrix4x4()
+        main_node.GetIJKToRASMatrix(main_original_transform)
+        main_original_transform = vtk_to_np(main_original_transform)
+        inverse_main_original_transform = np.linalg.inv(main_original_transform)
+
+        # create identity with y and z negative
+        identity_transform_reflection_yz = np.eye(4)
+        identity_transform_reflection_yz[1, 1] = -1
+        identity_transform_reflection_yz[2, 2] = -1
+
+        # transform the main node to identity (replace matrices)
+        main_node.SetIJKToRASMatrix(np_to_vtk(identity_transform_reflection_yz))
+
+        # transform all other nodes with the inverse of the main node
+        for node in all_nodes:
+            if node.vtk_id != main_node.GetID() and node.vtk_id:
+
+                # combine the two transformations
+                current_transform = vtk.vtkMatrix4x4()
+                slicer_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
+                slicer_node.GetIJKToRASMatrix(current_transform)
+                current_transform = vtk_to_np(current_transform)
+                new_transform = np.dot(inverse_main_original_transform, current_transform)
+
+                new_transform = np.dot(identity_transform_reflection_yz, new_transform)
+
+                # set the combined transformation
+                slicer_node.SetIJKToRASMatrix(np_to_vtk(new_transform))
+
+        return ""
+
+    def full_export(self, identity=False):
         """
         Perform all the steps to export the current scene
         """
@@ -253,6 +297,15 @@ class NiftiExportingLogic:
 
         # 3. Harden transforms
         self.harden_transformations()
+
+        # #. Transform all to identity of parent volume
+        if identity:
+            result = self.transform_all_nodes_to_identity(identity)
+
+            if result:
+                slicer.util.errorDisplay(f"Couldn't export current scene/mrb to Nifti.\n{result}",
+                                         windowTitle="Export error")
+                return
 
         # 3. Export volumes according to the studies
         self.export_volumes_and_segmentations_to_nifti()
