@@ -19,7 +19,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QPlainTextEdit" name="plainTextEdit">
+    <widget class="QPlainTextEdit" name="mainIdentityText">
      <property name="enabled">
       <bool>false</bool>
      </property>
@@ -28,6 +28,9 @@
        <width>16777215</width>
        <height>25</height>
       </size>
+     </property>
+     <property name="plainText">
+      <string>3D AX T1 Post-contrast Pre-op Thin-cut</string>
      </property>
     </widget>
    </item>
