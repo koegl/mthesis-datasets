@@ -287,7 +287,52 @@ class NiftiExportingLogic:
 
         return ""
 
-    def full_export(self, identity=False):
+    @staticmethod
+    def create_node_with_correct_spacing(spacing=0.5):
+        node_name = "sampling_ref"
+        image_size = [256, 256, 176]
+        voxel_type = vtk.VTK_UNSIGNED_CHAR
+        image_origin = [0.0, 0.0, 0.0]
+        image_spacing = [spacing, spacing, spacing]
+        image_directions = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+        fill_voxel_value = 0
+
+        # Create an empty image volume, filled with fill_voxel_value
+        image_data = vtk.vtkImageData()
+        image_data.SetDimensions(image_size)
+        image_data.AllocateScalars(voxel_type, 1)
+        image_data.GetPointData().GetScalars().Fill(fill_voxel_value)
+        # Create volume node
+        volume_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode", node_name)
+        volume_node.SetOrigin(image_origin)
+        volume_node.SetSpacing(image_spacing)
+        volume_node.SetIJKToRASDirections(image_directions)
+        volume_node.SetAndObserveImageData(image_data)
+        volume_node.CreateDefaultDisplayNodes()
+        volume_node.CreateDefaultStorageNode()
+
+        return volume_node
+    
+    def resample_all_nodes(self, resample_size):
+
+        # get all nodes from the scene tree
+        all_nodes = Tree.bfs(self.folder_structure)
+
+        # create a reference node with the correct spacing
+        reference_node = self.create_node_with_correct_spacing(resample_size)
+
+        # loop thorugh all nodes and use the brainsresample CLI to resampple them to the correct spacing (ref node)
+        for node in all_nodes:
+            if "vtkMRMLScalarVolumeNode" in node.vtk_id:
+                vtk_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
+                parameters = {'inputVolume': vtk_node, 'referenceVolume': reference_node, 'outputVolume': vtk_node}
+                slicer.cli.run(slicer.modules.brainsresample, None, parameters,
+                               wait_for_completion=True, update_display=False)
+
+        # remove the reference node
+        slicer.mrmlScene.RemoveNode(reference_node)
+
+    def full_export(self, identity=False, resample_size=False):
         """
         Perform all the steps to export the current scene
         """
@@ -306,6 +351,10 @@ class NiftiExportingLogic:
                 slicer.util.errorDisplay(f"Couldn't export current scene/mrb to Nifti.\n{result}",
                                          windowTitle="Export error")
                 return
+
+        # #. Resample all nodes to the same size
+        if resample_size:
+            self.resample_all_nodes(resample_size)
 
         # 3. Export volumes according to the studies
         self.export_volumes_and_segmentations_to_nifti()

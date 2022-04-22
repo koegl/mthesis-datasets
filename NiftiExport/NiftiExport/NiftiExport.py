@@ -64,6 +64,8 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.deidentify = False
         self.identity = False
         self.parent_identity = ""
+        self.resample = False
+        self.resample_spacing = None
 
     def setup(self):
         """
@@ -89,6 +91,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # Connections
         self.ui.deidentifyCheckBox.connect('clicked(bool)', self.onDeidentifyCheckBox)
         self.ui.identityCheckBox.connect('clicked(bool)', self.onIdentityCheckBox)
+        self.ui.resampleCheckbox.connect('clicked(bool)', self.onResampleCheckBox)
 
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
@@ -208,6 +211,15 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onDeidentifyCheckBox(self, activate=False):
         self.deidentify = activate
 
+    def onResampleCheckBox(self, activate=False):
+        self.resample = activate
+
+        # enable resampleText if resample is activated
+        if self.resample:
+            self.ui.resampleText.enabled = True
+        else:
+            self.ui.resampleText.enabled = False
+
     def onExportCurrentSceneToNiftiButton(self):
         """
         Exports the current scene (according to the hierarchy) to nifti. Assumed structure:
@@ -222,9 +234,9 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # export to nifti
             if self.identity is True:
                 self.parent_identity = self.ui.mainIdentityText.toPlainText()
-                nifti_logic.full_export(self.parent_identity)
-            else:
-                nifti_logic.full_export()
+            if self.resample is True:
+                self.resample_spacing = float(self.ui.resampleText.toPlainText())
+            nifti_logic.full_export(self.parent_identity, self.resample_spacing)
 
             print("\nFinished exporting to Nifti.")
 
