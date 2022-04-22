@@ -308,32 +308,42 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onLoadFolderStructureButton(self):
 
-        folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
 
-        # load folder structure
-        folders = []
-        folders_ids = []
-        buf = os.listdir(folder_structure_path)
-        for folder in buf:
-            if "store" not in folder.lower():
-                folders.append(folder)
+        try:
+            folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
 
-        hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
+            # load folder structure
+            folders = []
+            folders_ids = []
+            buf = os.listdir(folder_structure_path)
+            for folder in buf:
+                if "store" not in folder.lower():
+                    folders.append(folder)
 
-        # create folder structure and load files into it
-        for data_folder in folders:
-            data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
-            data_folder_path = os.path.join(folder_structure_path, data_folder)
+            hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
 
-            # for all nifti files in the folder
-            for root, dirs, files in os.walk(data_folder_path):
-                for file in files:
-                    if file.endswith(".nii"):
-                        temp_path = os.path.join(root, file)
-                        temp_volume_node = slicer.util.loadVolume(temp_path)
-                        temp_volume_hierarchy_id = hierarchy_node.GetItemByDataNode(temp_volume_node)
-                        hierarchy_node.SetItemParent(temp_volume_hierarchy_id, data_folder_id)
+            # create patient
+            # get last folder name from folder_structure_path
+            subject_folder_id = os.path.basename(os.path.normpath(folder_structure_path))
+            patient_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), subject_folder_id)
 
+            # create folder structure and load files into it
+            for data_folder in folders:
+                data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
+                hierarchy_node.SetItemParent(data_folder_id, patient_id)
+                data_folder_path = os.path.join(folder_structure_path, data_folder)
+
+                # for all nifti files in the folder
+                for root, dirs, files in os.walk(data_folder_path):
+                    for file in files:
+                        if file.endswith(".nii"):
+                            temp_path = os.path.join(root, file)
+                            temp_volume_node = slicer.util.loadVolume(temp_path)
+                            temp_volume_hierarchy_id = hierarchy_node.GetItemByDataNode(temp_volume_node)
+                            hierarchy_node.SetItemParent(temp_volume_hierarchy_id, data_folder_id)
+
+        except Exception as e:
+            slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
 
 #
 # NiftiExportLogic
