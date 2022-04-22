@@ -62,6 +62,8 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._updatingGUIFromParameterNode = False
 
         self.deidentify = False
+        self.identity = False
+        self.parent_identity = ""
 
     def setup(self):
         """
@@ -86,6 +88,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Connections
         self.ui.deidentifyCheckBox.connect('clicked(bool)', self.onDeidentifyCheckBox)
+        self.ui.identityCheckBox.connect('clicked(bool)', self.onIdentityCheckBox)
 
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
@@ -193,9 +196,17 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self._parameterNode.EndModify(wasModified)
 
+    def onIdentityCheckBox(self, activate=False):
+        self.identity = activate
+
+        # enable mainIdentityText if identity is activated
+        if self.identity:
+            self.ui.mainIdentityText.enabled = True
+        else:
+            self.ui.mainIdentityText.enabled = False
+
     def onDeidentifyCheckBox(self, activate=False):
         self.deidentify = activate
-        print(self.deidentify)
 
     def onExportCurrentSceneToNiftiButton(self):
         """
@@ -209,7 +220,11 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                               deidentify=self.deidentify)
 
             # export to nifti
-            nifti_logic.full_export()
+            if self.identity is True:
+                self.parent_identity = self.ui.mainIdentityText.toPlainText()
+                nifti_logic.full_export(self.parent_identity)
+            else:
+                nifti_logic.full_export()
 
             print("\nFinished exporting to Nifti.")
 
