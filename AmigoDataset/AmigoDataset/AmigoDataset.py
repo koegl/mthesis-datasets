@@ -227,8 +227,14 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             print("\n\nExporting current scene to Nifti...\n")
 
+            # get the nifti output folder path
+            nifti_output_folder_path = self.ui.niftiOutputPathTextWindow.toPlainText()
+
+            if not os.path.isdir(nifti_output_folder_path):
+                raise NotADirectoryError("The nifti output folder path does not exist.")
+
             # Create NiftiExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder="/Users/fryderykkogl/Data/nifti_test/exported",
+            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path,
                                               deidentify=self.deidentify)
 
             # export to nifti
@@ -282,6 +288,9 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             # get the nifti output folder path
             nifti_output_folder_path = self.ui.niftiOutputPathTextWindow.toPlainText()
+
+            if not os.path.isdir(nifti_output_folder_path):
+                raise NotADirectoryError("The nifti output folder path does not exist.")
 
             # check if the path is valid
             if not os.path.isdir(nifti_output_folder_path):
