@@ -5,6 +5,7 @@ from slicer.util import VTKObservationMixin
 
 from AdditionalLogic.nifti_exporting_logic import NiftiExportingLogic
 from AdditionalLogic.structure_logic import StructureLogic
+from AdditionalLogic.statistics_exporting_logic import StatisticsExportingLogic
 
 import os
 try:
@@ -347,10 +348,16 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
 
     def onExportCurrentSceneStatisticsButton(self):
-        print("stat current")
+        statistics_exporter = StatisticsExportingLogic()
+        statistics_exporter.export_current_scene()
 
     def onExportAllMRBStatisticsButton(self):
-        print("stat all")
+        try:
+            mrb_paths = self.ui.mrbStatisticsInputTextWindow.toPlainText()
+            statistics_exporter = StatisticsExportingLogic()
+            statistics_exporter.export_multiple_scenes(mrb_paths=mrb_paths)
+        except Exception as e:
+            slicer.util.errorDisplay("Couldn't export mrb statistics.\n{}".format(e), windowTitle="Statistics export error")
 
 #
 # AmigoDatasetLogic
