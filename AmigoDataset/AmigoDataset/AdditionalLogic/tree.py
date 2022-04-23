@@ -76,5 +76,3 @@ class Tree(object):
 
             for key_child, item_child in item.children.items():
                 print(f"\t{key_child}")
-
-            print("\n")
