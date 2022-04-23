@@ -14,17 +14,17 @@ except ImportError:
 
 
 #
-# NiftiExport
+# AmigoDataset
 #
 
-class NiftiExport(ScriptedLoadableModule):
+class AmigoDataset(ScriptedLoadableModule):
     """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "NiftiExport"
+        self.parent.title = "AmigoDataset"
         self.parent.categories = ["Informatics"]
         self.parent.dependencies = ["Markups"]
         self.parent.contributors = ["Fryderyk Kögl (TUM, BWH)"]
@@ -46,7 +46,7 @@ class NiftiExport(ScriptedLoadableModule):
 #
 # NiftiExportWidget
 #
-class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
@@ -75,7 +75,7 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Load widget from .ui file (created by Qt Designer).
         # Additional widgets can be instantiated manually and added to self.layout.
-        uiWidget = slicer.util.loadUI(self.resourcePath('UI/NiftiExport.ui'))
+        uiWidget = slicer.util.loadUI(self.resourcePath('UI/AmigoDataset.ui'))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -356,10 +356,10 @@ class NiftiExportWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
 
 #
-# NiftiExportLogic
+# AmigoDatasetLogic
 #
 
-class NiftiExportLogic(ScriptedLoadableModuleLogic):
+class AmigoDatasetLogic(ScriptedLoadableModuleLogic):
     """This class should implement all the actual
   computation done by your module.  The interface
   should be such that other python code can import
@@ -377,10 +377,10 @@ class NiftiExportLogic(ScriptedLoadableModuleLogic):
 
 
 #
-# NiftiExportTest
+# AmigoDatasetTest
 #
 #
-class NiftiExportTest(ScriptedLoadableModuleTest):
+class AmigoDatasetTest(ScriptedLoadableModuleTest):
     """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -396,9 +396,9 @@ class NiftiExportTest(ScriptedLoadableModuleTest):
         """Run as few or as many tests as needed here.
     """
         self.setUp()
-        self.test_NiftiExport1()
+        self.test_AmigoDataset1()
 
-    def test_NiftiExport1(self):
+    def test_AmigoDataset1(self):
         """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the
@@ -412,7 +412,7 @@ class NiftiExportTest(ScriptedLoadableModuleTest):
 
         self.delayDisplay("Starting the test")
 
-        logic = NiftiExportLogic()
+        logic = AmigoDatasetLogic()
 
         pass
 
