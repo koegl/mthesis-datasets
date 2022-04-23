@@ -299,7 +299,7 @@ class NiftiExportingLogic:
         """
 
         # 1. Generate folder structure
-        self.bfs_generate_folder_structure_as_tree()
+        self.folder_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
         # 3. Harden transforms
         self.harden_transformations()

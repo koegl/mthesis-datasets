@@ -86,7 +86,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Create logic class. AdditionalLogic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
-        self.logic = NiftiExportLogic()
+        self.logic = AmigoDatasetLogic()
 
         # Connections
         self.ui.deidentifyCheckBox.connect('clicked(bool)', self.onDeidentifyCheckBox)

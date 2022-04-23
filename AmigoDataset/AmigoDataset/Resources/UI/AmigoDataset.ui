@@ -193,7 +193,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Select export paths</string>
+         <string>Select export path(s) and export</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
