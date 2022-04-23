@@ -79,6 +79,14 @@ class NiftiExportingLogic:
             mrb_name = mrb_path[-1]
             mrb_name = mrb_name.split(".")[0]
 
+            # mrb name might be empty if we haven't loaded a mrb but single files (like with the load function)
+            if mrb_name == "":
+                child_ids = vtk.vtkIdList()
+                subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+                subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids)
+                sh_patient_id = child_ids.GetId(0)
+                mrb_name = subject_hierarchy_node.GetItemName(sh_patient_id)
+
             return mrb_name
 
         # create hasher
