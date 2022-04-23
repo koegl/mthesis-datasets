@@ -4,6 +4,7 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
 from AdditionalLogic.nifti_exporting_logic import NiftiExportingLogic
+from AdditionalLogic.structure_logic import StructureLogic
 
 import os
 try:
@@ -250,27 +251,6 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.util.errorDisplay("Couldn't export current scene to Nifti.\n{}".format(e),
                                      windowTitle="Export error")
 
-    @staticmethod
-    def return_a_list_of_all_mrbs_in_a_folder(folder_path):
-        """
-        Returns a list of all mrbs in a folder.
-        :@param folder_path: Path to the folder in which to search for mrbs.
-        :@return: A list of all mrbs in the folder.
-        """
-
-        # check if the path is valid
-        if not os.path.isdir(folder_path):
-            raise Exception("The mrb folder path is not valid.")
-
-        mrbs = []
-
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                if file.endswith(".mrb"):
-                    mrbs.append(os.path.join(root, file))
-
-        return mrbs
-
     def onExportAllMrbsFoundInFolderToNiftiButton(self):
         """
         Export all mrb's found in the folder to nifti
@@ -284,7 +264,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             folder_path = self.ui.mrbFolderPathTextWindow.toPlainText()
 
             # extract all mrbs from the folder
-            mrb_paths_list = self.return_a_list_of_all_mrbs_in_a_folder(folder_path)
+            mrb_paths_list = StructureLogic.return_a_list_of_all_mrbs_in_a_folder(folder_path)
 
             # get the nifti output folder path
             nifti_output_folder_path = self.ui.niftiOutputPathTextWindow.toPlainText()

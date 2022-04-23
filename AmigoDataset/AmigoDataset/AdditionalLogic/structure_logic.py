@@ -1,6 +1,8 @@
 import slicer
 import vtk
 
+import os
+
 from AdditionalLogic.tree import Tree
 
 class StructureLogic:
@@ -57,3 +59,23 @@ class StructureLogic:
 
         return folder_structure
 
+    @staticmethod
+    def return_a_list_of_all_mrbs_in_a_folder(folder_path):
+        """
+        Returns a list of all mrbs in a folder.
+        :@param folder_path: Path to the folder in which to search for mrbs.
+        :@return: A list of all mrbs in the folder.
+        """
+
+        # check if the path is valid
+        if not os.path.isdir(folder_path):
+            raise Exception("The mrb folder path is not valid.")
+
+        mrbs = []
+
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                if file.endswith(".mrb"):
+                    mrbs.append(os.path.join(root, file))
+
+        return mrbs
