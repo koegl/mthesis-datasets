@@ -532,7 +532,7 @@
       <item>
        <layout class="QGridLayout" name="textLayout_2">
         <item row="0" column="0">
-         <widget class="QLabel" name="mrbStatisticsInput">
+         <widget class="QLabel" name="mrbStatisticsInputLabel">
           <property name="font">
            <font>
             <pointsize>13</pointsize>
