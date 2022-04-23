@@ -5,6 +5,7 @@ import os
 
 from AdditionalLogic.tree import Tree
 
+
 class StructureLogic:
     """
     Class to encapsulate logic for handling mrb/folder structure
