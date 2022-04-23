@@ -69,3 +69,12 @@ class Tree(object):
                     return_array.append(child)
 
         return return_array
+
+    def print_tree(self):
+        for key, item in self.children.items():
+            print(f"{key}:")
+
+            for key_child, item_child in item.children.items():
+                print(f"\t{key_child}")
+
+            print("\n")
