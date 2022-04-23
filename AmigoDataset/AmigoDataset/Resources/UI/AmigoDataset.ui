@@ -466,7 +466,7 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="exportCurrentSceneStatisticsButton">
         <property name="font">
          <font>
           <pointsize>13</pointsize>

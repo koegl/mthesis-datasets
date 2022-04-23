@@ -106,6 +106,8 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.exportAllMrbsFoundInFolderToNiftiButton.connect('clicked(bool)',
                                                                 self.onExportAllMrbsFoundInFolderToNiftiButton)
         self.ui.loadFolderStructureButton.connect('clicked(bool)', self.onLoadFolderStructureButton)
+        self.ui.exportCurrentSceneStatisticsButton.connect('clicked(bool)', self.onExportCurrentSceneStatisticsButton)
+        self.ui.exportAllMRBStatisticsButton.connect('clicked(bool)', self.onExportAllMRBStatisticsButton)
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -343,6 +345,12 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         except Exception as e:
             slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
+
+    def onExportCurrentSceneStatisticsButton(self):
+        print("stat current")
+
+    def onExportAllMRBStatisticsButton(self):
+        print("stat all")
 
 #
 # AmigoDatasetLogic
