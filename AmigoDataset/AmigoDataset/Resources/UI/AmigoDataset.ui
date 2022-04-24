@@ -30,7 +30,7 @@
       <string>EXPORT</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="buttonTextAlignment">
       <set>Qt::AlignCenter|Qt::AlignHCenter|Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -366,7 +366,7 @@
       <string>LOAD</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="buttonTextAlignment">
       <set>Qt::AlignCenter</set>
@@ -459,7 +459,7 @@
       <string>STATISTICS</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="buttonTextAlignment">
       <set>Qt::AlignCenter</set>

@@ -173,38 +173,27 @@ class NiftiExportingLogic:
             except Exception as e:
                 self.logger.log(logging.ERROR, f"Could not export node {node.name}. ({str(e)})")
 
-    def export_landmarks_to_fcsv(self):
+    def export_landmarks_to_json(self):
         """
-        Export landmark to fcsv
+        Export landmark to json
         """
-        # todo export like Andras has shown on discourse
+
         bfs_array = Tree.bfs(self.folder_structure)
 
-        counter = {}
         for node in bfs_array:
             try:
-                if not bool(node.children) \
-                        and "transform" not in node.name.lower() \
-                        and "segment" not in node.parent.name.lower() \
-                        and "landmark" in node.parent.name.lower():
-
-                    # increase/create counter for series number
-                    if node.parent.name in counter:
-                        counter[node.parent.name] += 1
-                    else:
-                        counter[node.parent.name] = 1
+                if "markupsfiducialnode" in node.vtk_id.lower():
 
                     markups_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
 
                     if markups_node is None:
                         raise ValueError(f"Could not find and export landmarks node {node.name}")
 
-                    slicer.util.saveNode(markups_node,
-                                         os.path.join(self.subject_folder,
-                                                      "landmarks_" + "uid"))  # todo self.study_instance_uid))
+                    slicer.util.saveNode(markups_node, os.path.join(self.subject_folder, "landmarks.json"))
+
             except Exception as e:
                 self.logger.log(logging.ERROR, f"Could not export node {node.name}.\n({str(e)})\n"
-                                               f"export_landmarks_to_fcsv")
+                                               f"export_landmarks_to_json")
 
     def transform_all_nodes_to_identity(self, identity_main_name):
 
@@ -321,4 +310,4 @@ class NiftiExportingLogic:
         self.export_volumes_and_segmentations_to_nifti()
 
         # 5. Export landmarks
-        self.export_landmarks_to_fcsv()
+        self.export_landmarks_to_json()

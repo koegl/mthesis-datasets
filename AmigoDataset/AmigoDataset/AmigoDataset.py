@@ -319,8 +319,16 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             folders = []
             buf = os.listdir(folder_structure_path)
             for folder in buf:
-                if "store" not in folder.lower():
+                if "store" not in folder.lower() and os.path.isdir(os.path.join(folder_structure_path, folder)):
                     folders.append(folder)
+
+            # get .json landmark file path
+            landmark_file_path = ""
+            for folder in buf:
+                temp = os.path.join(folder_structure_path, folder)
+                if temp.endswith(".json"):
+                    landmark_file_path = temp
+                    break
 
             hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
 
@@ -329,7 +337,13 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             subject_folder_id = os.path.basename(os.path.normpath(folder_structure_path))
             patient_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), subject_folder_id)
 
-            # create folder structure and load files into it
+            # load landmark file
+            if landmark_file_path is not None:
+                markups_node = slicer.util.loadMarkups(landmark_file_path)
+                markups_hierarchy_id = hierarchy_node.GetItemByDataNode(markups_node)
+                hierarchy_node.SetItemParent(markups_hierarchy_id, patient_id)
+
+            # create folder structure and load nifti files into it
             for data_folder in folders:
                 data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
                 hierarchy_node.SetItemParent(data_folder_id, patient_id)
