@@ -238,15 +238,14 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 raise NotADirectoryError("The nifti output folder path does not exist.")
 
             # Create NiftiExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path,
-                                              deidentify=self.deidentify)
+            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path)
 
             # export to nifti
             if self.identity is True:
                 self.parent_identity = self.ui.mainIdentityText.toPlainText()
             if self.resample is True:
                 self.resample_spacing = float(self.ui.resampleText.toPlainText())
-            nifti_logic.full_export(self.parent_identity, self.resample_spacing)
+            nifti_logic.full_export(self.parent_identity, self.resample_spacing, self.deidentify)
 
             print("\nFinished exporting to Nifti.")
 
@@ -281,7 +280,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             # export all to nifti
             # Create NiftiExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path, deidentify=self.deidentify)
+            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path)
 
             for i in tqdm(range(len(mrb_paths_list)), "Exporting current scene to Nifti"):
                 mrb_path = mrb_paths_list[i]
@@ -298,7 +297,12 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                         pass
 
                     # export current scene to nifti
-                    nifti_logic.full_export()
+                    if self.identity is True:
+                        self.parent_identity = self.ui.mainIdentityText.toPlainText()
+                    if self.resample is True:
+                        self.resample_spacing = float(self.ui.resampleText.toPlainText())
+
+                    nifti_logic.full_export(self.parent_identity, self.resample_spacing, self.deidentify)
 
                     # clear scene
                     slicer.mrmlScene.Clear()

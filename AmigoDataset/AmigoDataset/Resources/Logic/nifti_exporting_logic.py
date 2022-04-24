@@ -1,18 +1,12 @@
 import slicer
-import vtk
-import DICOMLib
 
+from Resources.Logic.exporting_logic import ExportingLogic
 from Resources.Logic.tree import Tree
-from Resources.Logic.utils import np_to_vtk, vtk_to_np
-from Resources.Logic.structure_logic import StructureLogic
 
 import os
-import hashlib
-import logging
-import numpy as np
 
 
-class NiftiExportingLogic:
+class NiftiExportingLogic(ExportingLogic):
     """
     Class to encapsulate logic for exporting a scene to nifti. Assumed structure:
     Scene
@@ -25,86 +19,11 @@ class NiftiExportingLogic:
         │   └── volumes
         ├── Segmentation
         │   └── lesion segmentation
-        └── Annotations
-            └── landmarks
+        └── Landmarks
     """
 
-    def __init__(self, output_folder=None, log_path="/Users/fryderykkogl/Desktop/log.log", deidentify=False):
-
-        if output_folder is None:
-            self.output_folder = os.getcwd()
-        else:
-            self.output_folder = output_folder
-
-        self.deidentify = deidentify
-
-        self.subject_folder = None
-
-        self.patient_id = None
-
-        self.folder_structure = None
-
-        logging.basicConfig(filename=log_path)
-        self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)  # lowest level from ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
-
-    def harden_transformations(self):
-        """
-        Hardens all transformations
-        """
-
-        all_nodes = Tree.bfs(self.folder_structure)
-
-        for node in all_nodes:
-            # harden transformation
-            buf_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
-
-            if buf_node:  # if it exists
-                try:
-                    buf_node.HardenTransform()
-                except:  # broad clause, but some nodes cannot be transformed and we don't want to crash
-                    pass
-
-    def generate_id(self, hash_string):
-        """
-        Generates a unique id by hashing hash_string. (unique up to 999999999)
-        @param hash_string: The path which will be hashed
-        @return: the id
-        """
-
-        if self.deidentify is False:
-            # get filename from mrb_path without extension
-            mrb_path = slicer.mrmlScene.GetURL()
-            mrb_path = mrb_path.split("/")
-            mrb_name = mrb_path[-1]
-            mrb_name = mrb_name.split(".")[0]
-
-            # mrb name might be empty if we haven't loaded a mrb but single files (like with the load function)
-            if mrb_name == "":
-                child_ids = vtk.vtkIdList()
-                subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-                subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids)
-                sh_patient_id = child_ids.GetId(0)
-                mrb_name = subject_hierarchy_node.GetItemName(sh_patient_id)
-
-            return mrb_name
-
-        # create hasher
-        hasher = hashlib.sha1()
-
-        # hash the string
-        hasher.update(hash_string.encode('utf-8'))
-
-        # return hex-string of hashed value
-        hex_string = hasher.hexdigest()
-
-        # convert to int base 10
-        hashed = int(hex_string, 16)
-
-        # take the mod with a prime number to reduce the size of the id
-        hashed_mod = hashed % 999999937
-
-        return str(hashed_mod)
+    def __init__(self, output_folder=None):
+        super().__init__(output_folder)
 
     @staticmethod
     def export_node_to_nifti(export_path=None, volume_vtk_id=None):
@@ -171,143 +90,10 @@ class NiftiExportingLogic:
                     self.export_node_to_nifti(export_path, node.vtk_id)
 
             except Exception as e:
-                self.logger.log(logging.ERROR, f"Could not export node {node.name}. ({str(e)})")
+                slicer.util.errorDisplay(f"Could not export node {node.name}. ({str(e)})")
 
-    def export_landmarks_to_json(self):
-        """
-        Export landmark to json
-        """
+    def export_data(self):
 
-        bfs_array = Tree.bfs(self.folder_structure)
-
-        for node in bfs_array:
-            try:
-                if "markupsfiducialnode" in node.vtk_id.lower():
-
-                    markups_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
-
-                    if markups_node is None:
-                        raise ValueError(f"Could not find and export landmarks node {node.name}")
-
-                    slicer.util.saveNode(markups_node, os.path.join(self.subject_folder, "landmarks.json"))
-
-            except Exception as e:
-                self.logger.log(logging.ERROR, f"Could not export node {node.name}.\n({str(e)})\n"
-                                               f"export_landmarks_to_json")
-
-    def transform_all_nodes_to_identity(self, identity_main_name):
-
-        # get all nodes from the scene tree
-        all_nodes = Tree.bfs(self.folder_structure)
-
-        # get the main node to which everything will be transformed
-        main_node = slicer.util.getFirstNodeByName(identity_main_name)
-        if main_node is None:
-            return "Could not find identity node - wrong name"
-
-        # get its transform and create the inverse (with negative y and z)
-        main_original_transform = vtk.vtkMatrix4x4()
-        main_node.GetIJKToRASMatrix(main_original_transform)
-        main_original_transform = vtk_to_np(main_original_transform)
-        inverse_main_original_transform = np.linalg.inv(main_original_transform)
-
-        # create identity with y and z negative
-        identity_transform_reflection_yz = np.eye(4)
-        identity_transform_reflection_yz[1, 1] = -1
-        identity_transform_reflection_yz[2, 2] = -1
-
-        # transform the main node to identity (replace matrices)
-        main_node.SetIJKToRASMatrix(np_to_vtk(identity_transform_reflection_yz))
-
-        # transform all other nodes with the inverse of the main node
-        for node in all_nodes:
-            if node.vtk_id != main_node.GetID() and node.vtk_id:
-
-                # combine the two transformations
-                current_transform = vtk.vtkMatrix4x4()
-                slicer_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
-                slicer_node.GetIJKToRASMatrix(current_transform)
-                current_transform = vtk_to_np(current_transform)
-                new_transform = np.dot(inverse_main_original_transform, current_transform)
-
-                new_transform = np.dot(identity_transform_reflection_yz, new_transform)
-
-                # set the combined transformation
-                slicer_node.SetIJKToRASMatrix(np_to_vtk(new_transform))
-
-        return ""
-
-    @staticmethod
-    def create_node_with_correct_spacing(spacing=0.5):
-        node_name = "sampling_ref"
-        image_size = [256, 256, 176]
-        voxel_type = vtk.VTK_UNSIGNED_CHAR
-        image_origin = [0.0, 0.0, 0.0]
-        image_spacing = [spacing, spacing, spacing]
-        image_directions = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-        fill_voxel_value = 0
-
-        # Create an empty image volume, filled with fill_voxel_value
-        image_data = vtk.vtkImageData()
-        image_data.SetDimensions(image_size)
-        image_data.AllocateScalars(voxel_type, 1)
-        image_data.GetPointData().GetScalars().Fill(fill_voxel_value)
-        # Create volume node
-        volume_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode", node_name)
-        volume_node.SetOrigin(image_origin)
-        volume_node.SetSpacing(image_spacing)
-        volume_node.SetIJKToRASDirections(image_directions)
-        volume_node.SetAndObserveImageData(image_data)
-        volume_node.CreateDefaultDisplayNodes()
-        volume_node.CreateDefaultStorageNode()
-
-        return volume_node
-    
-    def resample_all_nodes(self, resample_size):
-
-        # get all nodes from the scene tree
-        all_nodes = Tree.bfs(self.folder_structure)
-
-        # create a reference node with the correct spacing
-        reference_node = self.create_node_with_correct_spacing(resample_size)
-
-        # loop thorugh all nodes and use the brainsresample CLI to resampple them to the correct spacing (ref node)
-        for node in all_nodes:
-            if "vtkMRMLScalarVolumeNode" in node.vtk_id:
-                vtk_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
-                parameters = {'inputVolume': vtk_node, 'referenceVolume': reference_node, 'outputVolume': vtk_node}
-                slicer.cli.run(slicer.modules.brainsresample, None, parameters,
-                               wait_for_completion=True, update_display=False)
-
-        # remove the reference node
-        slicer.mrmlScene.RemoveNode(reference_node)
-
-    def full_export(self, identity=False, resample_size=False):
-        """
-        Perform all the steps to export the current scene
-        """
-
-        # 1. Generate folder structure
-        self.folder_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
-
-        # 3. Harden transforms
-        self.harden_transformations()
-
-        # #. Transform all to identity of parent volume
-        if identity:
-            result = self.transform_all_nodes_to_identity(identity)
-
-            if result:
-                slicer.util.errorDisplay(f"Couldn't export current scene/mrb to Nifti.\n{result}",
-                                         windowTitle="Export error")
-                return
-
-        # #. Resample all nodes to the same size
-        if resample_size:
-            self.resample_all_nodes(resample_size)
-
-        # 3. Export volumes according to the studies
         self.export_volumes_and_segmentations_to_nifti()
 
-        # 5. Export landmarks
         self.export_landmarks_to_json()
