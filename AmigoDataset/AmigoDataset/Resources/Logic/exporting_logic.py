@@ -195,7 +195,8 @@ class ExportingLogic:
             # transform landmarks
             elif node.vtk_id != main_node.GetID() and node.vtk_id and "markupsfiducial" in node.vtk_id.lower():
                 slicer_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
-                slicer_node.ApplyTransformMatrix(np_to_vtk(inverse_main_original_transform))
+                new_transform = np.dot(identity_transform_reflection_yz, inverse_main_original_transform)
+                slicer_node.ApplyTransformMatrix(np_to_vtk(new_transform))
 
         return ""
 
