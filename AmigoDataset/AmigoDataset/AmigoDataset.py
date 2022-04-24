@@ -3,9 +3,9 @@ import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
-from AdditionalLogic.nifti_exporting_logic import NiftiExportingLogic
-from AdditionalLogic.structure_logic import StructureLogic
-from AdditionalLogic.statistics_exporting_logic import StatisticsExportingLogic
+from Resources.Logic.nifti_exporting_logic import NiftiExportingLogic
+from Resources.Logic.structure_logic import StructureLogic
+from Resources.Logic.statistics_exporting_logic import StatisticsExportingLogic
 
 import os
 try:

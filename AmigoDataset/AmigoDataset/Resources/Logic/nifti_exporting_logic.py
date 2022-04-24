@@ -2,9 +2,9 @@ import slicer
 import vtk
 import DICOMLib
 
-from AdditionalLogic.tree import Tree
-from AdditionalLogic.utils import np_to_vtk, vtk_to_np
-from AdditionalLogic.structure_logic import StructureLogic
+from Resources.Logic.tree import Tree
+from Resources.Logic.utils import np_to_vtk, vtk_to_np
+from Resources.Logic.structure_logic import StructureLogic
 
 import os
 import hashlib
