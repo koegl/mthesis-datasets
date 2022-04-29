@@ -46,7 +46,7 @@ class AmigoDataset(ScriptedLoadableModule):
 
 
 #
-# NiftiExportWidget
+# AmigoDatasetWidget
 #
 class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
@@ -71,6 +71,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.nifti = True
         self.dicom = False
+        self.format = None
 
     def setup(self):
         """
@@ -109,9 +110,9 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # (in the selected parameter node).
 
         # Buttons
-        self.ui.exportCurrentSceneToNiftiButton.connect('clicked(bool)', self.onExportCurrentSceneToNiftiButton)
-        self.ui.exportAllMrbsFoundInFolderToNiftiButton.connect('clicked(bool)',
-                                                                self.onExportAllMrbsFoundInFolderToNiftiButton)
+        self.ui.exportCurrentSceneToButton.connect('clicked(bool)', self.onexportCurrentSceneToButton)
+        self.ui.exportAllMrbsFoundInFolderToButton.connect('clicked(bool)',
+                                                                self.onexportAllMrbsFoundInFolderToButton)
         self.ui.loadFolderStructureButton.connect('clicked(bool)', self.onLoadFolderStructureButton)
         self.ui.exportCurrentSceneStatisticsButton.connect('clicked(bool)', self.onExportCurrentSceneStatisticsButton)
         self.ui.exportAllMRBStatisticsButton.connect('clicked(bool)', self.onExportAllMRBStatisticsButton)
@@ -232,39 +233,55 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onNiftiCheckBox(self, activate=True):
         self.nifti = activate
+        self.ui.niftiCheckBox.checked = activate
 
         if self.nifti:
             self.dicom = False
             self.ui.dicomCheckBox.checked = False
+
+            self.ui.outputPathLabel.text = "Path to the output NIFTI folder:\t"
+            self.ui.exportCurrentSceneToButton.text = "Export current scene to NIFTI"
+            self.ui.exportAllMrbsFoundInFolderToButton.text = "Export all MRBs to NIFTI " \
+                                                              "(found in the path below)"
         else:
-            self.dicom = True
-            self.ui.dicomCheckBox.checked = True
+            self.onDicomCheckBox(activate=True)
 
     def onDicomCheckBox(self, activate=False):
         self.dicom = activate
+        self.ui.dicomCheckBox.checked = activate
 
         if self.dicom:
             self.nifti = False
             self.ui.niftiCheckBox.checked = False
-        else:
-            self.nifti = True
-            self.ui.niftiCheckBox.checked = True
 
-    def onExportCurrentSceneToNiftiButton(self):
+            self.ui.outputPathLabel.text = "Path to the output DICOM folder:\t"
+            self.ui.exportCurrentSceneToButton.text = "Export current scene to DICOM"
+            self.ui.exportAllMrbsFoundInFolderToButton.text = "Export all MRBs to DICOM " \
+                                                              "(found in the path below)"
+        else:
+            self.onNiftiCheckBox(activate=True)
+
+    def onexportCurrentSceneToButton(self):
         """
-        Exports the current scene (according to the hierarchy) to nifti. Assumed structure:
+        Exports the current scene (according to the hierarchy) to nifti or dicom. Assumed structure:
         """
         try:
-            print("\n\nExporting current scene to Nifti...\n")
+
+            if self.nifti:
+                self.format = "NIFTI"
+            else:
+                self.format = "DICOM"
+
+            print(f"\n\nExporting current scene to {self.format}...\n")
 
             # get the nifti output folder path
-            nifti_output_folder_path = self.ui.niftiOutputPathTextWindow.toPlainText()
+            output_folder_path = self.ui.outputPathTextWindow.toPlainText()
 
-            if not os.path.isdir(nifti_output_folder_path):
-                raise NotADirectoryError("The nifti output folder path does not exist.")
+            if not os.path.isdir(output_folder_path):
+                raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
 
             # Create NiftiExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path)
+            nifti_logic = NiftiExportingLogic(output_folder=output_folder_path)
 
             # export to nifti
             if self.identity is True:
@@ -273,20 +290,26 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.resample_spacing = float(self.ui.resampleText.toPlainText())
             nifti_logic.full_export(self.parent_identity, self.resample_spacing, self.deidentify)
 
-            print("\nFinished exporting to Nifti.")
+            print(f"\nFinished exporting to {self.format}.")
 
         except Exception as e:
-            slicer.util.errorDisplay("Couldn't export current scene to Nifti.\n{}".format(e),
+            slicer.util.errorDisplay(f"Couldn't export current scene to {self.format}.\n{str(e)}",
                                      windowTitle="Export error")
 
-    def onExportAllMrbsFoundInFolderToNiftiButton(self):
+    def onexportAllMrbsFoundInFolderToButton(self):
         """
-        Export all mrb's found in the folder to nifti
+        Export all mrb's found in the folder to nifti/dicom
         """
         # todo add check to see which mrbs could and which could not be exported
 
         try:
-            print("\n\nExporting all mrbs found in the folder to Nifti...\n")
+
+            if self.nifti:
+                self.format = "NIFTI"
+            else:
+                self.format = "DICOM"
+
+            print(f"\n\nExporting all mrbs found in the folder to {self.format}...\n")
 
             # Get the folder path from the GUI
             folder_path = self.ui.mrbFolderPathTextWindow.toPlainText()
@@ -295,20 +318,20 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             mrb_paths_list = StructureLogic.return_a_list_of_all_mrbs_in_a_folder(folder_path)
 
             # get the nifti output folder path
-            nifti_output_folder_path = self.ui.niftiOutputPathTextWindow.toPlainText()
+            output_folder_path = self.ui.outputPathTextWindow.toPlainText()
 
-            if not os.path.isdir(nifti_output_folder_path):
-                raise NotADirectoryError("The nifti output folder path does not exist.")
+            if not os.path.isdir(output_folder_path):
+                raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
 
             # check if the path is valid
-            if not os.path.isdir(nifti_output_folder_path):
-                raise Exception("The nifti output path is not valid.")
+            if not os.path.isdir(output_folder_path):
+                raise Exception("The {self.format} output path is not valid.")
 
-            # export all to nifti
-            # Create NiftiExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder=nifti_output_folder_path)
+            # export all to nifti/dicom
+            # Create ExportLogic
+            nifti_logic = NiftiExportingLogic(output_folder=output_folder_path)
 
-            for i in tqdm(range(len(mrb_paths_list)), "Exporting current scene to Nifti"):
+            for i in tqdm(range(len(mrb_paths_list)), f"Exporting current scene to {self.format}"):
                 mrb_path = mrb_paths_list[i]
 
                 # clear scene at the beginning of each mrb in case older data is still present
@@ -322,7 +345,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                         # that does not impact the process except for interrupting and requiring user input
                         pass
 
-                    # export current scene to nifti
+                    # export current scene to nifti/dciom
                     if self.identity is True:
                         self.parent_identity = self.ui.mainIdentityText.toPlainText()
                     if self.resample is True:
@@ -333,12 +356,12 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     # clear scene
                     slicer.mrmlScene.Clear()
                 except Exception as e:
-                    print(f"Could not export {mrb_path} to Nifti.\n{e}")
+                    print(f"Could not export {mrb_path} to {self.format}.\n{e}")
 
-            print("\nFinished exporting all mrbs found in the folder to Nifti.")
+            print(f"\nFinished exporting all mrbs found in the folder to {self.format}.")
 
         except Exception as e:
-            slicer.util.errorDisplay("Couldn't export mrbs to Nifti.\n{}".format(e), windowTitle="Export error")
+            slicer.util.errorDisplay(f"Couldn't export mrbs to {self.format}.\n{str(e)}", windowTitle="Export error")
 
     def onLoadFolderStructureButton(self):
 

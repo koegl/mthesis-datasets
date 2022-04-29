@@ -324,12 +324,12 @@
            </font>
           </property>
           <property name="text">
-           <string>Path to the output Nifti folder: </string>
+           <string>Path to the output NIFTI folder:        </string>
           </property>
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QPlainTextEdit" name="niftiOutputPathTextWindow">
+         <widget class="QPlainTextEdit" name="outputPathTextWindow">
           <property name="maximumSize">
            <size>
             <width>20000</width>
@@ -370,7 +370,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="exportCurrentSceneToNiftiButton">
+       <widget class="QPushButton" name="exportCurrentSceneToButton">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -382,7 +382,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Export current scene to Nifti</string>
+         <string>Export current scene to NIFTI</string>
         </property>
        </widget>
       </item>
@@ -417,7 +417,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="exportAllMrbsFoundInFolderToNiftiButton">
+       <widget class="QPushButton" name="exportAllMrbsFoundInFolderToButton">
         <property name="font">
          <font>
           <pointsize>13</pointsize>
@@ -426,7 +426,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Export all .mrb's to Nifti (found in the path below)</string>
+         <string>Export all .mrb's to NIFTI (found in the path below)</string>
         </property>
        </widget>
       </item>
