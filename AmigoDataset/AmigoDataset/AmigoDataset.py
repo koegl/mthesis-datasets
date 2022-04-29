@@ -2,6 +2,7 @@ import vtk
 import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
+import ctk
 
 from Resources.Logic.export_wrapper import ExportWrapper
 from Resources.Logic.structure_logic import StructureLogic
@@ -73,6 +74,9 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.dicom = False
         self.format = None
 
+        self.output_path = None
+        self.mrb_path = None
+
     def setup(self):
         """
     Called when the user opens the module the first time and the widget is initialized.
@@ -102,6 +106,9 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.niftiCheckBox.connect('clicked(bool)', self.onNiftiCheckBox)
         self.ui.dicomCheckBox.connect('clicked(bool)', self.onDicomCheckBox)
 
+        self.ui.outputDirectoryButton.directoryChanged.connect(self.onOutputDirectoryButton)
+        self.ui.mrbDirectoryButton.directoryChanged.connect(self.onMRBDirectoryButton)
+
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.EndCloseEvent, self.onSceneEndClose)
@@ -111,8 +118,10 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Buttons
         self.ui.exportCurrentSceneToButton.connect('clicked(bool)', self.onexportCurrentSceneToButton)
+        self.ui.exportCurrentSceneToButton.toolTip = "The selected path is not a valid directory."
         self.ui.exportAllMrbsFoundInFolderToButton.connect('clicked(bool)',
                                                                 self.onexportAllMrbsFoundInFolderToButton)
+        self.ui.exportAllMrbsFoundInFolderToButton.toolTip = "The selected path is not a valid directory."
         self.ui.loadFolderStructureButton.connect('clicked(bool)', self.onLoadFolderStructureButton)
         self.ui.exportCurrentSceneStatisticsButton.connect('clicked(bool)', self.onExportCurrentSceneStatisticsButton)
         self.ui.exportAllMRBStatisticsButton.connect('clicked(bool)', self.onExportAllMRBStatisticsButton)
@@ -261,10 +270,37 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         else:
             self.onNiftiCheckBox(activate=True)
 
+    def onOutputDirectoryButton(self, changed=False):
+        if changed:
+            self.output_path = self.ui.outputDirectoryButton.directory
+
+            if os.path.isdir(self.output_path):
+                self.ui.exportCurrentSceneToButton.enabled = True
+                self.ui.exportCurrentSceneToButton.toolTip = ""
+            else:
+                self.ui.exportCurrentSceneToButton.enabled = False
+                self.ui.exportCurrentSceneToButton.toolTip = "The selected path is not a valid directory."
+
+        print("output path: " + self.output_path)
+
+    def onMRBDirectoryButton(self, changed=False):
+        if changed:
+            self.mrb_path = self.ui.mrbDirectoryButton.directory
+
+            if os.path.isdir(self.mrb_path):
+                self.ui.exportAllMrbsFoundInFolderToButton.enabled = True
+                self.ui.exportAllMrbsFoundInFolderToButton.toolTip = ""
+            else:
+                self.ui.exportAllMrbsFoundInFolderToButton.enabled = False
+                self.ui.exportAllMrbsFoundInFolderToButton.toolTip = "The selected path is not a valid directory."
+
     def onexportCurrentSceneToButton(self):
         """
         Exports the current scene (according to the hierarchy) to nifti or dicom. Assumed structure:
         """
+
+        print(self.ui.outputPathLineEdit.currentPath)
+
         try:
 
             if self.nifti:
@@ -275,7 +311,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             print(f"\n\nExporting current scene to {self.format}...\n")
 
             # get the nifti output folder path
-            output_folder_path = self.ui.outputPathTextWindow.toPlainText()
+            output_folder_path = self.ui.outputPathLineEdit.currentPath
 
             if not os.path.isdir(output_folder_path):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
@@ -312,13 +348,13 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             print(f"\n\nExporting all mrbs found in the folder to {self.format}...\n")
 
             # Get the folder path from the GUI
-            folder_path = self.ui.mrbFolderPathTextWindow.toPlainText()
+            folder_path = self.ui.mrbPathLineEdit.currentPath
 
             # extract all mrbs from the folder
             mrb_paths_list = StructureLogic.return_a_list_of_all_mrbs_in_a_folder(folder_path)
 
             # get the nifti output folder path
-            output_folder_path = self.ui.outputPathTextWindow.toPlainText()
+            output_folder_path = self.ui.outputPathLineEdit.currentPath
 
             if not os.path.isdir(output_folder_path):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")

@@ -6,13 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>506</width>
+    <width>530</width>
     <height>717</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>450</width>
+    <height>0</height>
+   </size>
+  </property>
   <property name="maximumSize">
    <size>
-    <width>4500</width>
+    <width>550</width>
     <height>16777215</height>
    </size>
   </property>
@@ -30,7 +36,7 @@
       <string>EXPORT</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="buttonTextAlignment">
       <set>Qt::AlignCenter|Qt::AlignHCenter|Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -316,6 +322,12 @@
        <layout class="QGridLayout" name="textLayout">
         <item row="1" column="0">
          <widget class="QLabel" name="outputPathLabel">
+          <property name="maximumSize">
+           <size>
+            <width>190</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="font">
            <font>
             <pointsize>13</pointsize>
@@ -329,11 +341,11 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QPlainTextEdit" name="outputPathTextWindow">
+         <widget class="ctkDirectoryButton" name="outputDirectoryButton">
           <property name="maximumSize">
            <size>
-            <width>20000</width>
-            <height>25</height>
+            <width>295</width>
+            <height>16777215</height>
            </size>
           </property>
           <property name="font">
@@ -342,9 +354,6 @@
             <weight>50</weight>
             <bold>false</bold>
            </font>
-          </property>
-          <property name="plainText">
-           <string/>
           </property>
          </widget>
         </item>
@@ -372,7 +381,7 @@
       <item>
        <widget class="QPushButton" name="exportCurrentSceneToButton">
         <property name="enabled">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <property name="font">
          <font>
@@ -418,6 +427,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="exportAllMrbsFoundInFolderToButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="font">
          <font>
           <pointsize>13</pointsize>
@@ -432,26 +444,12 @@
       </item>
       <item>
        <layout class="QGridLayout" name="textLayout">
-        <item row="1" column="0">
-         <widget class="QLabel" name="inputPathLabel">
-          <property name="font">
-           <font>
-            <pointsize>13</pointsize>
-            <weight>50</weight>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>Path to the folder with .mrb's: </string>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="1">
-         <widget class="QPlainTextEdit" name="mrbFolderPathTextWindow">
+         <widget class="ctkDirectoryButton" name="mrbDirectoryButton">
           <property name="maximumSize">
            <size>
-            <width>20000</width>
-            <height>25</height>
+            <width>295</width>
+            <height>16777215</height>
            </size>
           </property>
           <property name="font">
@@ -461,8 +459,25 @@
             <bold>false</bold>
            </font>
           </property>
-          <property name="plainText">
-           <string/>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="inputPathLabel">
+          <property name="maximumSize">
+           <size>
+            <width>185</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>13</pointsize>
+            <weight>50</weight>
+            <bold>false</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Path to the folder with .mrb's:</string>
           </property>
          </widget>
         </item>
@@ -735,6 +750,11 @@
    <extends>QWidget</extends>
    <header>ctkCollapsibleButton.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkDirectoryButton</class>
+   <extends>QWidget</extends>
+   <header>ctkDirectoryButton.h</header>
   </customwidget>
   <customwidget>
    <class>qMRMLWidget</class>
