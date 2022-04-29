@@ -299,8 +299,6 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         Exports the current scene (according to the hierarchy) to nifti or dicom. Assumed structure:
         """
 
-        print(self.ui.outputPathLineEdit.currentPath)
-
         try:
 
             if self.nifti:
@@ -310,14 +308,11 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             print(f"\n\nExporting current scene to {self.format}...\n")
 
-            # get the nifti output folder path
-            output_folder_path = self.ui.outputPathLineEdit.currentPath
-
-            if not os.path.isdir(output_folder_path):
+            if not os.path.isdir(self.output_path):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
 
             # Create NiftiExportLogic
-            export_logic = ExportWrapper(output_folder=output_folder_path, export_type=self.format)
+            export_logic = ExportWrapper(output_folder=self.output_path, export_type=self.format)
 
             # export to nifti
             if self.identity is True:
@@ -347,25 +342,19 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             print(f"\n\nExporting all mrbs found in the folder to {self.format}...\n")
 
-            # Get the folder path from the GUI
-            folder_path = self.ui.mrbPathLineEdit.currentPath
-
             # extract all mrbs from the folder
-            mrb_paths_list = StructureLogic.return_a_list_of_all_mrbs_in_a_folder(folder_path)
+            mrb_paths_list = StructureLogic.return_a_list_of_all_mrbs_in_a_folder(self.mrb_path)
 
-            # get the nifti output folder path
-            output_folder_path = self.ui.outputPathLineEdit.currentPath
-
-            if not os.path.isdir(output_folder_path):
+            if not os.path.isdir(self.output_path):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
 
             # check if the path is valid
-            if not os.path.isdir(output_folder_path):
+            if not os.path.isdir(self.output_path):
                 raise Exception("The {self.format} output path is not valid.")
 
             # export all to nifti/dicom
             # Create ExportLogic
-            export_logic = ExportWrapper(output_folder=output_folder_path, export_type=self.format)
+            export_logic = ExportWrapper(output_folder=self.output_path, export_type=self.format)
 
             for i in tqdm(range(len(mrb_paths_list)), f"Exporting current scene to {self.format}"):
                 mrb_path = mrb_paths_list[i]
@@ -400,7 +389,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.util.errorDisplay(f"Couldn't export mrbs to {self.format}.\n{str(e)}", windowTitle="Export error")
 
     def onLoadFolderStructureButton(self):
-
+        # todo load segmentations as segmentation nodes
         try:
             folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
 

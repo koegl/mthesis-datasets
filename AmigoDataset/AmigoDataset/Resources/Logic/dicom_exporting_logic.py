@@ -26,12 +26,10 @@ class DicomExportingLogic(ExportingLogic):
         └── Landmarks
     """
 
-    # todo figure out workflow for user interaction - probably user prepares the scene and then clicks a button
-
     def __init__(self, output_folder=None):
         super().__init__(output_folder)
         self.study_instance_uid = None
-        self.pre_op_name = ""
+        self.pre_op_name = "Pre-op MR"
 
     def create_studies_in_slicer(self):
         """
@@ -71,9 +69,8 @@ class DicomExportingLogic(ExportingLogic):
         @param series_counter: Counts at which series we currently are
         @param segmentation: A node with a parent - only available if we have a segmentation
         """
-
         # PatientID - get last element of subject name (MRN) and hash it - root name
-        self.patient_id = self.generate_id(self.folder_structure.name)
+        self.patient_id = self.generate_id(self.folder_structure.name, self.deidentify)
         exp.setTag('PatientID', self.patient_id)
         exp.setTag('PatientName', self.patient_id)
 
@@ -90,7 +87,7 @@ class DicomExportingLogic(ExportingLogic):
         # If any of UIDs (studyInstanceUID, seriesInstanceUID, and frameOfReferenceInstanceUID) are specified then all
         # of them must be specified.
         # StudyInstanceUID (unique for each study, series are grouped by this ID)
-        self.study_instance_uid = self.generate_id(study_description + self.folder_structure.name)
+        self.study_instance_uid = self.generate_id(study_description + self.folder_structure.name, deidentify=True)
         exp.setTag('StudyInstanceUID', self.study_instance_uid)
         exp.setTag('SeriesInstanceUID', self.study_instance_uid + str(series_counter))
         file.dcm_series_instance_uid = self.study_instance_uid + str(series_counter)
@@ -125,7 +122,8 @@ class DicomExportingLogic(ExportingLogic):
         @param segmentation_name: The name of the segmentation
         @return: The volume node of the parent
         """
-        # todo - default should be T1, unless in the segmentation name there is t2
+        # todo - assign to flair
+
         first_node = None
 
         if "t2" in segmentation_name.lower():
@@ -213,9 +211,9 @@ class DicomExportingLogic(ExportingLogic):
                 if not bool(node.children) \
                         and "transform" not in node.name.lower() \
                         and "segment" not in node.parent.name.lower() \
-                        and "landmark" not in node.parent.name.lower():
+                        and "landmark" not in node.parent.name.lower() \
+                        and "landmark" not in node.name.lower():
                     # only if it: does not have any children; is not a transformation; is not a segmentation
-
                     # increase/create counter for series number
                     if node.parent.name in counter:
                         counter[node.parent.name] += 1
@@ -225,7 +223,7 @@ class DicomExportingLogic(ExportingLogic):
                     exportables = exporter_volumes.examineForExport(node.sh_id)
 
                     if not exportables:
-                        raise ValueError("Nothing found to export.")
+                        raise ValueError("Nothing found to export. (Click 'Ok' to continue)")
 
                     # loop through exportables (should always be only one) and set dicom tags
                     for exp in exportables:
@@ -269,7 +267,8 @@ class DicomExportingLogic(ExportingLogic):
                 if not bool(node.children) \
                         and "transform" not in node.name.lower() \
                         and "segment" in node.parent.name.lower() \
-                        and "landmark" not in node.parent.name.lower():
+                        and "landmark" not in node.parent.name.lower() \
+                        and "landmark" not in node.name.lower():
 
                     # 1. load the reference dicom file into the database
                     # find parent of segmentation

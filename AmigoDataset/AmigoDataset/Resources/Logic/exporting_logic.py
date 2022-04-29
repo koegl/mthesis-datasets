@@ -43,14 +43,15 @@ class ExportingLogic:
 
         self.folder_structure = None
 
-    def generate_id(self, hash_string):
+    def generate_id(self, hash_string, deidentify=False):
         """
         Generates a unique id by hashing hash_string. (unique up to 999999999)
         @param hash_string: The path which will be hashed
+        @param deidentify: If True, the hash will be de-identified
         @return: the id
         """
 
-        if self.deidentify is False:
+        if deidentify is False:
             # get filename from mrb_path without extension
             mrb_path = slicer.mrmlScene.GetURL()
             mrb_path = mrb_path.split("/")
