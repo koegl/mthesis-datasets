@@ -14,9 +14,9 @@ class ExportWrapper:
         self.output_folder = output_folder
         self.export_type = export_type
 
-        if self.export_type.lower() == 'NIFTI':
+        if self.export_type.lower() == 'nifti':
             self.exporting_logic = NiftiExportingLogic(output_folder)
-        elif self.export_type.lower() == 'DICOM':
+        elif self.export_type.lower() == 'dicom':
             self.exporting_logic = DicomExportingLogic(output_folder)
         else:
             raise ValueError('Export type not supported')
