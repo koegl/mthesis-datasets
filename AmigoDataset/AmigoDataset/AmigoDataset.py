@@ -69,6 +69,9 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.resample = False
         self.resample_spacing = None
 
+        self.nifti = True
+        self.dicom = False
+
     def setup(self):
         """
     Called when the user opens the module the first time and the widget is initialized.
@@ -94,6 +97,9 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.deidentifyCheckBox.connect('clicked(bool)', self.onDeidentifyCheckBox)
         self.ui.identityCheckBox.connect('clicked(bool)', self.onIdentityCheckBox)
         self.ui.resampleCheckbox.connect('clicked(bool)', self.onResampleCheckBox)
+        self.ui.resampleCheckbox.enabled = False
+        self.ui.niftiCheckBox.connect('clicked(bool)', self.onNiftiCheckBox)
+        self.ui.dicomCheckBox.connect('clicked(bool)', self.onDicomCheckBox)
 
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
@@ -223,6 +229,26 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.resampleText.enabled = True
         else:
             self.ui.resampleText.enabled = False
+
+    def onNiftiCheckBox(self, activate=True):
+        self.nifti = activate
+
+        if self.nifti:
+            self.dicom = False
+            self.ui.dicomCheckBox.checked = False
+        else:
+            self.dicom = True
+            self.ui.dicomCheckBox.checked = True
+
+    def onDicomCheckBox(self, activate=False):
+        self.dicom = activate
+
+        if self.dicom:
+            self.nifti = False
+            self.ui.niftiCheckBox.checked = False
+        else:
+            self.nifti = True
+            self.ui.niftiCheckBox.checked = True
 
     def onExportCurrentSceneToNiftiButton(self):
         """
