@@ -8,7 +8,7 @@ from Resources.Logic.exporting_logic import ExportingLogic
 from Resources.Logic.tree import Tree
 
 import os
-
+# todo loading and exporting for nifti and dicom should produce the same result
 
 class DicomExportingLogic(ExportingLogic):
     """
