@@ -113,13 +113,16 @@ class DicomExportingLogic(ExportingLogic):
         # SeriesNumber
         exp.setTag('SeriesNumber', series_counter)
 
-    def find_semantic_parent_of_a_segmentation(self, segmentation_name):
+    @staticmethod
+    def find_semantic_parent_of_a_segmentation(segmentation_name, folder_structure, pre_op_name):
         """
         Function to find the semantic parent of a segmentation - semantic referring to the fact that we are not looking
         at the hierarchy tree, as the segmentaion will be in a different folder. What we are doing instead is only look
         at the pre-operative imaging (that's where the lesions were created) and find the volume which corresponds to
         the segmentation
         @param segmentation_name: The name of the segmentation
+        @param folder_structure: The folder structure of the scene
+        @param pre_op_name: The name of the pre-operative imaging folder
         @return: The volume node of the parent
         """
         # todo - assign to flair
@@ -128,13 +131,13 @@ class DicomExportingLogic(ExportingLogic):
 
         if "t2" in segmentation_name.lower():
             # loop through pre-op imaging nodes
-            for preop_name, preop_node in self.folder_structure.children[self.pre_op_name].children.items():
+            for preop_name, preop_node in folder_structure.children[pre_op_name].children.items():
                 if "t2" in preop_name.lower():
                     return preop_node
 
         else:
             # loop through pre-op imaging nodes
-            for preop_name, preop_node in self.folder_structure.children[self.pre_op_name].children.items():
+            for preop_name, preop_node in folder_structure.children[pre_op_name].children.items():
 
                 if not first_node:
                     first_node = preop_node
@@ -144,7 +147,7 @@ class DicomExportingLogic(ExportingLogic):
 
         # this case can happen when t2 is in the segmentation name but in none of the pre-op names
         if not first_node:
-            for preop_name, preop_node in self.folder_structure.children[self.pre_op_name].children.items():
+            for preop_name, preop_node in folder_structure.children[pre_op_name].children.items():
                 if not first_node:
                     first_node = preop_node
 
@@ -164,6 +167,9 @@ class DicomExportingLogic(ExportingLogic):
         @param parent_node: Node of the parent of the segmentation
         @return: The segmentation node
         """
+        # it is possible that it is already a segmentation, then just return it
+        if "segmentationnode" in node.vtk_id.lower():
+            return slicer.mrmlScene.GetNodeByID(node.vtk_id)
 
         # convert volume to label-map
         # create volume and label nodes
@@ -210,9 +216,7 @@ class DicomExportingLogic(ExportingLogic):
             try:
                 if not bool(node.children) \
                         and "transform" not in node.name.lower() \
-                        and "segment" not in node.parent.name.lower() \
-                        and "landmark" not in node.parent.name.lower() \
-                        and "landmark" not in node.name.lower():
+                        and "annotation" not in node.parent.name.lower():
                     # only if it: does not have any children; is not a transformation; is not a segmentation
                     # increase/create counter for series number
                     if node.parent.name in counter:
@@ -265,14 +269,12 @@ class DicomExportingLogic(ExportingLogic):
         for node in bfs_array:
             try:
                 if not bool(node.children) \
-                        and "transform" not in node.name.lower() \
-                        and "segment" in node.parent.name.lower() \
-                        and "landmark" not in node.parent.name.lower() \
+                        and "annotation" in node.parent.name.lower() \
                         and "landmark" not in node.name.lower():
 
                     # 1. load the reference dicom file into the database
                     # find parent of segmentation
-                    parent = self.find_semantic_parent_of_a_segmentation(node.name)
+                    parent = self.find_semantic_parent_of_a_segmentation(node.name, self.folder_structure, self.pre_op_name)
 
                     if parent is None:
                         slicer.util.errorDisplay(f"Could not export node {node.name}, couldn't find any parent.")
