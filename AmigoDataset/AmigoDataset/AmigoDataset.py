@@ -3,7 +3,7 @@ import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
-from Resources.Logic.nifti_exporting_logic import NiftiExportingLogic
+from Resources.Logic.export_wrapper import ExportWrapper
 from Resources.Logic.structure_logic import StructureLogic
 from Resources.Logic.statistics_exporting_logic import StatisticsExportingLogic
 
@@ -281,14 +281,14 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
 
             # Create NiftiExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder=output_folder_path)
+            export_logic = ExportWrapper(output_folder=output_folder_path, export_type=self.format)
 
             # export to nifti
             if self.identity is True:
                 self.parent_identity = self.ui.mainIdentityText.toPlainText()
             if self.resample is True:
                 self.resample_spacing = float(self.ui.resampleText.toPlainText())
-            nifti_logic.full_export(self.parent_identity, self.resample_spacing, self.deidentify)
+            export_logic.export(self.parent_identity, self.resample_spacing, self.deidentify)
 
             print(f"\nFinished exporting to {self.format}.")
 
@@ -329,7 +329,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             # export all to nifti/dicom
             # Create ExportLogic
-            nifti_logic = NiftiExportingLogic(output_folder=output_folder_path)
+            export_logic = ExportWrapper(output_folder=output_folder_path, export_type=self.format)
 
             for i in tqdm(range(len(mrb_paths_list)), f"Exporting current scene to {self.format}"):
                 mrb_path = mrb_paths_list[i]
@@ -351,7 +351,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     if self.resample is True:
                         self.resample_spacing = float(self.ui.resampleText.toPlainText())
 
-                    nifti_logic.full_export(self.parent_identity, self.resample_spacing, self.deidentify)
+                    export_logic.export(self.parent_identity, self.resample_spacing, self.deidentify)
 
                     # clear scene
                     slicer.mrmlScene.Clear()
