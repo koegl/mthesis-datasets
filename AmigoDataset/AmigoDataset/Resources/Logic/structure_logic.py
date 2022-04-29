@@ -3,7 +3,7 @@ import vtk
 
 import os
 
-from AdditionalLogic.tree import Tree
+from Resources.Logic.tree import Tree
 
 
 class StructureLogic:

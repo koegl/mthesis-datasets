@@ -1,7 +1,6 @@
 import slicer
 
-from AdditionalLogic.structure_logic import StructureLogic
-from AdditionalLogic.tree import Tree
+from Resources.Logic.structure_logic import StructureLogic
 
 
 class StatisticsExportingLogic:
