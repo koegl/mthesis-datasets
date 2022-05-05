@@ -58,3 +58,54 @@ def read_matched_features(matched_path):
     """
 
     with open(matched_path, 'r') as f:
+        lines = f.readlines()
+
+    # remove header
+    lines = lines[4:]
+
+    # split lines by tab
+    lines = [x.split('\t') for x in lines]
+
+    # remove file name, scale and the ends
+    lines = [x[2:5] for x in lines]
+
+    # convert to float
+    lines = [[float(x) for x in y] for y in lines]
+
+    # convert to numpy array
+    features = np.asarray(lines)
+
+    return features
+
+
+def write_features_to_fcsv(features, fcsv_path):
+    """
+    Writes features to a .fcsv file
+    @param features: The features
+    @param fcsv_path: The path to the .fcsv file
+    """
+
+    # create string to write
+    text = ""
+    skip = False
+
+    shape = features.shape
+    for i in range(shape[0]):
+        text += str(i+1) + ","
+
+        # # check if features already exist
+        # for u in shape[0]:
+        #     if all(features[i] == features[u]):
+        #         skip = True
+        #
+        # if skip is True:
+        #     skip = False
+        #     continue
+
+        for j in range(shape[1]):
+            text += str(features[i, j]) + ','
+
+        text += f"0,0,0,1,1,1,0,F_{i+1},,,,2,0\n"
+
+    with open(fcsv_path, 'w') as f:
+        f.write(text)
