@@ -12,3 +12,11 @@ def extract_features(file_path):
     os.system(command)
 
     return file_features_path
+def read_matched_features(matched_path):
+    """
+    Reads the matched features from a .key file
+    @param matched_path: Path to the .key file
+    @return: The matched features
+    """
+
+    with open(matched_path, 'r') as f:
