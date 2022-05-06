@@ -38,6 +38,12 @@ def match_features(feature1_path, feature2_path):
     matched2 = read_matched_features(matched2_path)
 
     # delete files created by featMatchMultiple.mac
+    remove_files_created_by_matching(matched1_path, matched2_path)
+
+    return matched1, matched2
+
+
+def remove_files_created_by_matching(matched1_path, matched2_path):
     os.remove(matched1_path)
     os.remove(matched2_path)
     path = matched2_path[:-8] + "info.txt"
@@ -48,8 +54,6 @@ def match_features(feature1_path, feature2_path):
     os.remove(path)
     path = matched2_path[:-16] + "update.key"
     os.remove(path)
-
-    return matched1, matched2
 
 
 def read_matched_features(matched_path):
