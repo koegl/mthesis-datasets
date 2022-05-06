@@ -12,7 +12,7 @@ def extract_features(file_path):
     file_features_path = file_path.split('.')[0] + '_features.key'
 
     # todo add check what machine is running the script
-    command = f"./sift_executables/featExtract.mac \"{file_path}\" \"{file_features_path}\""
+    command = f"./sift_executables/featExtract.mac -qto_xyz \"{file_path}\" \"{file_features_path}\""
     os.system(command)
 
     return file_features_path
@@ -93,25 +93,16 @@ def write_features_to_fcsv(features, fcsv_path):
 
     # create string to write
     text = ""
-    skip = False
 
     shape = features.shape
     for i in range(shape[0]):
-        text += str(i+1) + ","
 
-        # # check if features already exist
-        # for u in shape[0]:
-        #     if all(features[i] == features[u]):
-        #         skip = True
-        #
-        # if skip is True:
-        #     skip = False
-        #     continue
+        text += str(i+1) + ","
 
         for j in range(shape[1]):
             text += str(features[i, j]) + ','
 
         text += f"0,0,0,1,1,1,0,F_{i+1},,,,2,0\n"
-
+        
     with open(fcsv_path, 'w') as f:
         f.write(text)
