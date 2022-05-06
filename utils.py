@@ -11,7 +11,8 @@ def extract_features(file_path):
 
     file_features_path = file_path.split('.')[0] + '_features.key'
 
-    command = f"./featExtract.mac \"{file_path}\" \"{file_features_path}\""
+    # todo add check what machine is running the script
+    command = f"./sift_executables/featExtract.mac \"{file_path}\" \"{file_features_path}\""
     os.system(command)
 
     return file_features_path
@@ -25,7 +26,8 @@ def match_features(feature1_path, feature2_path):
     @return: the matched features
     """
 
-    command = f"./featMatchMultiple.mac \"{feature1_path}\" \"{feature2_path}\""
+    # todo add check what machine is running the script
+    command = f"./sift_executables/featMatchMultiple.mac \"{feature1_path}\" \"{feature2_path}\""
     os.system(command)
 
     # load features from 1st file
