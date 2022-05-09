@@ -536,6 +536,9 @@
         <property name="text">
          <string>Load a folder structure with niftis (same as the result of exporting)</string>
         </property>
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
        </widget>
       </item>
       <item>
@@ -555,11 +558,11 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QPlainTextEdit" name="folderStructurePathTextWindow">
+         <widget class="ctkDirectoryButton" name="loadFolderStructurePathSearchButton">
           <property name="maximumSize">
            <size>
-            <width>20000</width>
-            <height>25</height>
+            <width>295</width>
+            <height>16777215</height>
            </size>
           </property>
           <property name="font">
@@ -568,9 +571,6 @@
             <weight>50</weight>
             <bold>false</bold>
            </font>
-          </property>
-          <property name="plainText">
-           <string/>
           </property>
          </widget>
         </item>

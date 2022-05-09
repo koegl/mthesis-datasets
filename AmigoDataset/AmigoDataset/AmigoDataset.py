@@ -83,6 +83,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.output_path = None
         self.mrb_path = None
+        self.load_path = None
 
     def setup(self):
         """
@@ -115,6 +116,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.ui.outputDirectoryButton.directoryChanged.connect(self.onOutputDirectoryButton)
         self.ui.mrbDirectoryButton.directoryChanged.connect(self.onMRBDirectoryButton)
+        self.ui.loadFolderStructurePathSearchButton.directoryChanged.connect(self.onLoadFolderStructurePathSearchButton)
 
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
@@ -130,6 +132,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                 self.onexportAllMrbsFoundInFolderToButton)
         self.ui.exportAllMrbsFoundInFolderToButton.toolTip = "The selected path is not a valid directory."
         self.ui.loadFolderStructureButton.connect('clicked(bool)', self.onLoadFolderStructureButton)
+        self.ui.loadFolderStructureButton.toolTip = "The selected path is not a valid directory."
         self.ui.exportCurrentSceneStatisticsButton.connect('clicked(bool)', self.onExportCurrentSceneStatisticsButton)
         self.ui.exportAllMRBStatisticsButton.connect('clicked(bool)', self.onExportAllMRBStatisticsButton)
 
@@ -299,6 +302,18 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.ui.exportAllMrbsFoundInFolderToButton.enabled = False
                 self.ui.exportAllMrbsFoundInFolderToButton.toolTip = "The selected path is not a valid directory."
 
+    def onLoadFolderStructurePathSearchButton(self, changed=False):
+        if changed:
+            self.load_path = self.ui.loadFolderStructurePathSearchButton.directory
+
+        if os.path.isdir(self.load_path):
+            self.ui.loadFolderStructureButton.enabled = True
+            self.ui.loadFolderStructureButton.toolTip = ""
+        else:
+            self.ui.loadFolderStructureButton.enabled = False
+            self.ui.loadFolderStructureButton.toolTip = "The selected path is not a valid directory."
+
+
     def onexportCurrentSceneToButton(self):
         """
         Exports the current scene (according to the hierarchy) to nifti or dicom. Assumed structure:
@@ -416,27 +431,26 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onLoadFolderStructureButton(self):
         # todo load segmentations as segmentation nodes
         try:
-            folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
 
             # load folder structure
             folders = []
-            buf = os.listdir(folder_structure_path)
+            buf = os.listdir(self.load_path)
             for folder in buf:
-                if "store" not in folder.lower() and os.path.isdir(os.path.join(folder_structure_path, folder)):
+                if "store" not in folder.lower() and os.path.isdir(os.path.join(self.load_path, folder)):
                     folders.append(folder)
 
             hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
 
             # create patient
             # get last folder name from folder_structure_path
-            subject_folder_id = os.path.basename(os.path.normpath(folder_structure_path))
+            subject_folder_id = os.path.basename(os.path.normpath(self.load_path))
             patient_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), subject_folder_id)
 
             # create folder structure and load nifti files into it
             for data_folder in folders:
                 data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
                 hierarchy_node.SetItemParent(data_folder_id, patient_id)
-                data_folder_path = os.path.join(folder_structure_path, data_folder)
+                data_folder_path = os.path.join(self.load_path, data_folder)
 
                 # for all nifti files in the folder
                 for root, dirs, files in os.walk(data_folder_path):
