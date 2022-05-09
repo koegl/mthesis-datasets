@@ -27,6 +27,9 @@ class NiftiLoadingLogic:
 
             slicer.mrmlScene.RemoveNode(labelmap_node)
 
+            # turn of 2D slice-fill visibility
+            segmentation_node.GetDisplayNode().SetAllSegmentsOpacity2DFill(False)
+
             return segmentation_node
 
         return None
