@@ -30,6 +30,12 @@ class NiftiLoadingLogic:
             # turn of 2D slice-fill visibility
             segmentation_node.GetDisplayNode().SetAllSegmentsOpacity2DFill(False)
 
+            # collapse segmentation folder structure
+            subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+            segmentation_sh_id = subject_hierarchy_node.GetItemByName((segmentation_node.GetName()))
+
+            subject_hierarchy_node.SetItemExpanded(segmentation_sh_id, False)
+
             return segmentation_node
 
         return None
