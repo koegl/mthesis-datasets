@@ -20,8 +20,8 @@ def main(args):
 
     # feature matching
     start_time = perf_counter()
-    file1_features_path = "/Users/fryderykkogl/Data/nifti_test/785522447/Intra-op US/US1_features.key"
-    file2_features_path = "/Users/fryderykkogl/Data/nifti_test/785522447/Intra-op US/US2_features.key"
+    file1_features_path = "/Users/fryderykkogl/Data/nifti_test/785522447/Intra-op US/features_qto/US1_features.key"
+    file2_features_path = "/Users/fryderykkogl/Data/nifti_test/785522447/Intra-op US/features_qto/US2_features.key"
     features = match_features(file1_features_path, file2_features_path)
     end_time = perf_counter()
     print(f"\nFeature matching time: {end_time - start_time}\n")
