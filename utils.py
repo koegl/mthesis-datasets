@@ -12,35 +12,10 @@ def extract_features(file_path):
     file_features_path = file_path.split('.')[0] + '_features.key'
 
     # todo add check what machine is running the script
-    command = f"./sift_executables/featExtract.mac -qto_xyz \"{file_path}\" \"{file_features_path}\""
+    command = f"./sift_executables/featExtract.mac \"{file_path}\" \"{file_features_path}\""
     os.system(command)
 
     return file_features_path
-
-
-def match_features(feature1_path, feature2_path):
-    """
-    Mathc features between two .key files
-    @param feature1_path: Path to the first .key file
-    @param feature2_path: Path to the second .key file
-    @return: the matched features
-    """
-
-    # todo add check what machine is running the script
-    command = f"./sift_executables/featMatchMultiple.mac \"{feature1_path}\" \"{feature2_path}\""
-    os.system(command)
-
-    # load features from 1st file
-    matched1_path = feature2_path + ".matches.img1.txt"
-    matched1 = read_matched_features(matched1_path)
-
-    matched2_path = feature2_path + ".matches.img2.txt"
-    matched2 = read_matched_features(matched2_path)
-
-    # delete files created by featMatchMultiple.mac
-    remove_files_created_by_matching(matched1_path, matched2_path)
-
-    return matched1, matched2
 
 
 def remove_files_created_by_matching(matched1_path, matched2_path):
@@ -73,7 +48,7 @@ def read_matched_features(matched_path):
     lines = [x.split('\t') for x in lines]
 
     # remove file name, scale and the ends
-    lines = [x[2:5] for x in lines]
+    lines = [x[1:4] for x in lines]
 
     # convert to float
     lines = [[float(x) for x in y] for y in lines]
@@ -82,6 +57,31 @@ def read_matched_features(matched_path):
     features = np.asarray(lines)
 
     return features
+
+
+def match_features(feature1_path, feature2_path):
+    """
+    Mathc features between two .key files
+    @param feature1_path: Path to the first .key file
+    @param feature2_path: Path to the second .key file
+    @return: the matched features
+    """
+
+    # todo add check what machine is running the script
+    command = f"./sift_executables/featMatchMultiple.mac \"{feature1_path}\" \"{feature2_path}\""
+    os.system(command)
+
+    # load features from 1st file
+    matched1_path = feature2_path + ".matches.img1.txt"
+    matched1 = read_matched_features(matched1_path)
+
+    matched2_path = feature2_path + ".matches.img2.txt"
+    matched2 = read_matched_features(matched2_path)
+
+    # delete files created by featMatchMultiple.mac
+    remove_files_created_by_matching(matched1_path, matched2_path)
+
+    return matched1, matched2
 
 
 def write_features_to_fcsv(features, fcsv_path):
@@ -103,6 +103,31 @@ def write_features_to_fcsv(features, fcsv_path):
             text += str(features[i, j]) + ','
 
         text += f"0,0,0,1,1,1,0,F_{i+1},,,,2,0\n"
-        
+
     with open(fcsv_path, 'w') as f:
         f.write(text)
+
+
+def read_fcsv_features(fcsv_path):
+    """
+    Reads features from an .fcsv file
+    @param fcsv_path:
+    @return: numpy array with features
+    """
+
+    with open(fcsv_path, 'r') as f:
+        lines = f.readlines()
+
+    features = np.zeros((len(lines), 3))
+
+    for i in range(len(lines)):
+
+        line = lines[i]
+
+        temp = line.split(',')
+
+        features[i, 0] = float(temp[1])
+        features[i, 1] = float(temp[2])
+        features[i, 2] = float(temp[3])
+
+    return features
