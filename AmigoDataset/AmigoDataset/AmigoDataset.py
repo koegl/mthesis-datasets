@@ -327,8 +327,6 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             else:
                 self.format = "DICOM"
 
-            print(f"\n\nExporting current scene to {self.format}...\n")
-
             if not os.path.isdir(self.output_path):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
 
@@ -342,7 +340,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.resample_spacing = float(self.ui.resampleText.toPlainText())
             export_logic.export(self.parent_identity, self.resample_spacing, self.deidentify)
 
-            print(f"\nFinished exporting to {self.format}.")
+            slicer.util.messageBox(f"\nFinished exporting to {self.format}.")
 
         except Exception as e:
             slicer.util.errorDisplay(f"Couldn't export current scene to {self.format}.\n{str(e)}",
@@ -360,8 +358,6 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.format = "NIFTI"
             else:
                 self.format = "DICOM"
-
-            print(f"\n\nExporting all mrbs found in the folder to {self.format}...\n")
 
             # extract all mrbs from the folder
             mrb_paths_list = structure_logic.StructureLogic.return_a_list_of_all_mrbs_in_a_folder(self.mrb_path)
@@ -404,7 +400,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 except Exception as e:
                     print(f"Could not export {mrb_path} to {self.format}.\n{e}")
 
-            print(f"\nFinished exporting all mrbs found in the folder to {self.format}.")
+            slicer.util.messageBox(f"\nFinished exporting all mrb's found in the folder to {self.format}.")
 
         except Exception as e:
             slicer.util.errorDisplay(f"Couldn't export mrbs to {self.format}.\n{str(e)}", windowTitle="Export error")
@@ -416,6 +412,8 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             loading_logic = nifti_loading_logic.NiftiLoadingLogic(self.load_path)
 
             loading_logic.load_nifti_structure()
+
+            slicer.util.messageBox("Finished loading folder structure.")
 
         except Exception as e:
             slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
