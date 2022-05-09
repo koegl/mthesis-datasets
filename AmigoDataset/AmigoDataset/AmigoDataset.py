@@ -4,17 +4,23 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import ctk
 
-from Resources.Logic.export_wrapper import ExportWrapper
-from Resources.Logic.structure_logic import StructureLogic
-from Resources.Logic.dicom_exporting_logic import DicomExportingLogic
-from Resources.Logic.statistics_exporting_logic import StatisticsExportingLogic
-
 import os
+import importlib
 try:
     from tqdm import tqdm
 except ImportError:
     slicer.util.pip_install('tqdm')
     from tqdm import tqdm
+
+import Resources
+import Resources.Logic.export_wrapper as export_wrapper
+import Resources.Logic.structure_logic as structure_logic
+import Resources.Logic.dicom_exporting_logic as dicom_exporting_logic
+import Resources.Logic.statistics_exporting_logic as statistics_exporting_logic
+importlib.reload(Resources.Logic.export_wrapper)
+importlib.reload(Resources.Logic.structure_logic)
+importlib.reload(Resources.Logic.dicom_exporting_logic)
+importlib.reload(Resources.Logic.statistics_exporting_logic)
 
 
 #
@@ -311,7 +317,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
 
             # Create NiftiExportLogic
-            export_logic = ExportWrapper(output_folder=self.output_path, export_type=self.format)
+            export_logic = export_wrapper.ExportWrapper(output_folder=self.output_path, export_type=self.format)
 
             # export to nifti
             if self.identity is True:
@@ -342,7 +348,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             print(f"\n\nExporting all mrbs found in the folder to {self.format}...\n")
 
             # extract all mrbs from the folder
-            mrb_paths_list = StructureLogic.return_a_list_of_all_mrbs_in_a_folder(self.mrb_path)
+            mrb_paths_list = structure_logic.StructureLogic.return_a_list_of_all_mrbs_in_a_folder(self.mrb_path)
 
             if not os.path.isdir(self.output_path):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
@@ -353,7 +359,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             # export all to nifti/dicom
             # Create ExportLogic
-            export_logic = ExportWrapper(output_folder=self.output_path, export_type=self.format)
+            export_logic = export_wrapper.ExportWrapper(output_folder=self.output_path, export_type=self.format)
 
             for i in tqdm(range(len(mrb_paths_list)), f"Exporting current scene to {self.format}"):
                 mrb_path = mrb_paths_list[i]
@@ -392,7 +398,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if annotation_path.endswith(".json"):
             return slicer.util.loadMarkups(annotation_path)
         elif annotation_path.endswith(".nii"):
-            # get fulename from annotation_path
+            # get fullname from annotation_path
             filename = os.path.basename(annotation_path)
             segmentation_name = filename.replace(".nii", "")
 
@@ -447,12 +453,12 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                             hierarchy_node.SetItemParent(temp_volume_hierarchy_id, data_folder_id)
 
             # assign correct parents to the segmentations
-            folder_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+            folder_structure = structure_logic.StructureLogic.bfs_generate_folder_structure_as_tree()
             volume_list = folder_structure.bfs(folder_structure)
 
             for volume in volume_list:
                 if "annotations" in volume.parent.name.lower() and "landmark" not in volume.name.lower():
-                    parent = DicomExportingLogic.find_semantic_parent_of_a_segmentation(volume.name, folder_structure, "Pre-op MR")
+                    parent = dicom_exporting_logic.DicomExportingLogic.find_semantic_parent_of_a_segmentation(volume.name, folder_structure, "Pre-op MR")
                     parent_node = slicer.mrmlScene.GetNodeByID(parent.vtk_id)
 
                     if parent is not None:
@@ -463,13 +469,13 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
 
     def onExportCurrentSceneStatisticsButton(self):
-        statistics_exporter = StatisticsExportingLogic()
+        statistics_exporter = statistics_exporting_logic.StatisticsExportingLogic()
         statistics_exporter.export_current_scene()
 
     def onExportAllMRBStatisticsButton(self):
         try:
             mrb_paths = self.ui.mrbStatisticsInputTextWindow.toPlainText()
-            statistics_exporter = StatisticsExportingLogic()
+            statistics_exporter = statistics_exporting_logic.StatisticsExportingLogic()
             statistics_exporter.export_multiple_scenes(mrb_paths=mrb_paths)
         except Exception as e:
             slicer.util.errorDisplay("Couldn't export mrb statistics.\n{}".format(e), windowTitle="Statistics export error")
