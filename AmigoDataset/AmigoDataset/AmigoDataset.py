@@ -17,10 +17,12 @@ import Resources.Logic.export_wrapper as export_wrapper
 import Resources.Logic.structure_logic as structure_logic
 import Resources.Logic.dicom_exporting_logic as dicom_exporting_logic
 import Resources.Logic.statistics_exporting_logic as statistics_exporting_logic
+import Resources.Logic.nifti_loading_logic as nifti_loading_logic
 importlib.reload(Resources.Logic.export_wrapper)
 importlib.reload(Resources.Logic.structure_logic)
 importlib.reload(Resources.Logic.dicom_exporting_logic)
 importlib.reload(Resources.Logic.statistics_exporting_logic)
+importlib.reload(Resources.Logic.nifti_loading_logic)
 
 
 #
@@ -313,7 +315,6 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.loadFolderStructureButton.enabled = False
             self.ui.loadFolderStructureButton.toolTip = "The selected path is not a valid directory."
 
-
     def onexportCurrentSceneToButton(self):
         """
         Exports the current scene (according to the hierarchy) to nifti or dicom. Assumed structure:
@@ -408,76 +409,13 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         except Exception as e:
             slicer.util.errorDisplay(f"Couldn't export mrbs to {self.format}.\n{str(e)}", windowTitle="Export error")
 
-    def load_annotation(self, annotation_path):
-
-        if annotation_path.endswith(".json"):
-            return slicer.util.loadMarkups(annotation_path)
-        elif annotation_path.endswith(".nii"):
-            # get fullname from annotation_path
-            filename = os.path.basename(annotation_path)
-            segmentation_name = filename.replace(".nii", "")
-
-            labelmap_node = slicer.util.loadLabelVolume(annotation_path)
-            segmentation_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode", segmentation_name)
-            slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmap_node, segmentation_node)
-            segmentation_node.CreateClosedSurfaceRepresentation()
-
-            slicer.mrmlScene.RemoveNode(labelmap_node)
-
-            return segmentation_node
-
-        return None
-
     def onLoadFolderStructureButton(self):
         # todo load segmentations as segmentation nodes
         try:
 
-            # load folder structure
-            folders = []
-            buf = os.listdir(self.load_path)
-            for folder in buf:
-                if "store" not in folder.lower() and os.path.isdir(os.path.join(self.load_path, folder)):
-                    folders.append(folder)
+            loading_logic = nifti_loading_logic.NiftiLoadingLogic(self.load_path)
 
-            hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
-
-            # create patient
-            # get last folder name from folder_structure_path
-            subject_folder_id = os.path.basename(os.path.normpath(self.load_path))
-            patient_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), subject_folder_id)
-
-            # create folder structure and load nifti files into it
-            for data_folder in folders:
-                data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
-                hierarchy_node.SetItemParent(data_folder_id, patient_id)
-                data_folder_path = os.path.join(self.load_path, data_folder)
-
-                # for all nifti files in the folder
-                for root, dirs, files in os.walk(data_folder_path):
-                    for file in files:
-                        if file.endswith(".nii") or file.endswith(".json"):
-                            temp_path = os.path.join(root, file)
-
-                            if "annotations" in temp_path.lower():
-                                temp_volume_node = self.load_annotation(temp_path)
-                            else:
-                                temp_volume_node = slicer.util.loadVolume(temp_path)
-
-                            temp_volume_hierarchy_id = hierarchy_node.GetItemByDataNode(temp_volume_node)
-                            hierarchy_node.SetItemParent(temp_volume_hierarchy_id, data_folder_id)
-
-            # assign correct parents to the segmentations
-            folder_structure = structure_logic.StructureLogic.bfs_generate_folder_structure_as_tree()
-            volume_list = folder_structure.bfs(folder_structure)
-
-            for volume in volume_list:
-                if "annotations" in volume.parent.name.lower() and "landmark" not in volume.name.lower():
-                    parent = dicom_exporting_logic.DicomExportingLogic.find_semantic_parent_of_a_segmentation(volume.name, folder_structure, "Pre-op MR")
-                    parent_node = slicer.mrmlScene.GetNodeByID(parent.vtk_id)
-
-                    if parent is not None:
-                        volume_node = slicer.mrmlScene.GetNodeByID(volume.vtk_id)
-                        volume_node.SetReferenceImageGeometryParameterFromVolumeNode(parent_node)
+            loading_logic.load_nifti_structure()
 
         except Exception as e:
             slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
