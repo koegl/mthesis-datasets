@@ -13,3 +13,7 @@ AmigoStatistics/AmigoStatistics/Logic/__pycache__/
 .DS_Store
 
 _names.txt
+
+report.txt
+
+feature_count.txt
