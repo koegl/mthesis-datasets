@@ -85,7 +85,7 @@ class ExportingLogic:
 
         return str(hashed_mod)
 
-    def export_landmarks_to_json(self):
+    def export_landmarks_to_json(self, folder_path):
         """
         Export landmark to json
         """
@@ -101,7 +101,7 @@ class ExportingLogic:
                     if markups_node is None:
                         raise ValueError(f"Could not find and export landmarks node {node.name}")
 
-                    slicer.util.saveNode(markups_node, os.path.join(self.subject_folder, "landmarks.json"))
+                    slicer.util.saveNode(markups_node, os.path.join(folder_path, "landmarks.json"))
 
             except Exception as e:
                 slicer.util.errorDisplay(f"Could not export node {node.name}.\n({str(e)})\n"
