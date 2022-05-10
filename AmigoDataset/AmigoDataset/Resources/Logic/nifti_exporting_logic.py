@@ -25,6 +25,8 @@ class NiftiExportingLogic(ExportingLogic):
     def __init__(self, output_folder=None):
         super().__init__(output_folder)
 
+        self.annotations_folder = ""
+
     @staticmethod
     def export_node_to_nifti(export_path=None, volume_vtk_id=None):
         """
@@ -77,6 +79,9 @@ class NiftiExportingLogic(ExportingLogic):
                 if not os.path.exists(buf_folder):
                     os.makedirs(buf_folder)
 
+                    if "annotations" in node.name.lower():
+                        self.annotations_folder = buf_folder
+
         # loop through all nodes to export them to nifti
         for node in bfs_array:
             try:  # only if it: does not have any children; is not a transformation;
@@ -96,4 +101,4 @@ class NiftiExportingLogic(ExportingLogic):
 
         self.export_volumes_and_segmentations_to_nifti()
 
-        self.export_landmarks_to_json()
+        self.export_landmarks_to_json(self.annotations_folder)

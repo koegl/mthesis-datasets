@@ -4,16 +4,25 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import ctk
 
-from Resources.Logic.export_wrapper import ExportWrapper
-from Resources.Logic.structure_logic import StructureLogic
-from Resources.Logic.statistics_exporting_logic import StatisticsExportingLogic
-
 import os
+import importlib
 try:
     from tqdm import tqdm
 except ImportError:
     slicer.util.pip_install('tqdm')
     from tqdm import tqdm
+
+import Resources
+import Resources.Logic.export_wrapper as export_wrapper
+import Resources.Logic.structure_logic as structure_logic
+import Resources.Logic.dicom_exporting_logic as dicom_exporting_logic
+import Resources.Logic.statistics_exporting_logic as statistics_exporting_logic
+import Resources.Logic.nifti_loading_logic as nifti_loading_logic
+importlib.reload(Resources.Logic.export_wrapper)
+importlib.reload(Resources.Logic.structure_logic)
+importlib.reload(Resources.Logic.dicom_exporting_logic)
+importlib.reload(Resources.Logic.statistics_exporting_logic)
+importlib.reload(Resources.Logic.nifti_loading_logic)
 
 
 #
@@ -76,6 +85,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.output_path = None
         self.mrb_path = None
+        self.load_path = None
 
     def setup(self):
         """
@@ -108,6 +118,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.ui.outputDirectoryButton.directoryChanged.connect(self.onOutputDirectoryButton)
         self.ui.mrbDirectoryButton.directoryChanged.connect(self.onMRBDirectoryButton)
+        self.ui.loadFolderStructurePathSearchButton.directoryChanged.connect(self.onLoadFolderStructurePathSearchButton)
 
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
@@ -123,6 +134,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                 self.onexportAllMrbsFoundInFolderToButton)
         self.ui.exportAllMrbsFoundInFolderToButton.toolTip = "The selected path is not a valid directory."
         self.ui.loadFolderStructureButton.connect('clicked(bool)', self.onLoadFolderStructureButton)
+        self.ui.loadFolderStructureButton.toolTip = "The selected path is not a valid directory."
         self.ui.exportCurrentSceneStatisticsButton.connect('clicked(bool)', self.onExportCurrentSceneStatisticsButton)
         self.ui.exportAllMRBStatisticsButton.connect('clicked(bool)', self.onExportAllMRBStatisticsButton)
 
@@ -281,8 +293,6 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.ui.exportCurrentSceneToButton.enabled = False
                 self.ui.exportCurrentSceneToButton.toolTip = "The selected path is not a valid directory."
 
-        print("output path: " + self.output_path)
-
     def onMRBDirectoryButton(self, changed=False):
         if changed:
             self.mrb_path = self.ui.mrbDirectoryButton.directory
@@ -293,6 +303,17 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             else:
                 self.ui.exportAllMrbsFoundInFolderToButton.enabled = False
                 self.ui.exportAllMrbsFoundInFolderToButton.toolTip = "The selected path is not a valid directory."
+
+    def onLoadFolderStructurePathSearchButton(self, changed=False):
+        if changed:
+            self.load_path = self.ui.loadFolderStructurePathSearchButton.directory
+
+        if os.path.isdir(self.load_path):
+            self.ui.loadFolderStructureButton.enabled = True
+            self.ui.loadFolderStructureButton.toolTip = ""
+        else:
+            self.ui.loadFolderStructureButton.enabled = False
+            self.ui.loadFolderStructureButton.toolTip = "The selected path is not a valid directory."
 
     def onexportCurrentSceneToButton(self):
         """
@@ -306,13 +327,11 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             else:
                 self.format = "DICOM"
 
-            print(f"\n\nExporting current scene to {self.format}...\n")
-
             if not os.path.isdir(self.output_path):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
 
             # Create NiftiExportLogic
-            export_logic = ExportWrapper(output_folder=self.output_path, export_type=self.format)
+            export_logic = export_wrapper.ExportWrapper(output_folder=self.output_path, export_type=self.format)
 
             # export to nifti
             if self.identity is True:
@@ -321,7 +340,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.resample_spacing = float(self.ui.resampleText.toPlainText())
             export_logic.export(self.parent_identity, self.resample_spacing, self.deidentify)
 
-            print(f"\nFinished exporting to {self.format}.")
+            slicer.util.messageBox(f"\nFinished exporting to {self.format}.")
 
         except Exception as e:
             slicer.util.errorDisplay(f"Couldn't export current scene to {self.format}.\n{str(e)}",
@@ -340,10 +359,8 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             else:
                 self.format = "DICOM"
 
-            print(f"\n\nExporting all mrbs found in the folder to {self.format}...\n")
-
             # extract all mrbs from the folder
-            mrb_paths_list = StructureLogic.return_a_list_of_all_mrbs_in_a_folder(self.mrb_path)
+            mrb_paths_list = structure_logic.StructureLogic.return_a_list_of_all_mrbs_in_a_folder(self.mrb_path)
 
             if not os.path.isdir(self.output_path):
                 raise NotADirectoryError(f"The {self.format} output folder path does not exist.")
@@ -354,7 +371,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             # export all to nifti/dicom
             # Create ExportLogic
-            export_logic = ExportWrapper(output_folder=self.output_path, export_type=self.format)
+            export_logic = export_wrapper.ExportWrapper(output_folder=self.output_path, export_type=self.format)
 
             for i in tqdm(range(len(mrb_paths_list)), f"Exporting current scene to {self.format}"):
                 mrb_path = mrb_paths_list[i]
@@ -383,7 +400,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 except Exception as e:
                     print(f"Could not export {mrb_path} to {self.format}.\n{e}")
 
-            print(f"\nFinished exporting all mrbs found in the folder to {self.format}.")
+            slicer.util.messageBox(f"\nFinished exporting all mrb's found in the folder to {self.format}.")
 
         except Exception as e:
             slicer.util.errorDisplay(f"Couldn't export mrbs to {self.format}.\n{str(e)}", windowTitle="Export error")
@@ -391,62 +408,24 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onLoadFolderStructureButton(self):
         # todo load segmentations as segmentation nodes
         try:
-            folder_structure_path = self.ui.folderStructurePathTextWindow.toPlainText()
 
-            # load folder structure
-            folders = []
-            buf = os.listdir(folder_structure_path)
-            for folder in buf:
-                if "store" not in folder.lower() and os.path.isdir(os.path.join(folder_structure_path, folder)):
-                    folders.append(folder)
+            loading_logic = nifti_loading_logic.NiftiLoadingLogic(self.load_path)
 
-            # get .json landmark file path
-            landmark_file_path = ""
-            for folder in buf:
-                temp = os.path.join(folder_structure_path, folder)
-                if temp.endswith(".json"):
-                    landmark_file_path = temp
-                    break
+            loading_logic.load_nifti_structure()
 
-            hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
-
-            # create patient
-            # get last folder name from folder_structure_path
-            subject_folder_id = os.path.basename(os.path.normpath(folder_structure_path))
-            patient_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), subject_folder_id)
-
-            # load landmark file
-            if landmark_file_path is not None:
-                markups_node = slicer.util.loadMarkups(landmark_file_path)
-                markups_hierarchy_id = hierarchy_node.GetItemByDataNode(markups_node)
-                hierarchy_node.SetItemParent(markups_hierarchy_id, patient_id)
-
-            # create folder structure and load nifti files into it
-            for data_folder in folders:
-                data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
-                hierarchy_node.SetItemParent(data_folder_id, patient_id)
-                data_folder_path = os.path.join(folder_structure_path, data_folder)
-
-                # for all nifti files in the folder
-                for root, dirs, files in os.walk(data_folder_path):
-                    for file in files:
-                        if file.endswith(".nii"):
-                            temp_path = os.path.join(root, file)
-                            temp_volume_node = slicer.util.loadVolume(temp_path)
-                            temp_volume_hierarchy_id = hierarchy_node.GetItemByDataNode(temp_volume_node)
-                            hierarchy_node.SetItemParent(temp_volume_hierarchy_id, data_folder_id)
+            slicer.util.messageBox("Finished loading folder structure.")
 
         except Exception as e:
             slicer.util.errorDisplay("Couldn't load folder structure.\n{}".format(e), windowTitle="Load error")
 
     def onExportCurrentSceneStatisticsButton(self):
-        statistics_exporter = StatisticsExportingLogic()
+        statistics_exporter = statistics_exporting_logic.StatisticsExportingLogic()
         statistics_exporter.export_current_scene()
 
     def onExportAllMRBStatisticsButton(self):
         try:
             mrb_paths = self.ui.mrbStatisticsInputTextWindow.toPlainText()
-            statistics_exporter = StatisticsExportingLogic()
+            statistics_exporter = statistics_exporting_logic.StatisticsExportingLogic()
             statistics_exporter.export_multiple_scenes(mrb_paths=mrb_paths)
         except Exception as e:
             slicer.util.errorDisplay("Couldn't export mrb statistics.\n{}".format(e), windowTitle="Statistics export error")
