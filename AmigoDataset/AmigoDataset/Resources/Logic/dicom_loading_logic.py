@@ -119,17 +119,38 @@ class DicomLoadingLogic(LoadingLogic):
                 if "markupsfiducialnode" in temp_vtk_id.lower():
                     self.annotation_sh_id = child_id
 
+    def reorder_volumes_into_correct_directories(self):
+        # create annotations folder
+        annotations_folder_sh_id = self.sh_node.CreateFolderItem(self.sh_node.GetSceneItemID(), "Annotations")
+
+        # assign annotations folder to patient
+        self.sh_node.SetItemParent(annotations_folder_sh_id, self.study_structure.sh_id)
+
+        # get landmarks
+        self.get_annotation_id()
+
+        # assign segmentations to annotations folder
+        for study_name, study in self.study_structure.children.items():
+            for volume_name, volume in study.children.items():
+                if "segmentationnode" in volume.vtk_id.lower():
+                    self.sh_node.SetItemParent(volume.sh_id, annotations_folder_sh_id)
+
+        # assign landmarks to annotations folder
+        self.sh_node.SetItemParent(self.annotation_sh_id, annotations_folder_sh_id)
 
     def postprocess_loaded_dicoms_and_landmarks(self):
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
         self.clean_up_names()
 
-        self.collapse_segmentations()
-
         self.segmentations_outlines()
 
         self.reorder_studies_into_directories()
+
+        self.reorder_volumes_into_correct_directories()
+
+        # todo this doesn't work anymore
+        self.collapse_segmentations()
 
         print(5)
 
