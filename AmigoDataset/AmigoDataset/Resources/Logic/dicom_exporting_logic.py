@@ -321,6 +321,60 @@ class DicomExportingLogic(ExportingLogic):
                 slicer.util.errorDisplay(f"Could not export node {node.name}.\n({str(e)})\n"
                                          f"export_segmentations_to_dicom")
 
+    def export_data_nodes_to_dicom(self):
+        """
+        Exports volumes and segmentations to DICOM
+        @return:
+        """
+
+        exporter_segmentation = DICOMSegmentationPlugin.DICOMSegmentationPluginClass()
+        exporter_volumes = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
+
+        counter = {}
+        exportables = None
+        exporter = None
+
+        bfs_array = Tree.bfs(self.folder_structure)
+
+        # todo split into two for loops because the volumes need to be exported before the segmentations because the
+        #      parent of the segmentation needs a DICOM.instanceUID
+        for node in bfs_array:
+
+            # volumes and segmentations
+            if "scalarvolumenode" in node.vtk_id.lower() or "segmentationnode" in node.vtk_id.lower():
+                # only if it: does not have any children; is not a transformation; is not a segmentation
+                # increase/create counter for series number
+                if node.parent.name in counter:
+                    counter[node.parent.name] += 1
+                else:
+                    counter[node.parent.name] = 1
+
+                if "scalarvolumenode" in node.vtk_id.lower():
+                    continue
+                    exportables = exporter_volumes.examineForExport(node.sh_id)
+                    exporter = exporter_volumes
+                elif "segmentationnode" in node.vtk_id.lower():
+                    # set the reference geometry
+                    segmentation_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
+
+                    segmentation_parent_vtk_id = segmentation_node.GetNodeReferenceID(
+                        slicer.vtkMRMLSegmentationNode.GetReferenceImageGeometryReferenceRole())
+                    segmentation_parent_node = slicer.mrmlScene.GetNodeByID(segmentation_parent_vtk_id)
+                    segmentation_node.SetReferenceImageGeometryParameterFromVolumeNode(segmentation_parent_node)
+
+                    # define the exportables
+                    exportables = exporter_segmentation.examineForExport(node.sh_id)
+                    exporter = exporter_segmentation
+
+                if not exportables or not exporter:
+                    raise ValueError("Nothing found to export. (Click 'Ok' to continue)")
+
+                # loop through exportables (should always be only one) and set dicom tags
+                for exp in exportables:
+                    self.set_dicom_tags(exp, node, counter[node.parent.name])
+
+                exporter.export(exportables)
+
     def export_data(self):
         # 0. Clear DICOM database
         DICOMLib.clearDatabase(slicer.dicomDatabase)
@@ -329,10 +383,12 @@ class DicomExportingLogic(ExportingLogic):
         self.create_studies_in_slicer()
 
         # 3. Export volumes according to the studies
-        self.export_volumes_to_dicom()
+        # self.export_volumes_to_dicom()
 
         # 4. Export segmentations according to the studies
-        self.export_segmentations_to_dicom()
+        # self.export_segmentations_to_dicom()
+
+        self.export_data_nodes_to_dicom()
 
         # 5. Export landmarks
         self.export_landmarks_to_json(self.subject_folder)
