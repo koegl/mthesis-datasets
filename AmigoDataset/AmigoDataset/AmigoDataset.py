@@ -13,11 +13,14 @@ except ImportError:
     from tqdm import tqdm
 
 import Resources
-import Resources.Logic.export_wrapper as export_wrapper
-import Resources.Logic.structure_logic as structure_logic
-import Resources.Logic.dicom_exporting_logic as dicom_exporting_logic
 import Resources.Logic.statistics_exporting_logic as statistics_exporting_logic
+import Resources.Logic.structure_logic as structure_logic
 import Resources.Logic.nifti_loading_logic as nifti_loading_logic
+import Resources.Logic.dicom_exporting_logic as dicom_exporting_logic
+import Resources.Logic.nifti_exporting_logic as nifti_exporting_logic
+import Resources.Logic.export_wrapper as export_wrapper
+importlib.reload(Resources.Logic.nifti_exporting_logic)
+importlib.reload(Resources.Logic.dicom_exporting_logic)
 importlib.reload(Resources.Logic.export_wrapper)
 importlib.reload(Resources.Logic.structure_logic)
 importlib.reload(Resources.Logic.dicom_exporting_logic)
