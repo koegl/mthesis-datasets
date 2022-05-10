@@ -12,12 +12,8 @@ class DicomLoadingLogic(LoadingLogic):
     """
     Logic class for loading DICOM files.
     """
-    # - probably duplicate the original structure and then only work on the new one
-    # todo Move the segmentations to a separate study
-    # todo Load everything as folders not as studies
     # todo open popup windows saying that the file is loading
     # todo close popup windows after 5 s
-    # todo reorder items in the tree with sh.MoveItem()
 
     def __init__(self, load_path, patient_dicom_id, landmark_path):
         super().__init__()
@@ -166,7 +162,6 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.reorder_volumes_into_correct_directories()
 
-        # todo this doesn't work anymore
         self.collapse_segmentations()
 
         print(5)
