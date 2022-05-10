@@ -31,13 +31,12 @@ class DicomLoadingLogic(LoadingLogic):
         self.study_structure = None
 
     def load_all_dicom_data(self):
-        # instantiate a new DICOM browser
-        dicom_browser = slicer.modules.DICOMWidget.browserWidget.dicomBrowser
 
-        dicom_browser.importDirectory(self.load_path, dicom_browser.ImportDirectoryAddLink)
+        # get acces to the dicom database
+        db = slicer.dicomDatabase
 
-        # wait for import to finish before proceeding
-        dicom_browser.waitForImportFinished()
+        # import the directory to the database
+        DICOMUtils.importDicom(self.load_path, db)
 
         # load all the data from the loaded patient to the scene
         self.loaded_volumes_vtk_ids = DICOMUtils.loadPatientByPatientID(self.patient_dicom_id)
