@@ -8,6 +8,7 @@ import os
 
 
 # todo reorder items in the tree with sh.MoveItem()
+# todo collapse segmentations in the tree
 class NiftiLoadingLogic(LoadingLogic):
     def __init__(self, load_path):
         super().__init__()
