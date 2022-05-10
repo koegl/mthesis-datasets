@@ -512,7 +512,7 @@
       <string>LOAD</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="buttonTextAlignment">
       <set>Qt::AlignCenter</set>
@@ -520,6 +520,9 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QPushButton" name="loadFolderStructureButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="maximumSize">
          <size>
           <width>1000</width>
@@ -534,10 +537,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Load a folder structure with niftis (same as the result of exporting)</string>
-        </property>
-        <property name="enabled">
-         <bool>false</bool>
+         <string>Load a folder structure with NIFTIS/DICOMS</string>
         </property>
        </widget>
       </item>
