@@ -11,7 +11,8 @@ import os
 # todo loading and exporting for nifti and dicom should produce the same result
 # todo Make it so that in DICOM export the original structure is preserved
 #      probably duplicate the original structure and then only work on the new one
-
+# todo export segmentations when they are already segmentations and not niftiis
+#      they should always be in segmentation format, so remove the code for changing niftii to seg
 
 class DicomExportingLogic(ExportingLogic):
     """
