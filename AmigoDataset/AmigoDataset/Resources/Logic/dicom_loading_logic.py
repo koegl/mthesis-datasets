@@ -11,11 +11,10 @@ class DicomLoadingLogic(LoadingLogic):
     """
     Logic class for loading DICOM files.
     """
-    # todo Make it so that in DICOM the original structure is preserved
     # - probably duplicate the original structure and then only work on the new one
     # todo Move the segmentations to a separate study
     # todo Load everything as folders not as studies
-    # open popup windows saying that the file is loading
+    # todo open popup windows saying that the file is loading
     # todo close popup windows after 5 s
     # todo reorder items in the tree with sh.MoveItem()
 
@@ -88,6 +87,21 @@ class DicomLoadingLogic(LoadingLogic):
                     segmentation_node = slicer.mrmlScene.GetNodeByID(volume.vtk_id)
                     segmentation_node.GetDisplayNode().SetAllSegmentsOpacity2DFill(False)
 
+    def reorder_studies_into_directories(self):
+        for study_name, study in self.study_structure.children.items():
+
+            # create new folder
+            new_folder_sh_id = self.sh_node.CreateFolderItem(self.sh_node.GetSceneItemID(), study_name)
+
+            # assign children to new folder
+            for volume_name, volume in study.children.items():
+                self.sh_node.SetItemParent(volume.sh_id, new_folder_sh_id)
+
+            # remove study
+            self.sh_node.RemoveItem(study.sh_id)
+
+        self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+
     def postprocess_loaded_dicoms_and_landmarks(self):
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
@@ -96,6 +110,8 @@ class DicomLoadingLogic(LoadingLogic):
         self.collapse_segmentations()
 
         self.segmentations_outlines()
+
+        self.reorder_studies_into_directories()
 
         print(5)
 
