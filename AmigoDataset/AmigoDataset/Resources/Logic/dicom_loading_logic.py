@@ -31,6 +31,8 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
 
+        self.annotation_sh_id = None
+
     def load_all_dicom_data(self):
 
         # get acces to the dicom database
@@ -104,6 +106,19 @@ class DicomLoadingLogic(LoadingLogic):
             self.sh_node.RemoveItem(study.sh_id)
 
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+
+    def get_annotation_id(self):
+        child_ids = vtk.vtkIdList()
+        self.sh_node.GetItemChildren(self.sh_node.GetSceneItemID(), child_ids)
+        for i in range(child_ids.GetNumberOfIds()):
+            child_id = child_ids.GetId(i)
+            temp_data_node = self.sh_node.GetItemDataNode(child_id)
+            if temp_data_node is not None:
+                temp_vtk_id = temp_data_node.GetID()
+
+                if "markupsfiducialnode" in temp_vtk_id.lower():
+                    self.annotation_sh_id = child_id
+
 
     def postprocess_loaded_dicoms_and_landmarks(self):
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
