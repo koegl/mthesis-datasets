@@ -13,11 +13,11 @@ class DicomLoadingLogic(LoadingLogic):
     """
     # todo Make it so that in DICOM the original structure is preserved
     # - probably duplicate the original structure and then only work on the new one
-    # todo Remove date from study name
-    # todo Remove the stuff in the parentheesis
     # todo Move the segmentations to a separate study
     # todo Load everything as folders not as studies
+    # open popup windows saying that the file is loading
     # todo close popup windows after 5 s
+    # todo reorder items in the tree with sh.MoveItem()
 
     def __init__(self, load_path, patient_dicom_id, landmark_path):
         super().__init__()
@@ -30,6 +30,8 @@ class DicomLoadingLogic(LoadingLogic):
         self.loaded_volumes_vtk_ids = []
         self.study_structure = None
 
+        self.sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+
     def load_all_dicom_data(self):
 
         # get acces to the dicom database
@@ -41,32 +43,44 @@ class DicomLoadingLogic(LoadingLogic):
         # load all the data from the loaded patient to the scene
         self.loaded_volumes_vtk_ids = DICOMUtils.loadPatientByPatientID(self.patient_dicom_id)
 
-    def remove_letter_and_colon_from_volume_names(self):
+    def clean_up_names(self):
         for study_name, study in self.study_structure.children.items():
+
+            # remove date and parenthesis from the name
+            # split name by space
+            split_name = study_name.split(' ')
+
+            # remove elements with parenthesis and create a new list without those elements
+            new_name = []
+            for element in split_name:
+                if '(' not in element and ')' not in element:
+                    new_name.append(element)
+
+            # join the list back to a string
+            new_name = ' '.join(new_name)
+            self.sh_node.SetItemName(study.sh_id, new_name)
+            study.name = new_name
+
+            # remove number and colon from the name
             for volume_name, volume in study.children.items():
-                temp_node = slicer.util.getNode(volume.vtk_id)
+                temp_volume_node = slicer.mrmlScene.GetNodeByID(volume.vtk_id)
                 while ':' in volume_name[0:3]:
                     volume_name = volume_name[3:]
-                    temp_node.SetName(volume_name)
+                    temp_volume_node.SetName(volume_name)
                     volume.name = volume_name
 
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
-    def remove_numbers_from_studies_parenthesis(self):
-        # todo
-        for study_name, study in self.study_structure.children.items():
-            pass
-
     def collapse_segmentations(self):
-        subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
 
         # loop through all volumes
         for study_name, study in self.study_structure.children.items():
             for volume_name, volume in study.children.items():
                 if "segmentationnode" in volume.vtk_id.lower():
                     segmentation_node = slicer.util.getNode(volume.vtk_id)
-                    segmentation_node_sh_id = subject_hierarchy_node.GetItemByDataNode(segmentation_node)
-                    subject_hierarchy_node.SetItemExpanded(segmentation_node_sh_id, False)
+                    segmentation_node_sh_id = self.sh_node.GetItemByDataNode(segmentation_node)
+                    self.sh_node.SetItemExpanded(segmentation_node_sh_id, False)
+
     def segmentations_outlines(self):
         for study_name, study in self.study_structure.children.items():
             for volume_name, volume in study.children.items():
@@ -77,9 +91,7 @@ class DicomLoadingLogic(LoadingLogic):
     def postprocess_loaded_dicoms_and_landmarks(self):
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
-        self.remove_letter_and_colon_from_volume_names()
-
-        self.remove_numbers_from_studies_parenthesis()
+        self.clean_up_names()
 
         self.collapse_segmentations()
 
