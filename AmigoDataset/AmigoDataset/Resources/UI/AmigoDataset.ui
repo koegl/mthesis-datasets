@@ -553,7 +553,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Path to the the nifti structure: </string>
+           <string>Path to the the data folder: </string>
           </property>
          </widget>
         </item>
