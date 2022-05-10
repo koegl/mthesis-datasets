@@ -5,6 +5,7 @@ from slicer.util import VTKObservationMixin
 import ctk
 
 import os
+import pydicom
 import importlib
 try:
     from tqdm import tqdm
@@ -15,7 +16,9 @@ except ImportError:
 import Resources
 import Resources.Logic.statistics_exporting_logic as statistics_exporting_logic
 import Resources.Logic.structure_logic as structure_logic
+import Resources.Logic.loading_logic as loading_logic
 import Resources.Logic.nifti_loading_logic as nifti_loading_logic
+import Resources.Logic.dicom_loading_logic as dicom_loading_logic
 import Resources.Logic.dicom_exporting_logic as dicom_exporting_logic
 import Resources.Logic.nifti_exporting_logic as nifti_exporting_logic
 import Resources.Logic.export_wrapper as export_wrapper
@@ -25,7 +28,9 @@ importlib.reload(Resources.Logic.export_wrapper)
 importlib.reload(Resources.Logic.structure_logic)
 importlib.reload(Resources.Logic.dicom_exporting_logic)
 importlib.reload(Resources.Logic.statistics_exporting_logic)
+importlib.reload(Resources.Logic.loading_logic)
 importlib.reload(Resources.Logic.nifti_loading_logic)
+importlib.reload(Resources.Logic.dicom_loading_logic)
 
 
 #
@@ -411,10 +416,31 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onLoadFolderStructureButton(self):
         # todo load segmentations as segmentation nodes
         try:
+            all_files = []
+            landmarks_path = ""
+            # loop through all files in directory and subdirectories of self.load_path
+            for root, dirs, files in os.walk(self.load_path):
+                for file in files:
+                    all_files.append(os.path.join(root, file))
+                    if ".json" in file:
+                        landmarks_path = os.path.join(root, file)
 
-            loading_logic = nifti_loading_logic.NiftiLoadingLogic(self.load_path)
+            # set the loader to nifti and change it to dicom if a dicom is found
+            loader = nifti_loading_logic.NiftiLoadingLogic(self.load_path)
 
-            loading_logic.load_nifti_structure()
+            for file in all_files:
+                if ".dcm" in file:
+                    # get patient id with pydicom
+                    temp_file = pydicom.dcmread(file)
+                    patient_dicom_id = temp_file.PatientID
+
+                    # get path to annotations
+
+                    # set loader to dicom
+                    loader = dicom_loading_logic.DicomLoadingLogic(self.load_path, patient_dicom_id, landmarks_path)
+                    break
+
+            loader.load_structure()
 
             slicer.util.messageBox("Finished loading folder structure.")
 
