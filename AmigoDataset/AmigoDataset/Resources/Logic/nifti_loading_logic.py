@@ -7,6 +7,7 @@ from Resources.Logic.dicom_exporting_logic import DicomExportingLogic
 import os
 
 
+# todo reorder items in the tree with sh.MoveItem()
 class NiftiLoadingLogic(LoadingLogic):
     def __init__(self, load_path):
         super().__init__()
