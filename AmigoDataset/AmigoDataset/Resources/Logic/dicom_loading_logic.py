@@ -93,6 +93,9 @@ class DicomLoadingLogic(LoadingLogic):
             # create new folder
             new_folder_sh_id = self.sh_node.CreateFolderItem(self.sh_node.GetSceneItemID(), study_name)
 
+            # assign folder to patient
+            self.sh_node.SetItemParent(new_folder_sh_id, self.study_structure.sh_id)
+
             # assign children to new folder
             for volume_name, volume in study.children.items():
                 self.sh_node.SetItemParent(volume.sh_id, new_folder_sh_id)
