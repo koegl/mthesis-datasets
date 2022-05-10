@@ -45,6 +45,22 @@ class DicomLoadingLogic(LoadingLogic):
         self.loaded_volumes_vtk_ids = DICOMUtils.loadPatientByPatientID(self.patient_dicom_id)
 
     def clean_up_names(self):
+
+        # remove date and parenthesis from the patient name
+        # split name by space
+        split_name = self.study_structure.name.split(' ')
+
+        # remove elements with parenthesis and create a new list without those elements
+        new_name = []
+        for element in split_name:
+            if '(' not in element and ')' not in element:
+                new_name.append(element)
+
+        # join the list back to a string
+        new_name = ' '.join(new_name)
+        self.sh_node.SetItemName(self.study_structure.sh_id, new_name)
+        self.study_structure.name = new_name
+
         for study_name, study in self.study_structure.children.items():
 
             # remove date and parenthesis from the name
