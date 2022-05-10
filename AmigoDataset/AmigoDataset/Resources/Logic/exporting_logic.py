@@ -236,7 +236,7 @@ class ExportingLogic:
             self.resample_all_nodes()
 
     def export_data(self):
-        raise NotImplementedError("export_data method is not implemented.")
+        raise NotImplementedError("export_data method is not implemented in the Parent class.")
 
     def full_export(self, identity=False, resample_size=False, deidentify=False):
         """

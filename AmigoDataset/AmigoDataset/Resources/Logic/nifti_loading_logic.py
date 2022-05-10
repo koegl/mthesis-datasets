@@ -1,46 +1,18 @@
 import slicer
 
+from Resources.Logic.loading_logic import LoadingLogic
 from Resources.Logic.structure_logic import StructureLogic
 from Resources.Logic.dicom_exporting_logic import DicomExportingLogic
 
 import os
 
 
-class NiftiLoadingLogic:
+class NiftiLoadingLogic(LoadingLogic):
     def __init__(self, load_path):
+        super().__init__()
         self.load_path = load_path
 
-    @staticmethod
-    def load_annotation(annotation_path):
-
-        if annotation_path.endswith(".json"):
-            return slicer.util.loadMarkups(annotation_path)
-        elif annotation_path.endswith(".nii"):
-            # get fullname from annotation_path
-            filename = os.path.basename(annotation_path)
-            segmentation_name = filename.replace(".nii", "")
-
-            labelmap_node = slicer.util.loadLabelVolume(annotation_path)
-            segmentation_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode", segmentation_name)
-            slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmap_node, segmentation_node)
-            segmentation_node.CreateClosedSurfaceRepresentation()
-
-            slicer.mrmlScene.RemoveNode(labelmap_node)
-
-            # turn of 2D slice-fill visibility
-            segmentation_node.GetDisplayNode().SetAllSegmentsOpacity2DFill(False)
-
-            # collapse segmentation folder structure
-            subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-            segmentation_sh_id = subject_hierarchy_node.GetItemByName((segmentation_node.GetName()))
-
-            subject_hierarchy_node.SetItemExpanded(segmentation_sh_id, False)
-
-            return segmentation_node
-
-        return None
-
-    def load_nifti_structure(self):
+    def load_structure(self):
         # load folder structure
         folders = []
         buf = os.listdir(self.load_path)
