@@ -1,5 +1,6 @@
 import slicer
 from DICOMLib import DICOMUtils
+import vtk
 
 from Resources.Logic.loading_logic import LoadingLogic
 from Resources.Logic.structure_logic import StructureLogic
