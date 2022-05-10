@@ -10,6 +10,12 @@ class DicomLoadingLogic(LoadingLogic):
     """
     Logic class for loading DICOM files.
     """
+    # todo Make it so that in DICOM the original structure is preserved
+    # - probably duplicate the original structure and then only work on the new one
+    # todo Remove date from study name
+    # todo Remove the “1: “ from the volume names
+    # todo Move the segmentations to a separate study
+    # todo Load everything as folders not as studies
 
     def __init__(self, load_path, patient_dicom_id, landmark_path):
         super().__init__()
