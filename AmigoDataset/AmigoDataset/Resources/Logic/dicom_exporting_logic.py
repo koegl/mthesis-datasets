@@ -331,7 +331,7 @@ class DicomExportingLogic(ExportingLogic):
         self.export_segmentations_to_dicom()
 
         # 5. Export landmarks
-        self.export_landmarks_to_json()
+        self.export_landmarks_to_json(self.subject_folder)
 
         # 5. Clear DICOM database
         DICOMLib.clearDatabase(slicer.dicomDatabase)
