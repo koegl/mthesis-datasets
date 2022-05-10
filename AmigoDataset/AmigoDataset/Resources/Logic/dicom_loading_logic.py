@@ -52,16 +52,30 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
-    def remove_numbers_from_studies_parenhtesis(self):
+    def remove_numbers_from_studies_parenthesis(self):
+        # todo
         for study_name, study in self.study_structure.children.items():
-            
+            pass
+
+    def collapse_segmentations(self):
+        subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+
+        # loop through all volumes
+        for study_name, study in self.study_structure.children.items():
+            for volume_name, volume in study.children.items():
+                if "segmentationnode" in volume.vtk_id.lower():
+                    segmentation_node = slicer.util.getNode(volume.vtk_id)
+                    segmentation_node_sh_id = subject_hierarchy_node.GetItemByDataNode(segmentation_node)
+                    subject_hierarchy_node.SetItemExpanded(segmentation_node_sh_id, False)
 
     def postprocess_loaded_dicoms_and_landmarks(self):
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
         self.remove_letter_and_colon_from_volume_names()
 
-        self.remove_numbers_from_studies_parenhtesis()
+        self.remove_numbers_from_studies_parenthesis()
+
+        self.collapse_segmentations()
 
         print(5)
 
