@@ -275,6 +275,10 @@ class DicomExportingLogic(ExportingLogic):
                 exporter_volumes.export(exportables)
 
     def export_data(self):
+
+        # clone subject
+        cloned_subject_id = self.clone_subject()
+
         # 0. Clear DICOM database
         DICOMLib.clearDatabase(slicer.dicomDatabase)
 
@@ -291,6 +295,9 @@ class DicomExportingLogic(ExportingLogic):
         self.export_landmarks_to_json(self.subject_folder)
 
         # 5. Clear DICOM database
-        # DICOMLib.clearDatabase(slicer.dicomDatabase)
+        DICOMLib.clearDatabase(slicer.dicomDatabase)
+
+        # delete cloned subject
+        self.subject_hierarchy.RemoveItem(cloned_subject_id)
 
 
