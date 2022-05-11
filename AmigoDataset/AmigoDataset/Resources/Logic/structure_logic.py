@@ -23,7 +23,13 @@ class StructureLogic:
         child_ids = vtk.vtkIdList()
         subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids)
-        sh_id_patient = child_ids.GetId(0)
+
+        if child_ids.GetNumberOfIds() == 2:
+            index = 1
+        else:
+            index = 0
+
+        sh_id_patient = child_ids.GetId(index)
 
         # FIFO queue of nodes and create root
         folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id_patient), sh_id=sh_id_patient, vtk_id="")
