@@ -6,13 +6,11 @@ import DICOMLib
 
 from Resources.Logic.exporting_logic import ExportingLogic
 from Resources.Logic.tree import Tree
+from Resources.Logic.structure_logic import StructureLogic
 
 import os
 # todo loading and exporting for nifti and dicom should produce the same result
-# todo Make it so that in DICOM export the original structure is preserved
-#      probably duplicate the original structure and then only work on the new one
-# todo export segmentations when they are already segmentations and not niftiis
-#      they should always be in segmentation format, so remove the code for changing niftii to seg
+# todo there is another subject created with one study - when is it created? remvoe it
 
 class DicomExportingLogic(ExportingLogic):
     """
@@ -34,6 +32,10 @@ class DicomExportingLogic(ExportingLogic):
         super().__init__(output_folder)
         self.study_instance_uid = None
         self.pre_op_name = "Pre-op MR"
+
+        self.subject_hierarchy = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+
+        self.folder_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
     def clone_subject(self):
         """
