@@ -35,6 +35,44 @@ class DicomExportingLogic(ExportingLogic):
         self.study_instance_uid = None
         self.pre_op_name = "Pre-op MR"
 
+    def clone_subject(self):
+        """
+        We want to work on a cloned version of the subject, so we can modify it without affecting the original
+        @return: the cloned subject id
+        """
+
+        # create a new subject
+        new_subject_id = self.subject_hierarchy.CreateSubjectItem(self.subject_hierarchy.GetSceneItemID(), self.folder_structure.name)
+
+        # create a correspondence dict of old and new - we need this to assign reference geometries to the cloned segs
+        correspondence_dict = {}
+
+        # create folders
+        for folder_name, folder in self.folder_structure.children.items():
+            cloned_folder_id = self.subject_hierarchy.CreateFolderItem(self.subject_hierarchy.GetSceneItemID(), folder_name)
+            self.subject_hierarchy.SetItemParent(cloned_folder_id, new_subject_id)
+
+            for node_name, node in folder.children.items():
+                cloned_node_id = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(self.subject_hierarchy, node.sh_id)
+                cloned_node = self.subject_hierarchy.GetItemDataNode(cloned_node_id)
+
+                correspondence_dict[node.vtk_id] = cloned_node.GetID()
+
+                name = cloned_node.GetName()
+                name = name.replace(' Copy', '')
+                cloned_node.SetName(name)
+                self.subject_hierarchy.SetItemParent(cloned_node_id, cloned_folder_id)
+
+                if "segmentationnode" in node.vtk_id.lower():
+                    # parent reference node
+                    parent_reference_id = correspondence_dict[node.segmentation_reference_vtk_id]
+                    parent_reference_node = slicer.mrmlScene.GetNodeByID(parent_reference_id)
+                    cloned_node.SetReferenceImageGeometryParameterFromVolumeNode(parent_reference_node)
+
+        self.folder_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+
+        return new_subject_id
+
     def create_studies_in_slicer(self):
         """
         Create studies according to the folder structure in Slicer
