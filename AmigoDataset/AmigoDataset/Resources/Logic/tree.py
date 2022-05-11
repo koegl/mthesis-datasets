@@ -13,6 +13,7 @@ class Tree(object):
         self.vtk_id = vtk_id
 
         self.parent = None
+        self.segmentation_reference_vtk_id = None
 
         self.sh_study_id = None  # not to which sh_study the node belongs, but which sh_study was created from it
         self.dcm_series_instance_uid = None
