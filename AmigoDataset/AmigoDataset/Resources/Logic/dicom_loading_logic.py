@@ -28,7 +28,7 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
 
-        self.annotation_sh_id = None
+        self.landmark_sh_id = None
 
     def load_all_dicom_data(self):
 
@@ -146,7 +146,7 @@ class DicomLoadingLogic(LoadingLogic):
         self.sh_node.SetItemParent(annotations_folder_sh_id, self.study_structure.sh_id)
 
         # get landmarks
-        self.get_annotation_id()
+        # self.get_annotation_id()
 
         # assign segmentations to annotations folder
         for study_name, study in self.study_structure.children.items():
@@ -155,7 +155,7 @@ class DicomLoadingLogic(LoadingLogic):
                     self.sh_node.SetItemParent(volume.sh_id, annotations_folder_sh_id)
 
         # assign landmarks to annotations folder
-        self.sh_node.SetItemParent(self.annotation_sh_id, annotations_folder_sh_id)
+        self.sh_node.SetItemParent(self.landmark_sh_id, annotations_folder_sh_id)
 
     def postprocess_loaded_dicoms_and_landmarks(self):
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
@@ -170,15 +170,12 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.collapse_segmentations()
 
-        print(5)
-
     def load_structure(self):
 
         self.load_all_dicom_data()
 
-        if self.landmark_path != "":
-            self.landmark_node = slicer.util.loadMarkups(self.landmark_path)
+        self.load_landmarks()
 
         self.postprocess_loaded_dicoms_and_landmarks()
 
-        slicer.util.selectModule("AmigoDataset")
+        # slicer.util.selectModule("AmigoDataset")
