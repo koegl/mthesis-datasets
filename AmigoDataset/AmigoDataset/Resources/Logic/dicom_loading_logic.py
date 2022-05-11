@@ -28,7 +28,7 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
 
-        self.annotation_sh_id = None
+        self.landmark_sh_id = None
 
     def load_all_dicom_data(self):
 
@@ -40,6 +40,24 @@ class DicomLoadingLogic(LoadingLogic):
 
         # load all the data from the loaded patient to the scene
         self.loaded_volumes_vtk_ids = DICOMUtils.loadPatientByPatientID(self.patient_dicom_id)
+
+    def load_landmarks(self):
+        if self.landmark_path != "":
+            self.landmark_node = slicer.util.loadMarkups(self.landmark_path)
+
+            # assign to patient
+            child_ids = vtk.vtkIdList()
+            self.sh_node.GetItemChildren(self.sh_node.GetSceneItemID(), child_ids)
+            patient_sh_id = child_ids.GetId(0)
+
+            # get pre-op sh id
+            patient_children = vtk.vtkIdList()
+            self.sh_node.GetItemChildren(patient_sh_id, patient_children)
+
+            # get landmark sh id and assign to patient - it needs to be assigned to some folder, otherwise, later a
+            # folder out of it will be created
+            self.landmark_sh_id = self.sh_node.GetItemByDataNode(self.landmark_node)
+            self.sh_node.SetItemParent(self.landmark_sh_id, patient_children.GetId(0))
 
     def clean_up_names(self):
 
@@ -120,18 +138,6 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
-    def get_annotation_id(self):
-        child_ids = vtk.vtkIdList()
-        self.sh_node.GetItemChildren(self.sh_node.GetSceneItemID(), child_ids)
-        for i in range(child_ids.GetNumberOfIds()):
-            child_id = child_ids.GetId(i)
-            temp_data_node = self.sh_node.GetItemDataNode(child_id)
-            if temp_data_node is not None:
-                temp_vtk_id = temp_data_node.GetID()
-
-                if "markupsfiducialnode" in temp_vtk_id.lower():
-                    self.annotation_sh_id = child_id
-
     def reorder_volumes_into_correct_directories(self):
         # create annotations folder
         annotations_folder_sh_id = self.sh_node.CreateFolderItem(self.sh_node.GetSceneItemID(), "Annotations")
@@ -140,7 +146,7 @@ class DicomLoadingLogic(LoadingLogic):
         self.sh_node.SetItemParent(annotations_folder_sh_id, self.study_structure.sh_id)
 
         # get landmarks
-        self.get_annotation_id()
+        # self.get_annotation_id()
 
         # assign segmentations to annotations folder
         for study_name, study in self.study_structure.children.items():
@@ -149,7 +155,7 @@ class DicomLoadingLogic(LoadingLogic):
                     self.sh_node.SetItemParent(volume.sh_id, annotations_folder_sh_id)
 
         # assign landmarks to annotations folder
-        self.sh_node.SetItemParent(self.annotation_sh_id, annotations_folder_sh_id)
+        self.sh_node.SetItemParent(self.landmark_sh_id, annotations_folder_sh_id)
 
     def postprocess_loaded_dicoms_and_landmarks(self):
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
@@ -164,15 +170,12 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.collapse_segmentations()
 
-        print(5)
-
     def load_structure(self):
 
         self.load_all_dicom_data()
 
-        if self.landmark_path != "":
-            self.landmark_node = slicer.util.loadMarkups(self.landmark_path)
+        self.load_landmarks()
 
         self.postprocess_loaded_dicoms_and_landmarks()
 
-        slicer.util.selectModule("AmigoDataset")
+        # slicer.util.selectModule("AmigoDataset")
