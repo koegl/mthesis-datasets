@@ -244,6 +244,11 @@ class DicomExportingLogic(ExportingLogic):
                 # set the original node back to the segmentation as reference
                 segmentation_node.SetReferenceImageGeometryParameterFromVolumeNode(original_reference_node)
 
+                # set the original node back to the correct folder
+                original_reference_tree_node = self.folder_structure.find_node_by_vtk_id(original_reference_node.GetID())
+                preo_op_node = self.folder_structure.children["Pre-op MR"]
+                self.subject_hierarchy.SetItemParent(original_reference_tree_node.sh_id, preo_op_node.sh_id)
+
                 # remove the loaded volume
                 slicer.mrmlScene.RemoveNode(loaded_volume_node)
 
