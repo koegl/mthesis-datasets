@@ -138,18 +138,6 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
-    def get_annotation_id(self):
-        child_ids = vtk.vtkIdList()
-        self.sh_node.GetItemChildren(self.sh_node.GetSceneItemID(), child_ids)
-        for i in range(child_ids.GetNumberOfIds()):
-            child_id = child_ids.GetId(i)
-            temp_data_node = self.sh_node.GetItemDataNode(child_id)
-            if temp_data_node is not None:
-                temp_vtk_id = temp_data_node.GetID()
-
-                if "markupsfiducialnode" in temp_vtk_id.lower():
-                    self.annotation_sh_id = child_id
-
     def reorder_volumes_into_correct_directories(self):
         # create annotations folder
         annotations_folder_sh_id = self.sh_node.CreateFolderItem(self.sh_node.GetSceneItemID(), "Annotations")
