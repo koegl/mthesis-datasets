@@ -41,6 +41,24 @@ class DicomLoadingLogic(LoadingLogic):
         # load all the data from the loaded patient to the scene
         self.loaded_volumes_vtk_ids = DICOMUtils.loadPatientByPatientID(self.patient_dicom_id)
 
+    def load_landmarks(self):
+        if self.landmark_path != "":
+            self.landmark_node = slicer.util.loadMarkups(self.landmark_path)
+
+            # assign to patient
+            child_ids = vtk.vtkIdList()
+            self.sh_node.GetItemChildren(self.sh_node.GetSceneItemID(), child_ids)
+            patient_sh_id = child_ids.GetId(0)
+
+            # get pre-op sh id
+            patient_children = vtk.vtkIdList()
+            self.sh_node.GetItemChildren(patient_sh_id, patient_children)
+
+            # get landmark sh id and assign to patient - it needs to be assigned to some folder, otherwise, later a
+            # folder out of it will be created
+            self.landmark_sh_id = self.sh_node.GetItemByDataNode(self.landmark_node)
+            self.sh_node.SetItemParent(self.landmark_sh_id, patient_children.GetId(0))
+
     def clean_up_names(self):
 
         # remove date and parenthesis from the patient name
