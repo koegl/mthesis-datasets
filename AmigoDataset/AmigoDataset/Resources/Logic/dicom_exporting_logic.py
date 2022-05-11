@@ -117,131 +117,6 @@ class DicomExportingLogic(ExportingLogic):
         # SeriesNumber
         exp.setTag('SeriesNumber', series_counter)
 
-    @staticmethod
-    def find_semantic_parent_of_a_segmentation_OLD(segmentation_name, folder_structure, pre_op_name):
-        """
-        Function to find the semantic parent of a segmentation - semantic referring to the fact that we are not looking
-        at the hierarchy tree, as the segmentaion will be in a different folder. What we are doing instead is only look
-        at the pre-operative imaging (that's where the lesions were created) and find the volume which corresponds to
-        the segmentation
-        @param segmentation_name: The name of the segmentation
-        @param folder_structure: The folder structure of the scene
-        @param pre_op_name: The name of the pre-operative imaging folder
-        @return: The volume node of the parent
-        """
-        # todo - assign to flair
-
-        first_node = None
-
-        if "t2" in segmentation_name.lower():
-            # loop through pre-op imaging nodes
-            for preop_name, preop_node in folder_structure.children[pre_op_name].children.items():
-                if "t2" in preop_name.lower():
-                    return preop_node
-
-        else:
-            # loop through pre-op imaging nodes
-            for preop_name, preop_node in folder_structure.children[pre_op_name].children.items():
-
-                if not first_node:
-                    first_node = preop_node
-
-                if "t1" in preop_name.lower():
-                    return preop_node
-
-        # this case can happen when t2 is in the segmentation name but in none of the pre-op names
-        if not first_node:
-            for preop_name, preop_node in folder_structure.children[pre_op_name].children.items():
-                if not first_node:
-                    first_node = preop_node
-
-                if "t1" in preop_name.lower():
-                    return preop_node
-
-        # if no t1 or t2 is found, return the first pre-op node
-        return first_node
-
-    @staticmethod
-    def convert_volume_to_segmentation(node, parent_node):
-        """
-        Function to convert a volume to a segmentation. First create a labelmap and then convert it to a segmentation.
-        Also associates the segment node with the reference volume node (parent node)
-        @param node: Name of the volume (node) in slicer which will be converted. Makes only sense for a binary
-                            volume
-        @param parent_node: Node of the parent of the segmentation
-        @return: The segmentation node
-        """
-        # it is possible that it is already a segmentation, then just return it
-        if "segmentationnode" in node.vtk_id.lower():
-            return slicer.mrmlScene.GetNodeByID(node.vtk_id)
-
-        # convert volume to label-map
-        # create volume and label nodes
-        volume_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
-        label_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
-
-        # create the label from the volume
-        volumes_logic = slicer.modules.volumes.logic()
-        volumes_logic.CreateLabelVolumeFromVolume(slicer.mrmlScene, label_node, volume_node)
-
-        # create new empty segmentation and associate it with the right parent node
-        segmentation_node = slicer.mrmlScene.AddNode(slicer.vtkMRMLSegmentationNode())
-        # https://github.com/lassoan/LabelmapToDICOMSeg/blob/main/convert.py
-        parent_volume_node = slicer.mrmlScene.GetNodeByID(parent_node.vtk_id)
-        segmentation_node.SetNodeReferenceID(segmentation_node.GetReferenceImageGeometryReferenceRole(),
-                                             parent_volume_node.GetID())
-
-        # convert label-map to segmentation
-        success = slicer.vtkSlicerSegmentationsModuleLogic.ImportLabelmapToSegmentationNode(label_node,
-                                                                                            segmentation_node)
-
-        # remove label map node
-        slicer.mrmlScene.RemoveNode(label_node)
-
-        if success:
-            return segmentation_node
-        else:
-            return None
-
-    def export_volumes_to_dicom_OLD(self):
-        """
-        Export volumes according to the created structure to DICOM
-
-        UID has to be unique - that's how they get identified together
-        """
-
-        exporter_volumes = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
-
-        bfs_array = Tree.bfs(self.folder_structure)
-
-        counter = {}
-        # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
-        for node in bfs_array:
-            try:
-                if not bool(node.children) \
-                        and "transform" not in node.name.lower() \
-                        and "annotation" not in node.parent.name.lower():
-                    # only if it: does not have any children; is not a transformation; is not a segmentation
-                    # increase/create counter for series number
-                    if node.parent.name in counter:
-                        counter[node.parent.name] += 1
-                    else:
-                        counter[node.parent.name] = 1
-
-                    exportables = exporter_volumes.examineForExport(node.sh_id)
-
-                    if not exportables:
-                        raise ValueError("Nothing found to export. (Click 'Ok' to continue)")
-
-                    # loop through exportables (should always be only one) and set dicom tags
-                    for exp in exportables:
-                        self.set_dicom_tags(exp, node, counter[node.parent.name])
-
-                    exporter_volumes.export(exportables)
-
-            except Exception as e:
-                slicer.util.errorDisplay(f"Could not export node {node.name}. ({str(e)})")
-
     def import_reference_image(self, reference_dir_path):
         """
         Imports the reference dicom volume into the database
@@ -259,67 +134,6 @@ class DicomExportingLogic(ExportingLogic):
 
         # switch back to previous module
         slicer.util.selectModule(previous_module)
-
-    def export_segmentations_to_dicom_OLD(self):
-        """
-        Exports segmentations
-        """
-        exporter_segmentation = DICOMSegmentationPlugin.DICOMSegmentationPluginClass()
-        sh_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-        bfs_array = Tree.bfs(self.folder_structure)
-        counter = {}
-
-        # loop through all nodes, but only use those that do not have children (volumes) and are not transforms
-        for node in bfs_array:
-            try:
-                if not bool(node.children) \
-                        and "annotation" in node.parent.name.lower() \
-                        and "landmark" not in node.name.lower():
-
-                    # 1. load the reference dicom file into the database
-                    # find parent of segmentation
-                    parent = self.find_semantic_parent_of_a_segmentation_OLD(node.name, self.folder_structure, self.pre_op_name)
-
-                    if parent is None:
-                        slicer.util.errorDisplay(f"Could not export node {node.name}, couldn't find any parent.")
-                        continue
-
-                    parent_path = os.path.join(self.subject_folder, "ScalarVolume_" + str(parent.sh_id))
-
-                    self.import_reference_image(parent_path)
-
-                    loaded_volume_id = DICOMUtils.loadSeriesByUID([parent.dcm_series_instance_uid])
-                    loaded_volume_node = slicer.mrmlScene.GetNodeByID(loaded_volume_id[0])
-
-                    # 2. convert volume to segmentation
-                    segmentation_node = self.convert_volume_to_segmentation(node, parent)
-
-                    # 3. Change the parent in the subject hierarchy of the segmentation to the new loaded dicom
-                    segmentation_id_in_hierarchy = sh_node.GetItemByDataNode(segmentation_node)
-                    loaded_volume_id_in_hierarchy = sh_node.GetItemByDataNode(loaded_volume_node)
-                    sh_node.SetItemParent(segmentation_id_in_hierarchy, loaded_volume_id_in_hierarchy)
-
-                    # 4. In the segment editor change the reference geometry to the loaded volume
-                    segmentation_node.SetReferenceImageGeometryParameterFromVolumeNode(loaded_volume_node)
-
-                    # 5. export the segmentation
-                    # increase/create counter for series number
-                    if node.parent.name in counter:
-                        counter[node.parent.name] += 1
-                    else:
-                        counter[node.parent.name] = 1
-
-                    # todo how to change names
-                    exportables = exporter_segmentation.examineForExport(segmentation_id_in_hierarchy)
-
-                    for exp in exportables:
-                        self.set_dicom_tags(exp, node, counter[node.parent.name])
-
-                    exporter_segmentation.export(exportables)
-
-            except Exception as e:
-                slicer.util.errorDisplay(f"Could not export node {node.name}.\n({str(e)})\n"
-                                         f"export_segmentations_to_dicom")
 
     def find_segmentation_parent_node(self, segmentation_node):
         bfs_array = Tree.bfs(self.folder_structure)
@@ -393,8 +207,6 @@ class DicomExportingLogic(ExportingLogic):
                 # remove the loaded volume
                 slicer.mrmlScene.RemoveNode(loaded_volume_node)
 
-
-    # todo give the exported folder names the names of the volumes and not 'scalarVOlume...'
     def export_volumes_to_dicom(self):
         exporter_volumes = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
 
