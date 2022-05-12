@@ -3,7 +3,7 @@ import slicer
 from Resources.Logic.loading_logic import LoadingLogic
 from Resources.Logic.structure_logic import StructureLogic
 from Resources.Logic.dicom_exporting_logic import DicomExportingLogic
-from Resources.Logic.utils import find_semantic_parent_of_a_segmentation
+from Resources.Logic.utils import find_semantic_parent_of_a_segmentation, collapse_segmentations
 
 import os
 
@@ -14,6 +14,13 @@ class NiftiLoadingLogic(LoadingLogic):
     def __init__(self, load_path):
         super().__init__()
         self.load_path = load_path
+
+    def postprocess_loaded_data(self):
+        # collapse the loaded segmentations (only for visuals)
+        structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+        subject_hierarchy = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+
+        collapse_segmentations(structure, subject_hierarchy)
 
     def load_structure(self):
         # load folder structure
@@ -56,11 +63,11 @@ class NiftiLoadingLogic(LoadingLogic):
 
         for volume in volume_list:
             if "annotations" in volume.parent.name.lower() and "landmark" not in volume.name.lower():
-                parent = find_semantic_parent_of_a_segmentation(volume.name,
-                                                                                        folder_structure,
-                                                                                                          "Pre-op MR")
+                parent = find_semantic_parent_of_a_segmentation(volume.name, folder_structure, "Pre-op MR")
                 parent_node = slicer.mrmlScene.GetNodeByID(parent.vtk_id)
 
                 if parent is not None:
                     volume_node = slicer.mrmlScene.GetNodeByID(volume.vtk_id)
                     volume_node.SetReferenceImageGeometryParameterFromVolumeNode(parent_node)
+
+        self.postprocess_loaded_data()
