@@ -10,6 +10,7 @@ from Resources.Logic.tree import Tree
 from Resources.Logic.structure_logic import StructureLogic
 
 import os
+# todo remove left-over study
 # todo loading and exporting for nifti and dicom should produce the same result
 # todo there is another subject created with one study - when is it created? remvoe it
 # todo fix for when segmentations have more than one parent
