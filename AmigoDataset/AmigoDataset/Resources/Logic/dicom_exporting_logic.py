@@ -10,7 +10,8 @@ from Resources.Logic.tree import Tree
 from Resources.Logic.structure_logic import StructureLogic
 
 import os
-# todo remove left-over study
+# todo instead of reassigning stuff at random, make a function that reassigns everything based on the original structure
+#      and it could compare with a 'new' structure and remove the difference
 # todo loading and exporting for nifti and dicom should produce the same result
 # todo there is another subject created with one study - when is it created? remvoe it
 # todo fix for when segmentations have more than one parent
