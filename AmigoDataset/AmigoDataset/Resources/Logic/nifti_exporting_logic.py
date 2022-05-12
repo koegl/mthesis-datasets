@@ -2,6 +2,8 @@ import slicer
 
 from Resources.Logic.exporting_logic import ExportingLogic
 from Resources.Logic.tree import Tree
+from Resources.Logic.structure_logic import StructureLogic
+from Resources.Logic.utils import collapse_segmentations
 
 import os
 
@@ -26,6 +28,9 @@ class NiftiExportingLogic(ExportingLogic):
         super().__init__(output_folder)
 
         self.annotations_folder = ""
+
+        self.folder_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+        self.subject_hierarchy = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
 
     @staticmethod
     def export_node_to_nifti(export_path=None, volume_vtk_id=None):
@@ -102,3 +107,5 @@ class NiftiExportingLogic(ExportingLogic):
         self.export_volumes_and_segmentations_to_nifti()
 
         self.export_landmarks_to_json(self.annotations_folder)
+
+        collapse_segmentations(self.folder_structure, self.subject_hierarchy)

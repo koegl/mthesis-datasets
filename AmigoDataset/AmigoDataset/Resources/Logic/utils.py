@@ -1,5 +1,6 @@
 import os
 import vtk
+import slicer
 import numpy as np
 
 
@@ -73,3 +74,14 @@ def find_semantic_parent_of_a_segmentation(segmentation_name, folder_structure, 
 
         # if no t1 or t2 is found, return the first pre-op node
         return first_node
+
+
+def collapse_segmentations(study_structure, sh_node):
+
+    # loop through all volumes
+    for study_name, study in study_structure.children.items():
+        for volume_name, volume in study.children.items():
+            if "segmentationnode" in volume.vtk_id.lower():
+                segmentation_node = slicer.util.getNode(volume.vtk_id)
+                segmentation_node_sh_id = sh_node.GetItemByDataNode(segmentation_node)
+                sh_node.SetItemExpanded(segmentation_node_sh_id, False)

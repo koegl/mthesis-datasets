@@ -41,7 +41,7 @@ class ExportingLogic:
 
         self.patient_id = None
 
-        self.folder_structure = None
+        self.folder_structure_parent = None
 
     def generate_id(self, hash_string, deidentify=False):
         """
@@ -90,7 +90,7 @@ class ExportingLogic:
         Export landmark to json
         """
 
-        bfs_array = Tree.bfs(self.folder_structure)
+        bfs_array = Tree.bfs(self.folder_structure_parent)
 
         for node in bfs_array:
             try:
@@ -139,7 +139,7 @@ class ExportingLogic:
         Hardens all transformations
         """
 
-        all_nodes = Tree.bfs(self.folder_structure)
+        all_nodes = Tree.bfs(self.folder_structure_parent)
 
         for node in all_nodes:
             # harden transformation
@@ -156,7 +156,7 @@ class ExportingLogic:
         # todo this should also transform the landmarks
 
         # get all nodes from the scene tree
-        all_nodes = Tree.bfs(self.folder_structure)
+        all_nodes = Tree.bfs(self.folder_structure_parent)
 
         # get the main node to which everything will be transformed
         main_node = slicer.util.getFirstNodeByName(self.identity)
@@ -204,7 +204,7 @@ class ExportingLogic:
     def resample_all_nodes(self):
 
         # get all nodes from the scene tree
-        all_nodes = Tree.bfs(self.folder_structure)
+        all_nodes = Tree.bfs(self.folder_structure_parent)
 
         # create a reference node with the correct spacing
         reference_node = self.create_node_with_correct_spacing(self.resample_size)
@@ -248,7 +248,7 @@ class ExportingLogic:
         self.deidentify = deidentify
 
         # 1. Generate folder structure
-        self.folder_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+        self.folder_structure_parent = StructureLogic.bfs_generate_folder_structure_as_tree()
 
         # 2. Preprocess nodes
         self.preprocess_nodes()
