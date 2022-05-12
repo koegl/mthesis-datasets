@@ -23,7 +23,13 @@ class StructureLogic:
         child_ids = vtk.vtkIdList()
         subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         subject_hierarchy_node.GetItemChildren(subject_hierarchy_node.GetSceneItemID(), child_ids)
-        sh_id_patient = child_ids.GetId(0)
+
+        if child_ids.GetNumberOfIds() == 2:
+            index = 1
+        else:
+            index = 0
+
+        sh_id_patient = child_ids.GetId(index)
 
         # FIFO queue of nodes and create root
         folder_structure = Tree(subject_hierarchy_node.GetItemName(sh_id_patient), sh_id=sh_id_patient, vtk_id="")
@@ -55,6 +61,13 @@ class StructureLogic:
 
                     sub_child = s.add_child(Tree(sub_name, sh_id=sub_id, vtk_id=sub_vtk_id))  # this returns the node
                     # which is like a C++ reference, so we can use this in the next iteration to append nodes
+
+                    # add reference geometry to segmentations
+                    if "segmentationnode" in sub_child.vtk_id.lower():
+                        segmentation_node = slicer.mrmlScene.GetNodeByID(sub_child.vtk_id)
+                        reference_node_id = segmentation_node.GetNodeReferenceID(slicer.vtkMRMLSegmentationNode.GetReferenceImageGeometryReferenceRole())
+                        sub_child.segmentation_reference_vtk_id = reference_node_id
+
                     nodes_queue.append(sub_child)
                     visited.append(sub_id)
 

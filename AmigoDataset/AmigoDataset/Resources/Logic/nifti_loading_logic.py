@@ -3,11 +3,13 @@ import slicer
 from Resources.Logic.loading_logic import LoadingLogic
 from Resources.Logic.structure_logic import StructureLogic
 from Resources.Logic.dicom_exporting_logic import DicomExportingLogic
+from Resources.Logic.utils import find_semantic_parent_of_a_segmentation
 
 import os
 
 
 # todo reorder items in the tree with sh.MoveItem()
+# todo collapse segmentations in the tree
 class NiftiLoadingLogic(LoadingLogic):
     def __init__(self, load_path):
         super().__init__()
@@ -54,8 +56,8 @@ class NiftiLoadingLogic(LoadingLogic):
 
         for volume in volume_list:
             if "annotations" in volume.parent.name.lower() and "landmark" not in volume.name.lower():
-                parent = DicomExportingLogic.find_semantic_parent_of_a_segmentation(volume.name,
-                                                                                                          folder_structure,
+                parent = find_semantic_parent_of_a_segmentation(volume.name,
+                                                                                        folder_structure,
                                                                                                           "Pre-op MR")
                 parent_node = slicer.mrmlScene.GetNodeByID(parent.vtk_id)
 

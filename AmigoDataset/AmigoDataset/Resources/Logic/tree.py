@@ -13,6 +13,7 @@ class Tree(object):
         self.vtk_id = vtk_id
 
         self.parent = None
+        self.segmentation_reference_vtk_id = None
 
         self.sh_study_id = None  # not to which sh_study the node belongs, but which sh_study was created from it
         self.dcm_series_instance_uid = None
@@ -76,3 +77,14 @@ class Tree(object):
 
             for key_child, item_child in item.children.items():
                 print(f"\t{key_child}")
+
+    def find_node_by_vtk_id(self, vtk_id):
+
+        all_nodes = self.bfs(self)
+
+        for node in all_nodes:
+            if node.vtk_id == vtk_id:
+                return node
+
+        return None
+
