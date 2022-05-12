@@ -1,4 +1,5 @@
 import slicer
+import vtk
 import DICOMScalarVolumePlugin
 import DICOMSegmentationPlugin
 from DICOMLib import DICOMUtils
@@ -246,13 +247,20 @@ class DicomExportingLogic(ExportingLogic):
                 # set the original node back to the segmentation as reference
                 segmentation_node.SetReferenceImageGeometryParameterFromVolumeNode(original_reference_node)
 
-                # set the original node back to the correct folder
-                original_reference_tree_node = self.folder_structure.find_node_by_vtk_id(original_reference_node.GetID())
-                preo_op_node = self.folder_structure.children["Pre-op MR"]
-                self.subject_hierarchy.SetItemParent(original_reference_tree_node.sh_id, preo_op_node.sh_id)
-
                 # remove the loaded volume
                 slicer.mrmlScene.RemoveNode(loaded_volume_node)
+
+        # set the original node back to the correct folder
+        for temp_node_name, temp_node in self.folder_structure_original.children["Annotations"].children.items():
+            if "segmentationnode" in temp_node.vtk_id.lower():
+                first_seg_node = temp_node
+                break
+
+        original_reference_vtk_id = first_seg_node.segmentation_reference_vtk_id
+        original_reference_tree_node = self.folder_structure_original.find_node_by_vtk_id(original_reference_vtk_id)
+        preo_op_node = self.folder_structure_original.children["Pre-op MR"]
+
+        self.subject_hierarchy.SetItemParent(original_reference_tree_node.sh_id, preo_op_node.sh_id)
 
     def export_volumes_to_dicom(self):
         exporter_volumes = DICOMScalarVolumePlugin.DICOMScalarVolumePluginClass()
