@@ -11,7 +11,8 @@ from Resources.Logic.structure_logic import StructureLogic
 import os
 # todo loading and exporting for nifti and dicom should produce the same result
 # todo there is another subject created with one study - when is it created? remvoe it
-
+# todo fix for when segmentations have more than one parent
+# todo figure out when/how the additional patient is created so in removein we don't have to remove all but the first
 class DicomExportingLogic(ExportingLogic):
     """
     Class to encapsulate logic for exporting a scene to DICOM. Assumed structure:
