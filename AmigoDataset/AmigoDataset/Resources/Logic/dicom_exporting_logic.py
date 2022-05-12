@@ -8,14 +8,15 @@ import DICOMLib
 from Resources.Logic.exporting_logic import ExportingLogic
 from Resources.Logic.tree import Tree
 from Resources.Logic.structure_logic import StructureLogic
+from Resources.Logic.utils import collapse_segmentations
 
 import os
 # todo instead of reassigning stuff at random, make a function that reassigns everything based on the original structure
 #      and it could compare with a 'new' structure and remove the difference
-# todo loading and exporting for nifti and dicom should produce the same result
 # todo there is another subject created with one study - when is it created? remvoe it
 # todo fix for when segmentations have more than one parent
-# todo figure out when/how the additional patient is created so in removein we don't have to remove all but the first
+
+
 class DicomExportingLogic(ExportingLogic):
     """
     Class to encapsulate logic for exporting a scene to DICOM. Assumed structure:
@@ -334,3 +335,6 @@ class DicomExportingLogic(ExportingLogic):
         # delete cloned subject
         self.remove_left_over_patients()
         self.remove_left_over_studies()
+
+        # collapse segmentations
+        collapse_segmentations(self.folder_structure, self.subject_hierarchy)
