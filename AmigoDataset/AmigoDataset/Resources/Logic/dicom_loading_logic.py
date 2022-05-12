@@ -12,6 +12,7 @@ class DicomLoadingLogic(LoadingLogic):
     """
     Logic class for loading DICOM files.
     """
+    # todo fold loaded segmentations
     # todo open popup windows saying that the file is loading
     # todo close popup windows after 5 s
 
