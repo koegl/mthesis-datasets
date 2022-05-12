@@ -291,6 +291,13 @@ class DicomExportingLogic(ExportingLogic):
 
                 exporter_volumes.export(exportables)
 
+    def remove_left_over_patients(self):
+        patient_ids = vtk.vtkIdList()
+        self.subject_hierarchy.GetItemChildren(self.subject_hierarchy.GetSceneItemID(), patient_ids)
+
+        for i in range(1, patient_ids.GetNumberOfIds()):
+            self.subject_hierarchy.RemoveItem(patient_ids.GetId(i))
+
     def export_data(self):
 
         # clone subject
@@ -315,6 +322,4 @@ class DicomExportingLogic(ExportingLogic):
         DICOMLib.clearDatabase(slicer.dicomDatabase)
 
         # delete cloned subject
-        self.subject_hierarchy.RemoveItem(cloned_subject_id)
-
-
+        self.remove_left_over_patients()
