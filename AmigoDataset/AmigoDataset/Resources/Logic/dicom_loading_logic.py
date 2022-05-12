@@ -4,6 +4,7 @@ import vtk
 
 from Resources.Logic.loading_logic import LoadingLogic
 from Resources.Logic.structure_logic import StructureLogic
+from Resources.Logic.utils import collapse_segmentations
 
 import os
 
@@ -159,7 +160,7 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.reorder_volumes_into_correct_directories()
 
-        self.collapse_segmentations()
+        collapse_segmentations(self.study_structure, self.sh_node)
 
     def load_structure(self):
 
@@ -169,4 +170,4 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.postprocess_loaded_dicoms_and_landmarks()
 
-        # slicer.util.selectModule("AmigoDataset")
+        slicer.util.selectModule("AmigoDataset")
