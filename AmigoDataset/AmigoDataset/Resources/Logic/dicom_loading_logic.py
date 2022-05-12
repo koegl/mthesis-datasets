@@ -104,16 +104,6 @@ class DicomLoadingLogic(LoadingLogic):
 
         self.study_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
 
-    def collapse_segmentations(self):
-
-        # loop through all volumes
-        for study_name, study in self.study_structure.children.items():
-            for volume_name, volume in study.children.items():
-                if "segmentationnode" in volume.vtk_id.lower():
-                    segmentation_node = slicer.util.getNode(volume.vtk_id)
-                    segmentation_node_sh_id = self.sh_node.GetItemByDataNode(segmentation_node)
-                    self.sh_node.SetItemExpanded(segmentation_node_sh_id, False)
-
     def segmentations_outlines(self):
         for study_name, study in self.study_structure.children.items():
             for volume_name, volume in study.children.items():
