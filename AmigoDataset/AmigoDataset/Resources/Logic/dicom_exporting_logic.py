@@ -37,6 +37,7 @@ class DicomExportingLogic(ExportingLogic):
         self.subject_hierarchy = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
 
         self.folder_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+        self.folder_structure_original = StructureLogic.bfs_generate_folder_structure_as_tree()
 
     def clone_subject(self):
         """
