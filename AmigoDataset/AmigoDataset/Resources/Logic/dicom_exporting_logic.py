@@ -299,6 +299,14 @@ class DicomExportingLogic(ExportingLogic):
         for i in range(1, patient_ids.GetNumberOfIds()):
             self.subject_hierarchy.RemoveItem(patient_ids.GetId(i))
 
+    def remove_left_over_studies(self):
+        buf_structure = StructureLogic.bfs_generate_folder_structure_as_tree()
+        all_nodes = Tree.bfs(buf_structure)
+
+        for node in all_nodes:
+            if '(' in node.name or ')' in node.name:
+                self.subject_hierarchy.RemoveItem(node.sh_id)
+
     def export_data(self):
 
         # clone subject
@@ -324,3 +332,4 @@ class DicomExportingLogic(ExportingLogic):
 
         # delete cloned subject
         self.remove_left_over_patients()
+        self.remove_left_over_studies()
