@@ -15,7 +15,8 @@ def get_all_files(path):
 def main():
     # get all files
     files = get_all_files(sys.argv[1])
-    ds = None
+    counter = 1
+
     # loop through all files
     for file in files:
         # read dicom file
@@ -25,8 +26,11 @@ def main():
             if ds.Modality.lower() == 'seg':
                 # execute dcmdrle in shell
                 os.system(f"dcmdrle \"{file}\" \"{file}_decompressed\"")
+                os.system(f"rm \"{file}\"")
+                print(f"{counter}: {file}")
+                counter += 1
 
-        except Exception as e:
+        except:
             continue
 
 
