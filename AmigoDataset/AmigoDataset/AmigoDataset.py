@@ -145,6 +145,8 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.exportCurrentSceneStatisticsButton.connect('clicked(bool)', self.onExportCurrentSceneStatisticsButton)
         self.ui.exportAllMRBStatisticsButton.connect('clicked(bool)', self.onExportAllMRBStatisticsButton)
 
+        self.ui.miscButton.connect('clicked(bool)', self.onMiscButton)
+
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
 
@@ -457,6 +459,10 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             statistics_exporter.export_multiple_scenes(mrb_paths=mrb_paths)
         except Exception as e:
             slicer.util.errorDisplay("Couldn't export mrb statistics.\n{}".format(e), windowTitle="Statistics export error")
+
+    def onMiscButton(self):
+        
+        pass
 
 #
 # AmigoDatasetLogic
