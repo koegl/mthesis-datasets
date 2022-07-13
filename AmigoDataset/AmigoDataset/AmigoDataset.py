@@ -22,6 +22,7 @@ import Resources.Logic.dicom_loading_logic as dicom_loading_logic
 import Resources.Logic.dicom_exporting_logic as dicom_exporting_logic
 import Resources.Logic.nifti_exporting_logic as nifti_exporting_logic
 import Resources.Logic.export_wrapper as export_wrapper
+from Resources.Logic.tree import Tree
 importlib.reload(Resources.Logic.nifti_exporting_logic)
 importlib.reload(Resources.Logic.dicom_exporting_logic)
 importlib.reload(Resources.Logic.export_wrapper)
@@ -30,6 +31,7 @@ importlib.reload(Resources.Logic.statistics_exporting_logic)
 importlib.reload(Resources.Logic.loading_logic)
 importlib.reload(Resources.Logic.nifti_loading_logic)
 importlib.reload(Resources.Logic.dicom_loading_logic)
+importlib.reload(Resources.Logic.tree)
 
 
 #
@@ -461,8 +463,38 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.util.errorDisplay("Couldn't export mrb statistics.\n{}".format(e), windowTitle="Statistics export error")
 
     def onMiscButton(self):
-        
-        pass
+
+        # get all mrbs in the folder and subfolders
+        mrb_path = "/Users/fryderykkogl/Dropbox (Partners HealthCare)/TCIA/3. TCIA cases - our choice/mrbs"
+        mrb_paths_list = structure_logic.StructureLogic.return_a_list_of_all_mrbs_in_a_folder(mrb_path)
+        save_folder = "/Users/fryderykkogl/Data/temp/us_data"
+
+        idx = 0
+
+        for path in mrb_paths_list:
+            # open mrb
+            slicer.mrmlScene.Clear()
+            slicer.util.loadScene(path)
+
+            # create tree with all files
+            folder_structure = structure_logic.StructureLogic.bfs_generate_folder_structure_as_tree()
+
+            # list all nodes
+            bfs_array = Tree.bfs(folder_structure)
+
+            for node in bfs_array:
+                if 'us' in node.name.lower() and "scalarvolumenode" in node.vtk_id.lower():
+                    try:
+                        slicer_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
+
+                        export_path = os.path.join(save_folder, f"{idx}.nii.gz")
+
+                        slicer.util.saveNode(slicer_node, export_path)
+
+                        idx += 1
+                    except Exception as e:
+                        print(e)
+
 
 #
 # AmigoDatasetLogic

@@ -22,7 +22,7 @@ class Tree(object):
         return self.name
 
     def add_child(self, node):
-        assert isinstance(node, Tree)
+        assert str(type(node)) == "<class 'Resources.Logic.tree.Tree'>", "Node is not a tree"
         self.children[node.name] = node
         self.children[node.name].parent = self
         return node
@@ -53,7 +53,7 @@ class Tree(object):
         @param node: The root of the (sub-) tree
         @return: List of nodes
         """
-        assert isinstance(node, Tree), "Node is not a Tree"
+        assert str(type(node)) == "<class 'Resources.Logic.tree.Tree'>", "Node is not a tree"
 
         # array with visited and FIFO queue with nodes
         visited = [node.sh_id]
