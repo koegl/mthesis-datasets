@@ -1,0 +1,165 @@
+mp2rage p3 iso uni intra-op thin-cut
+m2rage p3 iso uni pre-op thin-cut
+mprage intra-op
+mprage pre-op
+mprage post gad intra-op
+mp2rage 3d_uni
+mp2rage p3 iso uni pre-op thin-cut
+mp2rage iso uni p3 pre-op thin-cut
+mp2rage uni intra-op thin-cut
+mprage post gad intra-op
+intraop_mprage intra op
+mprage pre-op
+mprage post op_nd
+mprage_1_intraop
+mprage intra-op
+mprage nav post-contrast thin pre-op
+mprage intra-op
+mprage post gad intra-op
+mprage postgad
+mprage_nd intra-op
+mprage 5min post
+mprage  post gad
+mprage 60-105min post
+mprage nav pre-contrast pre-op
+mprage navigation
+mp2rage p3 iso uni post-contrast pre-op thin-cut 8-5-20
+mp2rage p3 iso uni pre-contrast pre-op thin-cut 8-5-20
+mp2rage p3 iso uni post-contrast pre-op thin-cut 8-5-20
+mprage post gd intra-op
+mprage post gad
+mprage pre gad
+mprage post gad
+spc flair intra-op thin-cut
+post-contrast intra-op thin-cut
+post-contrast pre-op thin-cut
+pre-op
+pre-op
+flair pre-op thick-cut
+blade intra-op 2mm thin-cut
+blade intra-op 3mm thin-cut
+post-contrast pre-op thin-cut
+space flair intra-op thin-cut
+space pre-op thin-cut
+nav pre thin pre-op
+space thin pre-op
+post-contrast intraop thin-cut
+nav pre-op
+space
+space intra-op
+flair
+blade 2mm intra-op thin-cut
+flair pre-op thin-cut
+pre-op thin-cut
+post gado  m.p.r.s thin pre-op
+pre-contrast pre-op thin-cut
+pre-contrast intra-op thin-cut
+post-contrast pre-op thin-cut
+blade intra-op thin-cut 2mm
+post-contrast intra-op thin-cut
+blade pre-op thin-cut 2mm
+post-contrast intra-op thin-cut
+space pre-op thin-cut
+blade pre-op thin-cut 2mm
+space intra-op
+space pre-op
+fspgr nav thin pre-op
+cube intra-op
+blade intra-op thick-cut 2mm
+pre-op thick-cut
+space pre-op thin-cut copy
+post-contrast pre-op thin-cut
+post intra-op
+pre-contrast intra-op thin-cut
+nav post-contrast thin pre-op
+blade 2mm post gad thin intra-op
+flair pre-op thin-cut
+flair thin pre-op
+pre gad thin intra-op
+post thin pre-op
+flair
+nav thin pre-op
+nav
+44 mr space for non-enhancing lesions
+space
+flair thick-cut intra-op
+blade thick-cut intra-op
+flair pre-op
+post-contrast pre-op thin-cut 1mm
+flair pre-op thin-cut
+blade intra-op thin-cut 2mm
+blade intra-op thin-cut 2mm
+cube flair pre-op thin-cut
+pre-op
+spc flair
+blade pre-op thin-cut
+blade 2mm
+post pre-op thin-cut
+flair intra-op thin-cut
+flair pre-op thin-cut
+blade intra-op 2mm
+intra-op post-contrast thin-cut
+first intraop_blade 2mm
+space pre-op slab sel
+spc flair intra-op
+pre-contrast pre-op thin-cut
+nav
+vibe post-contrast pre-op thin-cut
+blade 2mm_1_intraop
+blade 2mm_1_intraop
+post_1_preop
+space for non-enhancing lesions_2
+nav_1
+blade 2mm_1_intra-op
+post-contrast thin pre-op
+space isotropic thin intra-op
+flair pre-op thick-cut
+flair pre-op thick-cut
+space pre-op thin-cut
+thick pre-op
+flair thick pre-op
+nav pre-contrast thin pre-op
+blade pre-op thin-cut
+flair pre-op thin-cut
+space
+nav
+blade intra-op thin-cut 3mm
+flair mpr thin pre-op
+spc flair
+space for non-enhancing lesions
+space slab sel pre-op
+flair thick pre-op
+space pre-op
+post-contrast pre-op
+flair intra-op
+space ms pre-op thin-cut
+flair ms pre-op thin-cut
+blade pre-op thin-cut 2mm
+blade pre-op thin-cut 2mm
+space pre-op thin-cut 8-5-20
+post-contrast pre-op thin-cut 8-5-20
+flair pre-op thin-cut 8-5-20
+flair pre-op thick-cut 5-19-20
+blade intra-op thin-cut
+pre-op thick-cut 5-19-20
+nav post-contrast pre-op thin-cut
+pre-op thin-cut
+post-contrast pre-op thin-cut
+flair
+space for non-enhancing lesions
+blade 2mm
+post-contrast intra-op thin-cut
+flair intra-op thin-cut
+flair pre-op thick-cut
+flair pre-op thick-cut
+spc flair
+blade intra-op thin-cut
+post-contrast pre-op thin-cut
+fspgr
+vibe
+space ms
+flair ms
+spc flair intra-op1 thin-cut
+post-contrast pre-op thin-cut 0.5mm
+blade 2mm intra-op thin-cut
+post-contrast intra-op1 thin-cut
