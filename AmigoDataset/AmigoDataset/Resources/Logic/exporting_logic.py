@@ -43,6 +43,8 @@ class ExportingLogic:
 
         self.folder_structure_parent = None
 
+        self.case_number = '000'
+
     def generate_id(self, hash_string, deidentify=False):
         """
         Generates a unique id by hashing hash_string. (unique up to 999999999)
@@ -238,7 +240,7 @@ class ExportingLogic:
     def export_data(self):
         raise NotImplementedError("export_data method is not implemented in the Parent class.")
 
-    def full_export(self, identity=False, resample_size=False, deidentify=False):
+    def full_export(self, identity=False, resample_size=False, deidentify=False, case='000'):
         """
         Perform all the steps to export the current scene
         """
@@ -246,6 +248,7 @@ class ExportingLogic:
         self.identity = identity
         self.resample_size = resample_size
         self.deidentify = deidentify
+        self.case_number = case
 
         # 1. Generate folder structure
         self.folder_structure_parent = StructureLogic.bfs_generate_folder_structure_as_tree()

@@ -348,7 +348,7 @@ class AmigoDatasetWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.parent_identity = self.ui.mainIdentityText.toPlainText()
             if self.resample is True:
                 self.resample_spacing = float(self.ui.resampleText.toPlainText())
-            export_logic.export(self.parent_identity, self.resample_spacing, self.deidentify)
+            export_logic.export(self.parent_identity, self.resample_spacing, self.deidentify, self.ui.caseNumberText.toPlainText())
 
             slicer.util.messageBox(f"\nFinished exporting to {self.format}.")
 

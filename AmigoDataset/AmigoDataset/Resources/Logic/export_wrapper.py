@@ -21,7 +21,7 @@ class ExportWrapper:
         else:
             raise ValueError('Export type not supported')
 
-    def export(self, parent_identity=False, resample_spacing=False, deidentify=False):
-        self.exporting_logic.full_export(parent_identity, resample_spacing, deidentify)
+    def export(self, parent_identity=False, resample_spacing=False, deidentify=False, case='000'):
+        self.exporting_logic.full_export(parent_identity, resample_spacing, deidentify, case)
 
 

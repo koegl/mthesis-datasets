@@ -95,7 +95,9 @@ class NiftiExportingLogic(ExportingLogic):
                         and "landmark" not in node.parent.name.lower():
 
                     parent_path = os.path.join(self.subject_folder, node.parent.name)
-                    export_path = os.path.join(parent_path, node.name + ".nii")
+                    file_name = f"case{self.case_number}-{node.name}.nii"
+                    file_name = file_name.replace(" ", "-")
+                    export_path = os.path.join(parent_path, file_name)
 
                     self.export_node_to_nifti(export_path, node.vtk_id)
 
