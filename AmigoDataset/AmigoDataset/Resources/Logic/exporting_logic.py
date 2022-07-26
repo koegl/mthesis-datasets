@@ -2,7 +2,7 @@ import slicer
 import vtk
 
 from Resources.Logic.tree import Tree
-from Resources.Logic.utils import np_to_vtk, vtk_to_np
+from Resources.Logic import utils
 from Resources.Logic.structure_logic import StructureLogic
 
 import os
@@ -167,7 +167,7 @@ class ExportingLogic:
         # get its transform and create the inverse (with negative y and z)
         main_original_transform = vtk.vtkMatrix4x4()
         main_node.GetIJKToRASMatrix(main_original_transform)
-        main_original_transform = vtk_to_np(main_original_transform)
+        main_original_transform = utils.vtk_to_np(main_original_transform)
         inverse_main_original_transform = np.linalg.inv(main_original_transform)
 
         # create identity with y and z negative
@@ -176,7 +176,7 @@ class ExportingLogic:
         identity_transform_reflection_yz[2, 2] = -1
 
         # transform the main node to identity (replace matrices)
-        main_node.SetIJKToRASMatrix(np_to_vtk(identity_transform_reflection_yz))
+        main_node.SetIJKToRASMatrix(utils.np_to_vtk(identity_transform_reflection_yz))
 
         # transform all other nodes with the inverse of the main node (volumes and segmentations)
         for node in all_nodes:
@@ -185,19 +185,19 @@ class ExportingLogic:
                 current_transform = vtk.vtkMatrix4x4()
                 slicer_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
                 slicer_node.GetIJKToRASMatrix(current_transform)
-                current_transform = vtk_to_np(current_transform)
+                current_transform = utils.vtk_to_np(current_transform)
                 new_transform = np.dot(inverse_main_original_transform, current_transform)
 
                 new_transform = np.dot(identity_transform_reflection_yz, new_transform)
 
                 # set the combined transformation
-                slicer_node.SetIJKToRASMatrix(np_to_vtk(new_transform))
+                slicer_node.SetIJKToRASMatrix(utils.np_to_vtk(new_transform))
 
             # transform landmarks
             elif node.vtk_id != main_node.GetID() and node.vtk_id and "markupsfiducial" in node.vtk_id.lower():
                 slicer_node = slicer.mrmlScene.GetNodeByID(node.vtk_id)
                 new_transform = np.dot(identity_transform_reflection_yz, inverse_main_original_transform)
-                slicer_node.ApplyTransformMatrix(np_to_vtk(new_transform))
+                slicer_node.ApplyTransformMatrix(utils.np_to_vtk(new_transform))
 
         return ""
 

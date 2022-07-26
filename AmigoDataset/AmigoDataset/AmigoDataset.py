@@ -2,11 +2,11 @@ import vtk
 import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
-import ctk
 
 import os
 import pydicom
 import importlib
+
 try:
     from tqdm import tqdm
 except ImportError:
@@ -14,6 +14,9 @@ except ImportError:
     from tqdm import tqdm
 
 import Resources
+# import Resources.Logic as Logic
+# from Resources.Logic import structure_logic
+# from Resources.Logic import export_wrapper
 import Resources.Logic.statistics_exporting_logic as statistics_exporting_logic
 import Resources.Logic.structure_logic as structure_logic
 import Resources.Logic.loading_logic as loading_logic

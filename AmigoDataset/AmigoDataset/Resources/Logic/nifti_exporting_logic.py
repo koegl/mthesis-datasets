@@ -3,7 +3,7 @@ import slicer
 from Resources.Logic.exporting_logic import ExportingLogic
 from Resources.Logic.tree import Tree
 from Resources.Logic.structure_logic import StructureLogic
-from Resources.Logic.utils import collapse_segmentations
+from Resources.Logic import utils
 
 import os
 
@@ -108,4 +108,4 @@ class NiftiExportingLogic(ExportingLogic):
 
         self.export_landmarks_to_json(self.annotations_folder)
 
-        collapse_segmentations(self.folder_structure, self.subject_hierarchy)
+        utils.collapse_segmentations(self.folder_structure, self.subject_hierarchy)
