@@ -70,10 +70,10 @@ class NiftiExportingLogic(ExportingLogic):
         bfs_array = Tree.bfs(self.folder_structure)
 
         # generate subject id
-        self.patient_id = self.generate_id(self.folder_structure.name, self.deidentify)
+        self.patient_id = self.case_number  # self.generate_id(self.folder_structure.name, self.deidentify)
 
         # create subject folder
-        self.subject_folder = os.path.join(self.output_folder, self.patient_id)
+        self.subject_folder = os.path.join(self.output_folder, "case" + self.patient_id)
         if not os.path.exists(self.subject_folder):
             os.makedirs(self.subject_folder)
 
