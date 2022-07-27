@@ -51,10 +51,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-fi", "--first_image",
-                        default="/Users/fryderykkogl/Dropbox (Partners HealthCare)/TCIA/2. TCIA cases - our choice - in progress/20191015_craini_golby/Data/US1.nii",
+                        default="/Users/fryderykkogl/Dropbox (Partners HealthCare)/TCIA/3. TCIA cases - images and segmentations/mrbs/"
+                                "20210921_craini_bi IN PROGRESS/Data/US1.nii",
                         help="Path to the trained .pt model file")
     parser.add_argument("-si", "--second_image",
-                        default="/Users/fryderykkogl/Dropbox (Partners HealthCare)/TCIA/2. TCIA cases - our choice - in progress/20191015_craini_golby/Data/US1_reg.nii",
+                        default="/Users/fryderykkogl/Dropbox (Partners HealthCare)/TCIA/3. TCIA cases - images and segmentations/mrbs/"
+                                "20210921_craini_bi IN PROGRESS/Data/US1_reg.nii",
                         help="Path to the trained .pt model file")
 
     args = parser.parse_args()
